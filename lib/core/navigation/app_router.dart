@@ -1,8 +1,8 @@
 import 'package:go_router/go_router.dart';
 import 'package:ubantu/presentation/views/help_detail_view.dart';
-import 'package:ubantu/presentation/views/home_view.dart';
 import 'package:ubantu/presentation/views/ktm_verification_view.dart';
 import 'package:ubantu/presentation/views/login_view.dart';
+import 'package:ubantu/presentation/views/main_navigation_view.dart';
 import 'package:ubantu/presentation/views/onboarding_view.dart';
 import 'package:ubantu/presentation/views/otp_verification_view.dart';
 import 'package:ubantu/presentation/views/register_view.dart';
@@ -47,7 +47,7 @@ class AppRouter {
       ),
       GoRoute(
         path: home,
-        builder: (context, state) => const HomeView(),
+        builder: (context, state) => const MainNavigationView(),
       ),
       GoRoute(
         path: helpDetail,

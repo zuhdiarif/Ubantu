@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/custom_badge.dart';
-import 'package:ubantu/components/custom_bottom_nav_bar.dart';
-import 'package:ubantu/components/custom_task_card.dart';
-import 'package:ubantu/components/custom_toggle_switch.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/task_provider.dart';
 
 class HomeView extends StatefulWidget {
@@ -20,16 +14,8 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  int _modeTab = 0;
   int _activityTab = 0;
-  int _navIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TaskProvider>().loadTasks();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,167 +24,244 @@ class _HomeViewState extends State<HomeView> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CustomToggleSwitch(
-                      labels: const ['Bantuan', 'Membantu'],
-                      icons: const [
-                        Icons.shopping_bag_outlined,
-                        Icons.people_outline_rounded,
-                      ],
-                      selectedIndex: taskProvider.selectedModeIndex,
-                      onChanged: (index) {
-                        taskProvider.switchMode(index);
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    if (taskProvider.selectedModeIndex == 0) ...[
-                      _buildLayananSection(),
-                      const SizedBox(height: 24),
-                      _buildAktivitasSayaSection(),
-                    ] else ...[
-                      _buildOrangButuhBantuanSection(taskProvider),
-                      const SizedBox(height: 24),
-                      _buildBarterSection(),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              _buildModeToggle(taskProvider),
+              const SizedBox(height: 20),
+              if (_modeTab == 0) ...[
+                _buildPromoBanner(),
+                const SizedBox(height: 24),
+                _buildLayananPopulerSection(),
+                const SizedBox(height: 24),
+                _buildAktivitasSayaSection(),
+              ] else ...[
+                _buildOrangButuhBantuanSection(taskProvider),
+              ],
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: _navIndex,
-        onTap: (index) {
-          setState(() {
-            _navIndex = index;
-          });
-        },
-        onFabPressed: () {},
       ),
     );
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 20),
-      decoration: const BoxDecoration(
-        color: AppColors.primaryDark,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+    return Row(
+      children: [
+        const CircleAvatar(
+          radius: 26,
+          backgroundColor: Color(0xFFE2F1D8),
+          backgroundImage: AssetImage('assets/images/img_avatar_farel.png'),
         ),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 22,
-            backgroundColor: Colors.white24,
-            child: Icon(Icons.person_rounded, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hai, Anisa 👋',
-                  style: AppTypography.h5.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'Siap membantu hari ini?',
-                  style: AppTypography.body2.copyWith(
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Stack(
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: Colors.white,
+              Text(
+                'Hai Farel!',
+                style: AppTypography.h4.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E281C),
                 ),
-                onPressed: () {},
               ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
+              const SizedBox(height: 2),
+              Text(
+                'Mau bantu apa hari ini?',
+                style: AppTypography.body2.copyWith(
+                  color: const Color(0xFF5C6658),
                 ),
               ),
             ],
           ),
-          IconButton(
+        ),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFE3E7DE)),
+          ),
+          child: IconButton(
             icon: const Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: Colors.white,
+              Icons.notifications_none_rounded,
+              color: Color(0xFF1E281C),
+              size: 22,
             ),
             onPressed: () {},
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModeToggle(TaskProvider taskProvider) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE5E7E2),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _modeTab = 0;
+                });
+                taskProvider.switchMode(0);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _modeTab == 0 ? const Color(0xFF283626) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Butuh Bantuan',
+                  style: AppTypography.body2.copyWith(
+                    fontWeight: _modeTab == 0 ? FontWeight.bold : FontWeight.w500,
+                    color: _modeTab == 0 ? Colors.white : const Color(0xFF283626),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _modeTab = 1;
+                });
+                taskProvider.switchMode(1);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _modeTab == 1 ? const Color(0xFF283626) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Membantu',
+                  style: AppTypography.body2.copyWith(
+                    fontWeight: _modeTab == 1 ? FontWeight.bold : FontWeight.w500,
+                    color: _modeTab == 1 ? Colors.white : const Color(0xFF283626),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLayananSection() {
+  Widget _buildPromoBanner() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF283626),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bantu bareng,\nringankan beban!',
+                  style: AppTypography.h5.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'UBantu hadir untuk membantu mahasiswa',
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF283626),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Lihat Promo',
+                    style: AppTypography.body2.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF283626),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 4,
+            child: Image.asset(
+              'assets/images/img_promo_helper.png',
+              height: 110,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLayananPopulerSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Layanan',
+          'Layanan Populer',
           style: AppTypography.h5.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.primaryDark,
+            color: const Color(0xFF1E281C),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Row(
           children: [
             Expanded(
-              child: _buildLayananCard(
-                title: 'Bersih Kos',
-                subtitle: 'Bantu beresin kos',
-                svgAsset: 'assets/images/Gambar_bersih_kos.svg',
-                fallbackIcon: Icons.cleaning_services_rounded,
+              child: _buildCategoryCard(
+                title: 'Bersih kos',
+                imageAsset: 'assets/images/ic_bersih_kos.png',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildLayananCard(
-                title: 'Pindah Kos',
-                subtitle: 'Bantu pindahan',
-                svgAsset: 'assets/images/Gambar_pindah_kos.svg',
-                fallbackIcon: Icons.inventory_2_rounded,
+              child: _buildCategoryCard(
+                title: 'Pindah kos',
+                imageAsset: 'assets/images/ic_pindah_kos.png',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildLayananCard(
-                title: 'Antar Jemput',
-                subtitle: 'Bantu antar barang atau orang',
-                svgAsset: 'assets/images/Gambar_antar_jemput.svg',
-                fallbackIcon: Icons.two_wheeler_rounded,
+              child: _buildCategoryCard(
+                title: 'Antar jemput',
+                imageAsset: 'assets/images/ic_antar_jemput.png',
               ),
             ),
           ],
@@ -207,52 +270,40 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildLayananCard({
+  Widget _buildCategoryCard({
     required String title,
-    required String subtitle,
-    required String svgAsset,
-    required IconData fallbackIcon,
+    required String imageAsset,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: const Color(0xFFE8EBE4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          SizedBox(
-            height: 60,
-            width: 60,
-            child: SvgPicture.asset(
-              svgAsset,
-              fit: BoxFit.contain,
-              placeholderBuilder: (context) => Icon(
-                fallbackIcon,
-                size: 40,
-                color: AppColors.primaryGreen,
-              ),
-            ),
+          Image.asset(
+            imageAsset,
+            height: 64,
+            width: 64,
+            fit: BoxFit.contain,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(
             title,
             style: AppTypography.body2.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primaryDark,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E281C),
             ),
             textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: AppTypography.overline.copyWith(
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -264,71 +315,123 @@ class _HomeViewState extends State<HomeView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Aktivitas Saya',
+          'Aktivitas saya',
           style: AppTypography.h5.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.primaryDark,
+            color: const Color(0xFF1E281C),
           ),
         ),
-        const SizedBox(height: 12),
-        CustomToggleSwitch(
-          labels: const ['Sedang Berlangsung', 'Histori'],
-          selectedIndex: _activityTab,
-          onChanged: (index) {
-            setState(() {
-              _activityTab = index;
-            });
-          },
+        const SizedBox(height: 14),
+        Container(
+          height: 44,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5E7E2),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _activityTab = 0;
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _activityTab == 0 ? const Color(0xFF283626) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Sedang berlangsung',
+                      style: AppTypography.body2.copyWith(
+                        fontWeight: _activityTab == 0 ? FontWeight.bold : FontWeight.w500,
+                        color: _activityTab == 0 ? Colors.white : const Color(0xFF283626),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _activityTab = 1;
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _activityTab == 1 ? const Color(0xFF283626) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Histori',
+                      style: AppTypography.body2.copyWith(
+                        fontWeight: _activityTab == 1 ? FontWeight.bold : FontWeight.w500,
+                        color: _activityTab == 1 ? Colors.white : const Color(0xFF283626),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
-        _buildAktivitasItem(
-          title: 'Bersih Kos',
-          location: 'Jl. Merpati No. 12, Yogyakarta',
-          dateTime: '2 Jun 2025 • 10:00',
-          iconColor: Colors.green,
-          icon: Icons.cleaning_services_rounded,
-        ),
-        _buildAktivitasItem(
-          title: 'Pindah Kos',
-          location: 'Jl. Kaliurang Km 5, Yogyakarta',
-          dateTime: '1 Jun 2025 • 14:30',
-          iconColor: Colors.amber,
-          icon: Icons.inventory_2_rounded,
-        ),
-        _buildAktivitasItem(
-          title: 'Antar Jemput',
-          location: 'Jl. Seturan No. 45, Yogyakarta',
-          dateTime: '31 Mei 2025 • 09:00',
-          iconColor: Colors.blue,
-          icon: Icons.two_wheeler_rounded,
+        _buildAktivitasCard(
+          title: 'Bersih kos',
+          location: 'Jl.Veteran, Malang',
+          dateTime: '20 Juli 2026 - 09:00',
+          imageAsset: 'assets/images/ic_bersih_kos.png',
+          statusText: 'Berlangsung',
         ),
       ],
     );
   }
 
-  Widget _buildAktivitasItem({
+  Widget _buildAktivitasCard({
     required String title,
     required String location,
     required String dateTime,
-    required Color iconColor,
-    required IconData icon,
+    required String imageAsset,
+    required String statusText,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: const Color(0xFFE8EBE4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: iconColor.withValues(alpha: 0.15),
-            child: Icon(icon, color: iconColor, size: 20),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+              color: Color(0xFFF0F4EC),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Image.asset(
+                imageAsset,
+                width: 36,
+                height: 36,
+                fit: BoxFit.contain,
+              ),
+            ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,40 +440,64 @@ class _HomeViewState extends State<HomeView> {
                   title,
                   style: AppTypography.body1.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryDark,
+                    color: const Color(0xFF1E281C),
                   ),
                 ),
-                Text(
-                  location,
-                  style: AppTypography.body2.copyWith(
-                    color: Colors.grey.shade600,
-                  ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF283626)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        location,
+                        style: AppTypography.caption.copyWith(
+                          color: const Color(0xFF5C6658),
+                          fontSize: 12,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  dateTime,
-                  style: AppTypography.body2.copyWith(
-                    color: Colors.grey.shade500,
-                  ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today_rounded, size: 13, color: Color(0xFF283626)),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateTime,
+                      style: AppTypography.caption.copyWith(
+                        color: const Color(0xFF5C6658),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          const CustomBadge(text: 'Berlangsung', type: BadgeType.green),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE2F1D8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              statusText,
+              style: AppTypography.caption.copyWith(
+                color: const Color(0xFF283626),
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildOrangButuhBantuanSection(TaskProvider provider) {
-    if (provider.isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: CircularProgressIndicator(color: AppColors.primaryGreen),
-        ),
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -378,131 +505,62 @@ class _HomeViewState extends State<HomeView> {
           'Orang yang Butuh Bantuan',
           style: AppTypography.h5.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.primaryDark,
+            color: const Color(0xFF1E281C),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         ...provider.tasks.map((task) {
-          BadgeType bType = BadgeType.green;
-          if (task.category == ServiceCategory.pindahKos) {
-            bType = BadgeType.orange;
-          } else if (task.category == ServiceCategory.antarJemput) {
-            bType = BadgeType.blue;
-          }
-
-          return CustomTaskCard(
-            name: task.requesterName,
-            rating: task.rating,
-            ratingCount: task.ratingCount,
-            badgeText: task.title,
-            badgeType: bType,
-            location: task.location,
-            date: task.date,
-            time: task.time,
-            onDetailPressed: () => context.push(AppRouter.helpDetail),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE8EBE4)),
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Color(0xFFE2F1D8),
+                  child: Icon(Icons.person_rounded, color: Color(0xFF283626)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: AppTypography.body1.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E281C),
+                        ),
+                      ),
+                      Text(
+                        'Oleh: ${task.requesterName}',
+                        style: AppTypography.caption.copyWith(
+                          color: const Color(0xFF5C6658),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => context.push(AppRouter.helpDetail),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF283626),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Bantu'),
+                ),
+              ],
+            ),
           );
         }),
-      ],
-    );
-  }
-
-  Widget _buildBarterSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Jenis Barter yang Tersedia',
-          style: AppTypography.h5.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.primaryDark,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.fastfood_rounded,
-                      size: 32,
-                      color: AppColors.accentOrange,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Makanan',
-                            style: AppTypography.body1.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          Text(
-                            'Tukar dengan makanan',
-                            style: AppTypography.body2.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.card_giftcard_rounded,
-                      size: 32,
-                      color: AppColors.primaryGreen,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Barang',
-                            style: AppTypography.body1.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryDark,
-                            ),
-                          ),
-                          Text(
-                            'Tukar dengan barang',
-                            style: AppTypography.body2.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
