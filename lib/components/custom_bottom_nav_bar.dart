@@ -14,7 +14,6 @@ class CustomBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 68,
       decoration: const BoxDecoration(
         color: Color(0xFFF4F6F0),
         border: Border(
@@ -24,14 +23,20 @@ class CustomBottomNavBar extends StatelessWidget {
           ),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(0, Icons.home_rounded, 'Beranda'),
-          _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
-          _buildNavItem(2, Icons.article_rounded, 'Aktivitas'),
-          _buildNavItem(3, Icons.person_rounded, 'Profil'),
-        ],
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(0, Icons.home_rounded, 'Beranda'),
+              _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
+              _buildNavItem(2, Icons.article_rounded, 'Aktivitas'),
+              _buildNavItem(3, Icons.person_rounded, 'Profil'),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -52,7 +57,7 @@ class CustomBottomNavBar extends StatelessWidget {
             Icon(
               icon,
               color: isSelected ? activeColor : inactiveColor,
-              size: 26,
+              size: 24,
             ),
             const SizedBox(height: 3),
             Text(
