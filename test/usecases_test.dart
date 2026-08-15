@@ -18,7 +18,7 @@ void main() {
 
       expect(result.isSuccess, true);
       expect(result.data, isNotNull);
-      expect(result.data!.length, 3);
+      expect(result.data!.length, 7);
     });
 
     test('SubmitSosUseCase execution test', () async {

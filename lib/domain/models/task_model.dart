@@ -12,6 +12,9 @@ class TaskModel {
   final String time;
   final String notes;
   final TaskStatus status;
+  final bool isFemaleOnly;
+  final bool isEmergency;
+  final int rewardPoints;
 
   const TaskModel({
     required this.id,
@@ -25,6 +28,9 @@ class TaskModel {
     required this.time,
     required this.notes,
     this.status = TaskStatus.pending,
+    this.isFemaleOnly = false,
+    this.isEmergency = false,
+    this.rewardPoints = 10,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +52,9 @@ class TaskModel {
         (e) => e.name == json['status'],
         orElse: () => TaskStatus.pending,
       ),
+      isFemaleOnly: json['is_female_only'] as bool? ?? false,
+      isEmergency: json['is_emergency'] as bool? ?? false,
+      rewardPoints: json['reward_points'] as int? ?? 10,
     );
   }
 
@@ -62,6 +71,9 @@ class TaskModel {
       'time': time,
       'notes': notes,
       'status': status.name,
+      'is_female_only': isFemaleOnly,
+      'is_emergency': isEmergency,
+      'reward_points': rewardPoints,
     };
   }
 }

@@ -17,7 +17,7 @@ void main() {
         const TaskFilterModel(category: ServiceCategory.bersihKos),
       );
 
-      expect(filtered.length, 1);
+      expect(filtered.length, 2);
       expect(filtered.first.category, ServiceCategory.bersihKos);
     });
 

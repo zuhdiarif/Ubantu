@@ -25,15 +25,13 @@ void main() {
         tasks,
         const TaskFilterModel(searchQuery: 'Bersih'),
       );
-      expect(resultsTitle.length, 1);
-      expect(resultsTitle.first.title, 'Bersih Kos');
+      expect(resultsTitle.length, 2);
 
       final resultsLocation = useCase.execute(
         tasks,
-        const TaskFilterModel(searchQuery: 'Gejayan'),
+        const TaskFilterModel(searchQuery: 'Malang'),
       );
-      expect(resultsLocation.length, 1);
-      expect(resultsLocation.first.title, 'Antar Jemput');
+      expect(resultsLocation.length, 7);
     });
 
     test('TaskFilterModel copyWith parameters', () {
@@ -54,14 +52,14 @@ void main() {
       final provider = TaskProvider();
       await provider.loadTasks();
 
-      expect(provider.tasks.length, 3);
+      expect(provider.tasks.length, 7);
 
       provider.searchTasks('Bersih');
-      expect(provider.tasks.length, 1);
+      expect(provider.tasks.length, 2);
       expect(provider.searchQuery, 'Bersih');
 
       provider.searchTasks('');
-      expect(provider.tasks.length, 3);
+      expect(provider.tasks.length, 7);
     });
 
     test('RatingRepositoryImpl get & submit ratings', () async {

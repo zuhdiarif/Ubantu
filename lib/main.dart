@@ -5,9 +5,11 @@ import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/barter_provider.dart';
+import 'package:ubantu/presentation/providers/loyalty_provider.dart';
 import 'package:ubantu/presentation/providers/profile_provider.dart';
 import 'package:ubantu/presentation/providers/rating_provider.dart';
 import 'package:ubantu/presentation/providers/registration_provider.dart';
+import 'package:ubantu/presentation/providers/schedule_provider.dart';
 import 'package:ubantu/presentation/providers/sos_provider.dart';
 import 'package:ubantu/presentation/providers/task_provider.dart';
 
@@ -29,6 +31,8 @@ class UbantuApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => BarterProvider()),
         ChangeNotifierProvider(create: (_) => RatingProvider()),
+        ChangeNotifierProvider(create: (_) => LoyaltyProvider()),
+        ChangeNotifierProvider(create: (_) => ScheduleProvider()),
       ],
       child: MaterialApp.router(
         title: 'Ubantu',

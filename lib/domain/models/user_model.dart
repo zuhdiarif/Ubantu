@@ -7,7 +7,12 @@ class UserModel {
   final String phoneNumber;
   final String nim;
   final String? ktmPhotoUrl;
+  final String? avatarUrl;
   final KtmVerificationStatus verificationStatus;
+  final UserRole role;
+  final UserGender gender;
+  final bool isFemaleOnlyPreferred;
+  final int rewardPoints;
 
   const UserModel({
     required this.id,
@@ -16,7 +21,12 @@ class UserModel {
     required this.phoneNumber,
     required this.nim,
     this.ktmPhotoUrl,
+    this.avatarUrl,
     this.verificationStatus = KtmVerificationStatus.unverified,
+    this.role = UserRole.customer,
+    this.gender = UserGender.unspecified,
+    this.isFemaleOnlyPreferred = false,
+    this.rewardPoints = 0,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -27,10 +37,21 @@ class UserModel {
       phoneNumber: json['phone_number'] as String? ?? '',
       nim: json['nim'] as String? ?? '',
       ktmPhotoUrl: json['ktm_photo_url'] as String?,
+      avatarUrl: json['avatar_url'] as String?,
       verificationStatus: KtmVerificationStatus.values.firstWhere(
         (e) => e.name == json['verification_status'],
         orElse: () => KtmVerificationStatus.unverified,
       ),
+      role: UserRole.values.firstWhere(
+        (e) => e.name == json['role'],
+        orElse: () => UserRole.customer,
+      ),
+      gender: UserGender.values.firstWhere(
+        (e) => e.name == json['gender'],
+        orElse: () => UserGender.unspecified,
+      ),
+      isFemaleOnlyPreferred: json['is_female_only_preferred'] as bool? ?? false,
+      rewardPoints: json['reward_points'] as int? ?? 0,
     );
   }
 
@@ -42,7 +63,12 @@ class UserModel {
       'phone_number': phoneNumber,
       'nim': nim,
       'ktm_photo_url': ktmPhotoUrl,
+      'avatar_url': avatarUrl,
       'verification_status': verificationStatus.name,
+      'role': role.name,
+      'gender': gender.name,
+      'is_female_only_preferred': isFemaleOnlyPreferred,
+      'reward_points': rewardPoints,
     };
   }
 
@@ -53,7 +79,12 @@ class UserModel {
     String? phoneNumber,
     String? nim,
     String? ktmPhotoUrl,
+    String? avatarUrl,
     KtmVerificationStatus? verificationStatus,
+    UserRole? role,
+    UserGender? gender,
+    bool? isFemaleOnlyPreferred,
+    int? rewardPoints,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -62,7 +93,12 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       nim: nim ?? this.nim,
       ktmPhotoUrl: ktmPhotoUrl ?? this.ktmPhotoUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       verificationStatus: verificationStatus ?? this.verificationStatus,
+      role: role ?? this.role,
+      gender: gender ?? this.gender,
+      isFemaleOnlyPreferred: isFemaleOnlyPreferred ?? this.isFemaleOnlyPreferred,
+      rewardPoints: rewardPoints ?? this.rewardPoints,
     );
   }
 }

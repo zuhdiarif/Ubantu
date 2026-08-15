@@ -8,10 +8,10 @@ void main() {
   group('MockDataFactory Unit Tests', () {
     test('Mock user, tasks, barters and notifications generation', () {
       final user = MockDataFactory.mockUser;
-      expect(user.fullName, 'Farel Brawijaya');
+      expect(user.fullName, 'Mahasiswa Tester UB');
 
       final tasks = MockDataFactory.mockTasks;
-      expect(tasks.length, 3);
+      expect(tasks.length, 7);
 
       final barters = MockDataFactory.mockBarters;
       expect(barters.length, 2);
