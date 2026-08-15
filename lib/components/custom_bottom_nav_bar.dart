@@ -26,7 +26,7 @@ class CustomBottomNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
+          height: 60,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -59,13 +59,14 @@ class CustomBottomNavBar extends StatelessWidget {
               color: isSelected ? activeColor : inactiveColor,
               size: 24,
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               label,
               style: AppTypography.overline.copyWith(
                 color: isSelected ? activeColor : inactiveColor,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: 11,
+                decoration: TextDecoration.none,
               ),
             ),
           ],

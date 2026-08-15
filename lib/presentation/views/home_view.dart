@@ -21,9 +21,11 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     final taskProvider = context.watch<TaskProvider>();
 
-    return Container(
-      color: AppColors.background,
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        top: true,
+        bottom: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
