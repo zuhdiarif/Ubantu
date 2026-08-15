@@ -4,8 +4,6 @@
 ![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)
 ![Architecture](https://img.shields.io/badge/Architecture-Clean%20MVVM-green)
 ![Backend](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase)
-![Test Pass Rate](https://img.shields.io/badge/Tests-48%2F48%20Passed%20(100%25)-brightgreen)
-![Code Quality](https://img.shields.io/badge/Lints-0%20Issues-brightgreen)
 
 ## 📌 Overview
 
@@ -51,8 +49,6 @@ Berdasarkan analisis oleh *Damayanti et al. (2023)*, terdapat korelasi kuat anta
 | **State Management** | Provider Pattern (`MultiProvider`) |
 | **Navigation & Routing** | `go_router` |
 | **Backend & Cloud** | Supabase (PostgreSQL, Supabase Auth, Storage) |
-| **Design System Tokens** | Plus Jakarta Sans, Custom AppColors & AppTypography |
-| **Quality Assurance** | `flutter analyze` (0 lints), `flutter test` (48/48 unit & widget tests) |
 
 ---
 
@@ -62,7 +58,7 @@ Aplikasi dibangun mengikuti standar **Clean MVVM Architecture** untuk modularita
 
 ```text
 lib/
-├── components/           # UI Design System Tokens (Theme, Custom Badge, Buttons, Cards, States)
+├── components/           # UI Reusable Widgets (Theme, Custom Badge, Buttons, Cards, States)
 ├── core/                 # Infrastructure (AppConfig, DI, Error Handling, Navigation, Utils)
 ├── data/                 # Data Layer (DTOs, RepositoriesImpl, Supabase Services, Local Storage)
 ├── domain/               # Logic Layer (Entities, Abstract Repository Contracts, UseCases)
@@ -105,20 +101,7 @@ Untuk memfasilitasi pengujian aplikasi tanpa pendaftaran manual, seluruh akun be
    flutter pub get
    ```
 
-3. **Jalankan Automated Tests**:
-   ```bash
-   flutter test
-   ```
-
-4. **Jalankan Aplikasi**:
+3. **Jalankan Aplikasi**:
    ```bash
    flutter run --dart-define=SUPABASE_URL=https://orpilmyjifanjwpxxmdi.supabase.co --dart-define=SUPABASE_ANON_KEY=your-publishable-key
    ```
-
----
-
-## 🧪 Quality Assurance & Test Verification
-
-- **Lint Status**: `No issues found!` (`flutter analyze`)
-- **Test Pass Rate**: `48/48 tests passed!` (`flutter test`)
-- **Code Standards**: Strictly zero comments in `.dart` source files, YAGNI principle, OOP Clean Code.
