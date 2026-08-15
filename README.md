@@ -71,13 +71,18 @@ lib/
 
 ---
 
-## 🔑 Demo Account & Testing Credentials
+## 🔑 Demo Account & Seed Credentials
 
-Untuk memfasilitasi pengujian aplikasi tanpa proses pendaftaran manual:
+Untuk memfasilitasi pengujian aplikasi tanpa pendaftaran manual, seluruh akun berikut aktif di Supabase Auth & DB (Password default: `Testing123!`):
 
-- **Email**: `tester@student.ub.ac.id`
-- **Password**: `Testing123!`
-- **Status**: Terverifikasi Mahasiswa UB (KTM Approved)
+| Nama Pengguna | Email Login | Status | Telepon |
+|---|---|---|---|
+| **Mahasiswa Tester UB** | `tester@student.ub.ac.id` | Verified UB | 081234567890 |
+| **Bintang Pratama** | `bintang.pratama@gmail.com` | Verified | 081298765432 |
+| **Anisa Rahmawati** | `anisa.rahmawati@yahoo.com` | Verified | 085712345678 |
+| **Farhan Kurniawan** | `farhan.kurnia@gmail.com` | Verified | 082134567890 |
+| **Dinda Kirana** | `dinda.kirana@outlook.com` | Verified | 081345678901 |
+| **Rizky Aditya** | `rizky.aditya@gmail.com` | Verified | 087812345678 |
 
 ---
 
