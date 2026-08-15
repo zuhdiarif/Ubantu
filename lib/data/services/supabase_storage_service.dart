@@ -39,4 +39,19 @@ class SupabaseStorageService {
       return AppResult.failure(e.toString());
     }
   }
+
+  Future<AppResult<String>> uploadTaskImage(File file, String taskId) async {
+    try {
+      final fileExt = file.path.split('.').last;
+      final fileName = 'task_${taskId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final path = 'tasks/$fileName';
+
+      await _effectiveClient.storage.from('task_images').upload(path, file);
+      final publicUrl = _effectiveClient.storage.from('task_images').getPublicUrl(path);
+
+      return AppResult.success(publicUrl);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
 }
