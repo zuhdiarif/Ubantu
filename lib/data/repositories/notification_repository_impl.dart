@@ -1,12 +1,17 @@
 import 'package:ubantu/data/services/notification_service.dart';
+import 'package:ubantu/data/services/supabase_notification_service.dart';
 import 'package:ubantu/domain/models/notification_model.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
 
 class NotificationRepositoryImpl implements INotificationRepository {
   final NotificationService _service;
+  final SupabaseNotificationService? _supabaseService;
 
-  NotificationRepositoryImpl({NotificationService? service})
-      : _service = service ?? NotificationService();
+  NotificationRepositoryImpl({
+    NotificationService? service,
+    SupabaseNotificationService? remoteService,
+  })  : _service = service ?? NotificationService(),
+        _supabaseService = remoteService;
 
   @override
   List<NotificationModel> getNotifications() => _service.notifications;
@@ -22,5 +27,6 @@ class NotificationRepositoryImpl implements INotificationRepository {
   @override
   void markAllAsRead() {
     _service.markAllAsRead();
+    _supabaseService?.markAllAsRead();
   }
 }

@@ -73,6 +73,7 @@ class MockDataFactory {
   static List<NotificationModel> get mockNotifications => [
         NotificationModel(
           id: 'n1',
+          userId: 'usr_farel',
           title: 'Verifikasi Berhasil',
           message: 'Identitas KTM Universitas Brawijaya telah terverifikasi.',
           createdAt: DateTime.now().subtract(const Duration(hours: 1)),
@@ -80,6 +81,7 @@ class MockDataFactory {
         ),
         NotificationModel(
           id: 'n2',
+          userId: 'usr_farel',
           title: 'Permintaan Diterima',
           message: 'Nasya menerima bantuan Bersih Kos kamu.',
           createdAt: DateTime.now().subtract(const Duration(hours: 3)),

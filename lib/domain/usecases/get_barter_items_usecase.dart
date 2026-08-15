@@ -1,14 +1,13 @@
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/data/services/barter_service.dart';
 import 'package:ubantu/domain/models/barter_item_model.dart';
+import 'package:ubantu/domain/repositories/barter_repository.dart';
 
 class GetBarterItemsUseCase {
-  final BarterService _service;
+  final IBarterRepository repository;
 
-  GetBarterItemsUseCase({BarterService? service})
-      : _service = service ?? BarterService();
+  GetBarterItemsUseCase(this.repository);
 
   Future<AppResult<List<BarterItemModel>>> execute() {
-    return _service.fetchAvailableBarterItems();
+    return repository.getBarterItems();
   }
 }

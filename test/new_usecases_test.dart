@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/utils/mock_data_factory.dart';
+import 'package:ubantu/data/repositories/barter_repository_impl.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/task_filter_model.dart';
 import 'package:ubantu/domain/usecases/filter_tasks_usecase.dart';
@@ -21,7 +22,7 @@ void main() {
     });
 
     test('GetBarterItemsUseCase fetching available barters', () async {
-      final useCase = GetBarterItemsUseCase();
+      final useCase = GetBarterItemsUseCase(BarterRepositoryImpl());
       final result = await useCase.execute();
 
       expect(result.isSuccess, true);

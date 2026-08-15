@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 
-enum BadgeType { green, blue, orange, red }
+enum BadgeType { green, orange, blue, success, warning, danger, info }
 
 class CustomBadge extends StatelessWidget {
   final String text;
@@ -17,37 +17,40 @@ class CustomBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color bg;
-    Color fg;
+    Color textColor;
 
     switch (type) {
       case BadgeType.green:
+      case BadgeType.success:
         bg = const Color(0xFFE8F5E9);
-        fg = AppColors.primaryGreen;
-        break;
-      case BadgeType.blue:
-        bg = const Color(0xFFE3F2FD);
-        fg = const Color(0xFF1976D2);
+        textColor = AppColors.primaryGreen;
         break;
       case BadgeType.orange:
+      case BadgeType.warning:
         bg = AppColors.orangeLight;
-        fg = AppColors.orangeNormal;
+        textColor = AppColors.accentOrange;
         break;
-      case BadgeType.red:
-        bg = const Color(0xFFFFEBEE);
-        fg = const Color(0xFFD32F2F);
+      case BadgeType.blue:
+      case BadgeType.info:
+        bg = const Color(0xFFEBF5FF);
+        textColor = const Color(0xFF0066FF);
+        break;
+      case BadgeType.danger:
+        bg = const Color(0xFFFEF2F2);
+        textColor = const Color(0xFFEF4444);
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         text,
-        style: AppTypography.body2.copyWith(
-          color: fg,
+        style: AppTypography.caption.copyWith(
+          color: textColor,
           fontWeight: FontWeight.bold,
         ),
       ),

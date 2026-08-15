@@ -1,0 +1,42 @@
+import 'dart:io';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ubantu/core/errors/app_result.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
+
+class SupabaseStorageService {
+  final SupabaseClient? _client;
+
+  SupabaseStorageService({SupabaseClient? supabaseClient}) : _client = supabaseClient;
+
+  SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
+
+  Future<AppResult<String>> uploadKtmPhoto(File file, String userId) async {
+    try {
+      final fileExt = file.path.split('.').last;
+      final fileName = 'ktm_${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final path = 'ktm/$fileName';
+
+      await _effectiveClient.storage.from('ktm_photos').upload(path, file);
+      final publicUrl = _effectiveClient.storage.from('ktm_photos').getPublicUrl(path);
+
+      return AppResult.success(publicUrl);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<AppResult<String>> uploadAvatar(File file, String userId) async {
+    try {
+      final fileExt = file.path.split('.').last;
+      final fileName = 'avatar_${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final path = 'avatars/$fileName';
+
+      await _effectiveClient.storage.from('avatars').upload(path, file);
+      final publicUrl = _effectiveClient.storage.from('avatars').getPublicUrl(path);
+
+      return AppResult.success(publicUrl);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+}

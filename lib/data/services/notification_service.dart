@@ -8,9 +8,10 @@ class NotificationService extends ChangeNotifier {
 
   int get unreadCount => _notifications.where((n) => !n.isRead).length;
 
-  void addNotification(String title, String message) {
+  void addNotification(String title, String message, {String userId = 'usr_current'}) {
     final newNotif = NotificationModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: userId,
       title: title,
       message: message,
       createdAt: DateTime.now(),

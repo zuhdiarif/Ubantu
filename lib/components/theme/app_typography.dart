@@ -60,6 +60,13 @@ class AppTypography {
     color: AppColors.primaryDark,
   );
 
+  static const TextStyle caption = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12.0,
+    fontWeight: FontWeight.w500,
+    color: AppColors.primaryDark,
+  );
+
   static const TextStyle overline = TextStyle(
     fontFamily: fontFamily,
     fontSize: 10.0,

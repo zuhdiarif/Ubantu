@@ -18,7 +18,7 @@ class ServiceLocator {
 
   late final IAuthRepository authRepository = AuthRepositoryImpl();
   late final ITaskRepository taskRepository =
-      TaskRepositoryImpl(taskService: mockTaskService);
+      TaskRepositoryImpl(mockService: mockTaskService);
   late final ISosRepository sosRepository = SosRepositoryImpl();
 
   late final LoginUseCase loginUseCase = LoginUseCase(authRepository);

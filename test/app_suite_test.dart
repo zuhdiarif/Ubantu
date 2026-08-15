@@ -27,7 +27,7 @@ void main() {
       expect(netEx.message, 'No internet');
       expect(netEx.code, 'NET_01');
 
-      const authEx = AuthException('Invalid credentials', 'AUTH_01');
+      const authEx = AuthException('Invalid credentials', code: 'AUTH_01');
       expect(authEx.toString().contains('Invalid credentials'), true);
     });
   });
