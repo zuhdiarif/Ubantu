@@ -1,107 +1,125 @@
-# UBantu - Platform Ekosistem Saling Bantu Mahasiswa
+# UBantu
 
-![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)
-![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)
-![Architecture](https://img.shields.io/badge/Architecture-Clean%20MVVM-green)
-![Backend](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase)
-
-## 📌 Overview
-
-Tidak jarang mahasiswa menghadapi keterbatasan waktu akibat padatnya aktivitas perkuliahan, praktikum, dan organisasi. Kondisi ini membuat mahasiswa sering mengalami kesulitan dalam mengurus aktivitas harian seperti **bersih-bersih kos, pesan antar barang, hingga pindah kos**.
-
-**UBantu** hadir sebagai platform digital berbasis Flutter & Supabase yang menghubungkan mahasiswa untuk saling membantu menyelesaikan aktivitas harian tersebut secara efisien, aman, dan terjangkau.
+**UBantu** adalah platform ekosistem digital *peer-to-peer micro-services* yang dirancang khusus untuk mahasiswa **Fakultas Ilmu Komputer (FILKOM) Universitas Brawijaya**. UBantu mempertemukan mahasiswa yang memiliki keterbatasan waktu akibat padatnya aktivitas perkuliahan dengan sesama mahasiswa dan masyarakat sekitar untuk saling membantu dalam menyelesaikan berbagai aktivitas harian secara efisien, aman, dan terjangkau.
 
 ---
 
-## ❓ Problem Statement
+## 📌 Problem Statement
 
-Berdasarkan analisis oleh *Damayanti et al. (2023)*, terdapat korelasi kuat antara tingginya tingkat stres mahasiswa dengan minimnya manajemen waktu di tengah kesibukan akademik. Untuk meningkatkan efisiensi waktu, diperlukan solusi berbasis ekosistem saling bantu yang dapat memenuhi kebutuhan harian mahasiswa sekaligus membuka peluang bernilai ekonomi berkelanjutan.
+Mahasiswa seringkali mengalami kesulitan dalam manajemen waktu akibat tingginya beban akademis, praktikum, serta aktivitas organisasi. Berdasarkan penelitian oleh *Damayanti et al. (2023)*, terdapat korelasi langsung antara minimnya efisiensi manajemen waktu dengan tingginya tingkat stres mahasiswa. 
+
+Untuk mengatasi permasalahan tersebut, diperlukan sebuah solusi berbasis ekosistem saling bantu yang mampu mempermudah pengerjaan aktivitas harian sekaligus menciptakan peluang ekonomi berkelanjutan bagi sesama mahasiswa.
 
 ---
 
 ## 💡 Solution & Layanan Utama
 
-**UBantu** berperan sebagai ekosistem layanan mikro antar mahasiswa dan masyarakat sekitar. Terdapat 3 layanan utama:
+UBantu hadir sebagai penyedia ekosistem jasa mikro terintegrasi yang mencakup 3 layanan utama:
 
-1. 🧹 **Jasa Kebersihan Kos**: Bantuan pembersihan kamar kos secara fleksibel.
-2. 📦 **Jasa Pindah Kos**: Layanan pengangkutan barang pindahan kos antar lokasi.
-3. 🛵 **Layanan Pesan Antar Barang**: Jasa antar-jemput barang, dokumen, atau kebutuhan harian.
-
----
-
-## ⭐ Key Advantages & Innovative Features
-
-- 📅 **Smart Scheduling System**: Fitur pemesanan dan pemantauan jadwal fleksibel dengan notifikasi pengingat real-time.
-- ⭐ **Rating & Review Engine**: Transparansi ulasan dan skor reputasi penyedia jasa.
-- 🆔 **Verifikasi Identitas Mitra (KTM UB)**: Proses verifikasi Kartu Tanda Mahasiswa (KTM) Universitas Brawijaya sebelum mitra dapat menerima order.
-- 🚨 **In-App Emergency Button (SOS)**: Tombol darurat pelacakan dan bantuan saat pengguna tidak merasa aman selama layanan berlangsung.
-- 🎁 **Loyalty & Reward Points**: Sistem penukaran poin bantuan menjadi voucher jasa gratis 1x.
-- 👩 **Filter Women-Only**: Pilihan penyaringan penyedia jasa khusus perempuan untuk kenyamanan ekstra.
+1. 🧹 **Jasa Kebersihan Kos**: Layanan bantuan pembersihan kamar kos, penyedotan debu, dan perapihan area tempat tinggal mahasiswa.
+2. 📦 **Jasa Pindah Kos**: Layanan pengangkutan, pengemasan, dan pemindahan barang kos antar lokasi secara aman.
+3. 🛵 **Layanan Pesan Antar Barang**: Jasa antar-jemput dokumen, tugas cetak/print, makanan, serta kebutuhan harian kampus.
 
 ---
 
-## 🛠️ Technology Stack
+## ⭐ Fitur Utama & Keunggulan
 
-| Component | Technology |
-|---|---|
-| **Frontend Framework** | Flutter 3.x (Dart 3.x) |
-| **Architecture Pattern** | Clean MVVM (Model-View-ViewModel/Provider) |
-| **State Management** | Provider Pattern (`MultiProvider`) |
-| **Navigation & Routing** | `go_router` |
-| **Backend & Cloud** | Supabase (PostgreSQL, Supabase Auth, Storage) |
+* 🔐 **Sistem Autentikasi & Verifikasi Mitra**
+  * Login & Registrasi menggunakan email kampus (`@student.ub.ac.id`) atau email umum.
+  * Verifikasi Kartu Tanda Mahasiswa (KTM) Universitas Brawijaya sebelum mitra dapat menerima pesanan.
+  * Dukungan bypass otomatis untuk pengujian saat fitur konfirmasi email dimatikan.
+* 📅 **Smart Scheduling System**
+  * Sistem penjadwalan fleksibel yang memungkinkan pengguna membooking jadwal di jam tertentu dengan notifikasi pengingat real-time.
+* ⭐ **Rating & Review Engine**
+  * Transparansi penilaian bintang dan ulasan ulasan dari sesi bantuan sebelumnya untuk menjamin kualitas layanan.
+* 🚨 **In-App Emergency Button (SOS)**
+  * Tombol darurat yang dapat diakses pengguna saat tidak merasa aman selama layanan berlangsung dengan pelacakan status darurat.
+* 🎁 **Loyalty & Reward Points**
+  * Sistem pengumpulan poin bantuan yang dapat ditukarkan menjadi voucher jasa gratis 1x.
+* 👩 **Filter Women-Only**
+  * Fitur penyaringan penyedia jasa khusus perempuan untuk menjamin kenyamanan dan keamanan ekstra bagi mahasiswi.
+* 🔄 **Sistem Barter (Tukar Jasa)**
+  * Dukungan penukaran jasa bantuan dengan makanan atau barang secara fleksibel.
 
 ---
 
-## 🏗️ Clean MVVM Architecture Overview
+## 🛠️ Tech Stack
 
-Aplikasi dibangun mengikuti standar **Clean MVVM Architecture** untuk modularitas dan keterujian maksimal:
+UBantu dibangun menggunakan teknologi modern:
+
+* **Bahasa & Framework:** Flutter (Dart 3.x)
+* **Pattern Arsitektur:** Clean MVVM (Model-View-ViewModel / Provider)
+* **State Management:** Provider Pattern (`MultiProvider`)
+* **Routing & Navigasi:** `go_router`
+* **Backend-as-a-Service (BaaS):** Supabase
+  * **PostgreSQL** — penyimpanan data profil pengguna, tugas, laporan SOS, notifikasi, dan poin reward.
+  * **Auth** — manajemen sesi dan autentikasi JWT.
+  * **Storage** — penyimpanan foto verifikasi KTM dan avatar pengguna.
+  * **Realtime** — sinkronisasi status laporan dan notifikasi darurat.
+
+---
+
+## 🏗️ Arsitektur Aplikasi
+
+UBantu mengadopsi struktur **Clean MVVM Architecture** untuk memastikan pemisahan tanggung jawab (*separation of concerns*), keterujian (*testability*), dan kemudahan pemeliharaan kode:
 
 ```text
 lib/
-├── components/           # UI Reusable Widgets (Theme, Custom Badge, Buttons, Cards, States)
-├── core/                 # Infrastructure (AppConfig, DI, Error Handling, Navigation, Utils)
-├── data/                 # Data Layer (DTOs, RepositoriesImpl, Supabase Services, Local Storage)
-├── domain/               # Logic Layer (Entities, Abstract Repository Contracts, UseCases)
-└── presentation/         # UI Layer (ChangeNotifier Providers & Presentation Views)
+├── components/           # Reusable UI Widgets & Design Tokens (Badge, Buttons, Cards, Inputs, Theme)
+├── core/                 # Shared Infrastructure: Config, DI Service Locator, Exception Handler, Router, Utils
+│   ├── config/
+│   ├── di/
+│   ├── errors/
+│   ├── navigation/
+│   └── utils/
+├── data/                 # Data Layer: Service Wrappers, Concrete RepositoriesImpl, Local Storage
+│   ├── repositories/
+│   └── services/
+├── domain/               # Logic Layer: Entities, Abstract Repository Contracts, UseCases
+│   ├── models/
+│   ├── repositories/
+│   └── usecases/
+└── presentation/         # UI Layer: State Controllers (Providers) & Screen Views
+    ├── providers/
+    └── views/
 ```
 
 ---
 
-## 🔑 Demo Account & Seed Credentials
+## 🔑 Akun Demo & Kredensial Testing
 
-Untuk memfasilitasi pengujian aplikasi tanpa pendaftaran manual, seluruh akun berikut aktif di Supabase Auth & DB (Password default: `Testing123!`):
+Untuk memfasilitasi pengujian fitur tanpa proses pendaftaran manual, akun-akun berikut aktif di Supabase Auth & Database (Password default: `Testing123!`):
 
-| Nama Pengguna | Email Login | Status | Telepon |
+| Nama Pengguna | Email Login | Status Verifikasi | Nomor Telepon |
 |---|---|---|---|
-| **Mahasiswa Tester UB** | `tester@student.ub.ac.id` | Verified UB | 081234567890 |
-| **Bintang Pratama** | `bintang.pratama@gmail.com` | Verified | 081298765432 |
-| **Anisa Rahmawati** | `anisa.rahmawati@yahoo.com` | Verified | 085712345678 |
-| **Farhan Kurniawan** | `farhan.kurnia@gmail.com` | Verified | 082134567890 |
-| **Dinda Kirana** | `dinda.kirana@outlook.com` | Verified | 081345678901 |
-| **Rizky Aditya** | `rizky.aditya@gmail.com` | Verified | 087812345678 |
+| **Mahasiswa Tester UB** | `tester@student.ub.ac.id` | Verified UB (KTM Approved) | `081234567890` |
+| **Bintang Pratama** | `bintang.pratama@gmail.com` | Verified | `081298765432` |
+| **Anisa Rahmawati** | `anisa.rahmawati@yahoo.com` | Verified | `085712345678` |
+| **Farhan Kurniawan** | `farhan.kurnia@gmail.com` | Verified | `082134567890` |
+| **Dinda Kirana** | `dinda.kirana@outlook.com` | Verified | `081345678901` |
+| **Rizky Aditya** | `rizky.aditya@gmail.com` | Verified | `087812345678` |
 
 ---
 
-## 🚀 Quick Start & Installation Guide
+## 🚀 Setup & Cara Menjalankan Project
 
-### Prasyarat
-- Flutter SDK `^3.12.0`
-- Supabase Project & Credentials
-
-### Langkah Setup
-
-1. **Clone Repository**:
+1. **Clone Repository:**
    ```bash
    git clone https://github.com/zuhdiarif/Ubantu.git
    cd Ubantu
    ```
 
-2. **Install Dependencies**:
+2. **Install Dependencies:**
    ```bash
    flutter pub get
    ```
 
-3. **Jalankan Aplikasi**:
+3. **Jalankan Automated Test Suite:**
    ```bash
-   flutter run --dart-define=SUPABASE_URL=https://orpilmyjifanjwpxxmdi.supabase.co --dart-define=SUPABASE_ANON_KEY=your-publishable-key
+   flutter test
+   ```
+
+4. **Jalankan Aplikasi:**
+   ```bash
+   flutter run --dart-define=SUPABASE_URL=https://orpilmyjifanjwpxxmdi.supabase.co --dart-define=SUPABASE_ANON_KEY=your-anon-key
    ```
