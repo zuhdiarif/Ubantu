@@ -1,5 +1,6 @@
 # Skill & Agent Lock Files
 skill-lock.json
+skills-lock.json
 .agents/
 *.lock
 

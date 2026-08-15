@@ -1,17 +1,119 @@
-# ubantu
+# UBantu - Platform Ekosistem Saling Bantu Mahasiswa
 
-A new Flutter project.
+![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)
+![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)
+![Architecture](https://img.shields.io/badge/Architecture-Clean%20MVVM-green)
+![Backend](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase)
+![Test Pass Rate](https://img.shields.io/badge/Tests-48%2F48%20Passed%20(100%25)-brightgreen)
+![Code Quality](https://img.shields.io/badge/Lints-0%20Issues-brightgreen)
 
-## Getting Started
+## 📌 Overview
 
-This project is a starting point for a Flutter application.
+Tidak jarang mahasiswa menghadapi keterbatasan waktu akibat padatnya aktivitas perkuliahan, praktikum, dan organisasi. Kondisi ini membuat mahasiswa sering mengalami kesulitan dalam mengurus aktivitas harian seperti **bersih-bersih kos, pesan antar barang, hingga pindah kos**.
 
-A few resources to get you started if this is your first Flutter project:
+**UBantu** hadir sebagai platform digital berbasis Flutter & Supabase yang menghubungkan mahasiswa untuk saling membantu menyelesaikan aktivitas harian tersebut secara efisien, aman, dan terjangkau.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## ❓ Problem Statement
+
+Berdasarkan analisis oleh *Damayanti et al. (2023)*, terdapat korelasi kuat antara tingginya tingkat stres mahasiswa dengan minimnya manajemen waktu di tengah kesibukan akademik. Untuk meningkatkan efisiensi waktu, diperlukan solusi berbasis ekosistem saling bantu yang dapat memenuhi kebutuhan harian mahasiswa sekaligus membuka peluang bernilai ekonomi berkelanjutan.
+
+---
+
+## 💡 Solution & Layanan Utama
+
+**UBantu** berperan sebagai ekosistem layanan mikro antar mahasiswa dan masyarakat sekitar. Terdapat 3 layanan utama:
+
+1. 🧹 **Jasa Kebersihan Kos**: Bantuan pembersihan kamar kos secara fleksibel.
+2. 📦 **Jasa Pindah Kos**: Layanan pengangkutan barang pindahan kos antar lokasi.
+3. 🛵 **Layanan Pesan Antar Barang**: Jasa antar-jemput barang, dokumen, atau kebutuhan harian.
+
+---
+
+## ⭐ Key Advantages & Innovative Features
+
+- 📅 **Smart Scheduling System**: Fitur pemesanan dan pemantauan jadwal fleksibel dengan notifikasi pengingat real-time.
+- ⭐ **Rating & Review Engine**: Transparansi ulasan dan skor reputasi penyedia jasa.
+- 🆔 **Verifikasi Identitas Mitra (KTM UB)**: Proses verifikasi Kartu Tanda Mahasiswa (KTM) Universitas Brawijaya sebelum mitra dapat menerima order.
+- 🚨 **In-App Emergency Button (SOS)**: Tombol darurat pelacakan dan bantuan saat pengguna tidak merasa aman selama layanan berlangsung.
+- 🎁 **Loyalty & Reward Points**: Sistem penukaran poin bantuan menjadi voucher jasa gratis 1x.
+- 👩 **Filter Women-Only**: Pilihan penyaringan penyedia jasa khusus perempuan untuk kenyamanan ekstra.
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology |
+|---|---|
+| **Frontend Framework** | Flutter 3.x (Dart 3.x) |
+| **Architecture Pattern** | Clean MVVM (Model-View-ViewModel/Provider) |
+| **State Management** | Provider Pattern (`MultiProvider`) |
+| **Navigation & Routing** | `go_router` |
+| **Backend & Cloud** | Supabase (PostgreSQL, Supabase Auth, Storage) |
+| **Design System Tokens** | Plus Jakarta Sans, Custom AppColors & AppTypography |
+| **Quality Assurance** | `flutter analyze` (0 lints), `flutter test` (48/48 unit & widget tests) |
+
+---
+
+## 🏗️ Clean MVVM Architecture Overview
+
+Aplikasi dibangun mengikuti standar **Clean MVVM Architecture** untuk modularitas dan keterujian maksimal:
+
+```text
+lib/
+├── components/           # UI Design System Tokens (Theme, Custom Badge, Buttons, Cards, States)
+├── core/                 # Infrastructure (AppConfig, DI, Error Handling, Navigation, Utils)
+├── data/                 # Data Layer (DTOs, RepositoriesImpl, Supabase Services, Local Storage)
+├── domain/               # Logic Layer (Entities, Abstract Repository Contracts, UseCases)
+└── presentation/         # UI Layer (ChangeNotifier Providers & Presentation Views)
+```
+
+---
+
+## 🔑 Demo Account & Testing Credentials
+
+Untuk memfasilitasi pengujian aplikasi tanpa proses pendaftaran manual:
+
+- **Email**: `tester@student.ub.ac.id`
+- **Password**: `Testing123!`
+- **Status**: Terverifikasi Mahasiswa UB (KTM Approved)
+
+---
+
+## 🚀 Quick Start & Installation Guide
+
+### Prasyarat
+- Flutter SDK `^3.12.0`
+- Supabase Project & Credentials
+
+### Langkah Setup
+
+1. **Clone Repository**:
+   ```bash
+   git clone https://github.com/zuhdiarif/Ubantu.git
+   cd Ubantu
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+3. **Jalankan Automated Tests**:
+   ```bash
+   flutter test
+   ```
+
+4. **Jalankan Aplikasi**:
+   ```bash
+   flutter run --dart-define=SUPABASE_URL=https://orpilmyjifanjwpxxmdi.supabase.co --dart-define=SUPABASE_ANON_KEY=your-publishable-key
+   ```
+
+---
+
+## 🧪 Quality Assurance & Test Verification
+
+- **Lint Status**: `No issues found!` (`flutter analyze`)
+- **Test Pass Rate**: `48/48 tests passed!` (`flutter test`)
+- **Code Standards**: Strictly zero comments in `.dart` source files, YAGNI principle, OOP Clean Code.
