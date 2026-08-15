@@ -7,42 +7,50 @@ class ChatView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: Text(
-          'Chat Diskusi',
-          style: AppTypography.h4.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E281C),
-          ),
+    return Material(
+      color: AppColors.background,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 20, top: 16, bottom: 8),
+              child: Text(
+                'Chat Diskusi',
+                style: AppTypography.h4.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E281C),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  _buildChatItem(
+                    name: 'Ahmad Farel',
+                    message: 'Halo, untuk lokasi kosnya di mana ya?',
+                    time: '10:15',
+                    unreadCount: 2,
+                    avatarUrl: 'assets/images/img_avatar_farel.png',
+                  ),
+                  _buildChatItem(
+                    name: 'Anisa Rahmawati',
+                    message: 'Siap, saya bantu bawa 2 kardus barang.',
+                    time: 'Yesterday',
+                    unreadCount: 0,
+                  ),
+                  _buildChatItem(
+                    name: 'Dinda Putri',
+                    message: 'Terima kasih atas bantuannya kemarin!',
+                    time: '20 Jul',
+                    unreadCount: 0,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          _buildChatItem(
-            name: 'Ahmad Farel',
-            message: 'Halo, untuk lokasi kosnya di mana ya?',
-            time: '10:15',
-            unreadCount: 2,
-            avatarUrl: 'assets/images/img_avatar_farel.png',
-          ),
-          _buildChatItem(
-            name: 'Anisa Rahmawati',
-            message: 'Siap, saya bantu bawa 2 kardus barang.',
-            time: 'Yesterday',
-            unreadCount: 0,
-          ),
-          _buildChatItem(
-            name: 'Dinda Putri',
-            message: 'Terima kasih atas bantuannya kemarin!',
-            time: '20 Jul',
-            unreadCount: 0,
-          ),
-        ],
       ),
     );
   }

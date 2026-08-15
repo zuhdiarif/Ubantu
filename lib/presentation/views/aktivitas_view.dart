@@ -14,107 +14,107 @@ class _AktivitasViewState extends State<AktivitasView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: Text(
-          'Aktivitas Saya',
-          style: AppTypography.h4.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E281C),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Container(
-              height: 44,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE5E7E2),
-                borderRadius: BorderRadius.circular(22),
+    return Material(
+      color: AppColors.background,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Aktivitas Saya',
+                style: AppTypography.h4.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E281C),
+                ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = 0;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _selectedTab == 0 ? const Color(0xFF283626) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Sedang Berlangsung',
-                          style: AppTypography.body2.copyWith(
-                            fontWeight: _selectedTab == 0 ? FontWeight.bold : FontWeight.w500,
-                            color: _selectedTab == 0 ? Colors.white : const Color(0xFF283626),
+              const SizedBox(height: 16),
+              Container(
+                height: 44,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E7E2),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedTab = 0;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _selectedTab == 0 ? const Color(0xFF283626) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Sedang Berlangsung',
+                            style: AppTypography.body2.copyWith(
+                              fontWeight: _selectedTab == 0 ? FontWeight.bold : FontWeight.w500,
+                              color: _selectedTab == 0 ? Colors.white : const Color(0xFF283626),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedTab = 1;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _selectedTab == 1 ? const Color(0xFF283626) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Histori Selesai',
-                          style: AppTypography.body2.copyWith(
-                            fontWeight: _selectedTab == 1 ? FontWeight.bold : FontWeight.w500,
-                            color: _selectedTab == 1 ? Colors.white : const Color(0xFF283626),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedTab = 1;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _selectedTab == 1 ? const Color(0xFF283626) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Histori Selesai',
+                            style: AppTypography.body2.copyWith(
+                              fontWeight: _selectedTab == 1 ? FontWeight.bold : FontWeight.w500,
+                              color: _selectedTab == 1 ? Colors.white : const Color(0xFF283626),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            if (_selectedTab == 0) ...[
-              _buildAktivitasItem(
-                title: 'Bersih kos',
-                location: 'Jl.Veteran, Malang',
-                dateTime: '20 Juli 2026 - 09:00',
-                imageAsset: 'assets/images/ic_bersih_kos.png',
-                statusText: 'Berlangsung',
-              ),
-            ] else ...[
-              _buildAktivitasItem(
-                title: 'Pindah kos',
-                location: 'Jl. MT Haryono Gg 8, Malang',
-                dateTime: '15 Juli 2026 - 13:30',
-                imageAsset: 'assets/images/ic_pindah_kos.png',
-                statusText: 'Selesai',
-              ),
-              _buildAktivitasItem(
-                title: 'Antar jemput',
-                location: 'Stasiun Malang Kota Baru',
-                dateTime: '10 Juli 2026 - 20:15',
-                imageAsset: 'assets/images/ic_antar_jemput.png',
-                statusText: 'Selesai',
-              ),
+              const SizedBox(height: 20),
+              if (_selectedTab == 0) ...[
+                _buildAktivitasItem(
+                  title: 'Bersih kos',
+                  location: 'Jl.Veteran, Malang',
+                  dateTime: '20 Juli 2026 - 09:00',
+                  imageAsset: 'assets/images/ic_bersih_kos.png',
+                  statusText: 'Berlangsung',
+                ),
+              ] else ...[
+                _buildAktivitasItem(
+                  title: 'Pindah kos',
+                  location: 'Jl. MT Haryono Gg 8, Malang',
+                  dateTime: '15 Juli 2026 - 13:30',
+                  imageAsset: 'assets/images/ic_pindah_kos.png',
+                  statusText: 'Selesai',
+                ),
+                _buildAktivitasItem(
+                  title: 'Antar jemput',
+                  location: 'Stasiun Malang Kota Baru',
+                  dateTime: '10 Juli 2026 - 20:15',
+                  imageAsset: 'assets/images/ic_antar_jemput.png',
+                  statusText: 'Selesai',
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
