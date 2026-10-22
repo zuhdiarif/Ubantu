@@ -6,6 +6,7 @@ abstract class IAuthRepository {
   Future<AppResult<UserModel>> signUp(String email, String password, Map<String, dynamic> metadata);
   Future<AppResult<bool>> sendOtp(String email);
   Future<AppResult<bool>> verifyOtp(String email, String token);
+  Future<AppResult<bool>> signInWithGoogle();
   Future<void> logout();
   UserModel? getCurrentUser();
   bool didSignUpReturnSession();

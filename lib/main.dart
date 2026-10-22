@@ -12,8 +12,13 @@ import 'package:ubantu/presentation/providers/registration_provider.dart';
 import 'package:ubantu/presentation/providers/schedule_provider.dart';
 import 'package:ubantu/presentation/providers/sos_provider.dart';
 import 'package:ubantu/presentation/providers/task_provider.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await SupabaseService.instance.initialize();
+  } catch (_) {}
   runApp(const UbantuApp());
 }
 

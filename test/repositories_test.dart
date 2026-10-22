@@ -19,6 +19,13 @@ void main() {
       expect(repo.getCurrentUser(), isNull);
     });
 
+    test('AuthRepositoryImpl signInWithGoogle succeeds', () async {
+      final repo = AuthRepositoryImpl();
+      final result = await repo.signInWithGoogle();
+      expect(result.isSuccess, true);
+      expect(repo.getCurrentUser()?.email, 'user@google.com');
+    });
+
     test('AuthRepositoryImpl signUp creates user', () async {
       final repo = AuthRepositoryImpl();
       final result = await repo.signUp('new@gmail.com', 'pass123', {

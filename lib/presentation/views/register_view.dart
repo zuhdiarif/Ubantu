@@ -77,6 +77,29 @@ class _RegisterViewState extends State<RegisterView> {
     }
   }
 
+  void _onGoogleSignUp() async {
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (success) {
+      CustomToast.show(
+        context,
+        message: 'Selamat datang di Ubantu!',
+        type: ToastType.success,
+      );
+      context.go(AppRouter.home);
+    } else {
+      final errorMsg = authProvider.errorMessage ?? 'Gagal mendaftar dengan Google.';
+      CustomToast.show(
+        context,
+        message: errorMsg,
+        type: ToastType.danger,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final regProvider = context.watch<RegistrationProvider>();
@@ -91,7 +114,13 @@ class _RegisterViewState extends State<RegisterView> {
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.onboarding);
+            }
+          },
         ),
         title: Text(
           'Daftar Akun',
@@ -151,7 +180,55 @@ class _RegisterViewState extends State<RegisterView> {
                   text: regProvider.isSigningUp ? 'Mendaftarkan...' : 'Lanjutkan',
                   onPressed: regProvider.isSigningUp ? () {} : _onNext,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'atau',
+                        style: AppTypography.body2.copyWith(
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(26),
+                      ),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    onPressed: _onGoogleSignUp,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.g_mobiledata_rounded,
+                          size: 28,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Daftar dengan google',
+                          style: AppTypography.body1.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

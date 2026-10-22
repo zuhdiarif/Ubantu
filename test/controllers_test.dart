@@ -18,6 +18,14 @@ void main() {
       expect(authProvider.currentUser, isNull);
     });
 
+    test('AuthProvider signInWithGoogle state', () async {
+      final authProvider = AuthProvider();
+      final success = await authProvider.signInWithGoogle();
+      expect(success, true);
+      expect(authProvider.currentUser?.email, 'user@google.com');
+      expect(authProvider.isAuthenticated, true);
+    });
+
     test('TaskProvider load tasks and mode switch', () async {
       final taskProvider = TaskProvider();
       expect(taskProvider.selectedModeIndex, 0);

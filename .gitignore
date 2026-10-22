@@ -63,3 +63,7 @@ app.*.map.json
 /android/app/release
 /android/local.properties
 /android/.gradle/
+
+lastresponse.md
+prd.md
+roadmap.md
