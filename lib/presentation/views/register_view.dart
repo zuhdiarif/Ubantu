@@ -91,7 +91,13 @@ class _RegisterViewState extends State<RegisterView> {
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.onboarding);
+            }
+          },
         ),
         title: Text(
           'Daftar Akun',

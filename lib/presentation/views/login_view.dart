@@ -56,7 +56,13 @@ class _LoginViewState extends State<LoginView> {
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,
           ),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.onboarding);
+            }
+          },
         ),
         title: Text(
           'Masuk Akun',
@@ -170,7 +176,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => context.go(AppRouter.register),
+                      onTap: () => context.push(AppRouter.register),
                       child: Text(
                         'Daftar',
                         style: AppTypography.body1.copyWith(
