@@ -4,12 +4,12 @@ class AppConfig {
 
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://orpilmyjifanjwpxxmdi.supabase.co',
+    defaultValue: 'https://wbazgdawlakoufkottwm.supabase.co',
   );
 
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'placeholder-key',
+    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiYXpnZGF3bGFrb3Vma290dHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2ODA4MDAsImV4cCI6MjEwODI1NjgwMH0.cBaf-L_QXlBMz_dEQw93LLLbaJmz1cWtmOEcUEFcyao',
   );
 
   static const bool confirmEmailEnabled = bool.fromEnvironment(

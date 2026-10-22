@@ -8,6 +8,8 @@ class SupabaseService {
 
   SupabaseClient? _client;
 
+  bool get isInitialized => _client != null;
+
   SupabaseClient get client {
     if (_client == null) {
       throw StateError('Supabase client not initialized');

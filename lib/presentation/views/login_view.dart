@@ -29,18 +29,54 @@ class _LoginViewState extends State<LoginView> {
     super.dispose();
   }
 
-  void _onLogin() {
-    if (_formKey.currentState?.validate() ?? false) {
-      context.read<AuthProvider>().login(
-            _emailController.text,
-            _passwordController.text,
-          );
+  void _onLogin() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.login(
+      _emailController.text,
+      _passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    if (success) {
       CustomToast.show(
         context,
         message: 'Selamat datang kembali di Ubantu!',
         type: ToastType.success,
       );
       context.go(AppRouter.home);
+    } else {
+      final errorMsg = authProvider.errorMessage ?? 'Gagal masuk. Periksa kembali email dan kata sandi Anda.';
+      CustomToast.show(
+        context,
+        message: errorMsg,
+        type: ToastType.danger,
+      );
+    }
+  }
+
+  void _onGoogleSignIn() async {
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.signInWithGoogle();
+
+    if (!mounted) return;
+
+    if (success) {
+      CustomToast.show(
+        context,
+        message: 'Selamat datang kembali di Ubantu!',
+        type: ToastType.success,
+      );
+      context.go(AppRouter.home);
+    } else {
+      final errorMsg = authProvider.errorMessage ?? 'Gagal masuk dengan Google.';
+      CustomToast.show(
+        context,
+        message: errorMsg,
+        type: ToastType.danger,
+      );
     }
   }
 
@@ -144,7 +180,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       side: BorderSide(color: Colors.grey.shade300),
                     ),
-                    onPressed: () {},
+                    onPressed: _onGoogleSignIn,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
