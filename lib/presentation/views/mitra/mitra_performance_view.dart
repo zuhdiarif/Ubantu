@@ -1,0 +1,368 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:ubantu/components/theme/app_colors.dart';
+import 'package:ubantu/components/theme/app_typography.dart';
+import 'package:ubantu/presentation/providers/mitra_provider.dart';
+
+class MitraPerformanceView extends StatelessWidget {
+  const MitraPerformanceView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<MitraProvider>();
+    final profile = provider.profile;
+    final rating = profile?.rating ?? 4.9;
+    final totalReviews = profile?.totalReviews ?? 38;
+    final totalCompleted = profile?.totalOrdersCompleted ?? 42;
+    final acceptanceRate = profile?.acceptanceRate ?? 98.0;
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.primaryDark,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          'Performa & Ulasan Mitra',
+          style: AppTypography.h5.copyWith(color: Colors.white),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildScoreHeroCard(context, rating, totalReviews, totalCompleted),
+            const SizedBox(height: 16),
+            _buildMetricsRow(totalCompleted, acceptanceRate),
+            const SizedBox(height: 20),
+            Text(
+              'Ulasan Mahasiswa UB',
+              style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _buildReviewsList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScoreHeroCard(
+    BuildContext context,
+    double rating,
+    int totalReviews,
+    int totalCompleted,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '$rating',
+                        style: AppTypography.display.copyWith(
+                          color: AppColors.primaryDark,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '/ 5.0',
+                        style: AppTypography.body1.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: List.generate(
+                      5,
+                      (index) => const Icon(
+                        Icons.star_rounded,
+                        color: Colors.amber,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Berdasarkan $totalReviews ulasan mahasiswa',
+                    style: AppTypography.caption.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySage.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.military_tech_rounded,
+                  size: 44,
+                  color: AppColors.primaryGreen,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          _buildRatingBar('5 Bintang', 0.92, '92%'),
+          _buildRatingBar('4 Bintang', 0.08, '8%'),
+          _buildRatingBar('3 Bintang', 0.00, '0%'),
+          _buildRatingBar('2 Bintang', 0.00, '0%'),
+          _buildRatingBar('1 Bintang', 0.00, '0%'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingBar(String label, double ratio, String percent) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3.0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 70,
+            child: Text(
+              label,
+              style: AppTypography.caption.copyWith(
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: ratio,
+                backgroundColor: Colors.grey.shade200,
+                color: Colors.amber,
+                minHeight: 8,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 32,
+            child: Text(
+              percent,
+              textAlign: TextAlign.end,
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricsRow(int totalCompleted, double acceptanceRate) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildMetricTile(
+            icon: Icons.check_circle_outline_rounded,
+            color: AppColors.primaryGreen,
+            value: '100%',
+            label: 'Penyelesaian',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildMetricTile(
+            icon: Icons.thumb_up_alt_outlined,
+            color: Colors.blueAccent,
+            value: '${acceptanceRate.toInt()}%',
+            label: 'Penerimaan',
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildMetricTile(
+            icon: Icons.speed_rounded,
+            color: AppColors.accentOrange,
+            value: '< 5 Mnt',
+            label: 'Respon Cepat',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricTile({
+    required IconData icon,
+    required Color color,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: AppTypography.body1.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryDark,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTypography.overline.copyWith(
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewsList() {
+    final mockReviews = [
+      {
+        'name': 'Bima Aditya',
+        'faculty': 'Fakultas Ekonomi dan Bisnis UB',
+        'rating': 5,
+        'date': '2 hari lalu',
+        'comment':
+            'Sangat membantu dan tepat waktu! Barang pindahan kos diangkat dengan rapi dan aman sampai kos baru di Soekarno Hatta.',
+      },
+      {
+        'name': 'Citra Kirana',
+        'faculty': 'Fakultas Ilmu Administrasi UB',
+        'rating': 5,
+        'date': '4 hari lalu',
+        'comment':
+            'Kamar kos langsung bersih dan wangi setelah dibantu bersihkan. Komunikatif sekali lewat chat.',
+      },
+      {
+        'name': 'Dhimas Arya',
+        'faculty': 'Fakultas Teknik UB',
+        'rating': 5,
+        'date': '1 minggu lalu',
+        'comment':
+            'Tebengan ke stasiun lancar banget, helm bersih dan bawa motornya hati-hati.',
+      },
+      {
+        'name': 'Nabila Zahra',
+        'faculty': 'Fakultas Kedokteran UB',
+        'rating': 4,
+        'date': '2 minggu lalu',
+        'comment':
+            'Ramah dan solutif. Bantu angkat kardus buku yang cukup berat di lantai 2.',
+      },
+    ];
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: mockReviews.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final review = mockReviews[index];
+        final stars = review['rating'] as int;
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        review['name'] as String,
+                        style: AppTypography.body2.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        review['faculty'] as String,
+                        style: AppTypography.caption.copyWith(
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: List.generate(
+                      stars,
+                      (i) => const Icon(
+                        Icons.star_rounded,
+                        color: Colors.amber,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                review['comment'] as String,
+                style: AppTypography.body2.copyWith(
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                review['date'] as String,
+                style: AppTypography.overline.copyWith(
+                  color: Colors.grey.shade500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
