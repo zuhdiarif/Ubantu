@@ -284,11 +284,7 @@ class _PindahKosViewState extends State<PindahKosView> {
             title: 'Antar jemput',
             subtitle: 'Bantu antar jemput kamu',
             imagePath: 'assets/pindah_kos_flow/illust-antar-jemput.png',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Layanan Antar Jemput segera hadir!')),
-              );
-            },
+            onTap: () => context.push(AppRouter.antarJemput),
           ),
         ),
       ],

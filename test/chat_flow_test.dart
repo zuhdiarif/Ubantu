@@ -456,7 +456,11 @@ void main() {
 
       expect(find.text('Navigasi Debug'), findsOneWidget);
 
-      await tester.drag(find.byType(ListView), const Offset(0, -600));
+      await tester.scrollUntilVisible(
+        find.text('Fitur Chat & Percakapan'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pump();
 
       expect(find.text('Fitur Chat & Percakapan'), findsOneWidget);

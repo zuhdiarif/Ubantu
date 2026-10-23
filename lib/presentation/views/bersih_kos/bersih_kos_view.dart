@@ -260,7 +260,7 @@ class _BersihKosViewState extends State<BersihKosView> {
             const SizedBox(width: 14),
             Expanded(
               child: GestureDetector(
-                onTap: () {},
+                onTap: () => context.push(AppRouter.antarJemput),
                 child: _buildOtherFeatureCard(
                   title: 'Antar jemput',
                   description: 'Bantu pesan antar barang',
