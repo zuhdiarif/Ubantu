@@ -25,6 +25,16 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
       ],
     },
     {
+      'title': 'Alur Bersih Kos (5 Layar)',
+      'routes': [
+        {'name': '1. Promo Bersih Kos', 'route': AppRouter.bersihKos, 'icon': Icons.cleaning_services_rounded},
+        {'name': '2. Formulir Bersih Kos', 'route': AppRouter.bersihKosForm, 'icon': Icons.assignment_rounded},
+        {'name': '3. Menunggu Helper Bersih', 'route': AppRouter.bersihKosWaiting, 'icon': Icons.hourglass_top_rounded},
+        {'name': '4. Bersih Berlangsung', 'route': AppRouter.bersihKosInProgress, 'icon': Icons.navigation_rounded},
+        {'name': '5. Selesai & Ulasan Bersih', 'route': AppRouter.bersihKosSelesai, 'icon': Icons.star_rounded},
+      ],
+    },
+    {
       'title': 'Aplikasi & Fitur Utama',
       'routes': [
         {'name': 'Beranda Utama', 'route': AppRouter.home, 'icon': Icons.home_rounded},
