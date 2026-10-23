@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/debug_floating_menu.dart';
@@ -62,9 +63,10 @@ class UbantuApp extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               ?child,
-              const Positioned.fill(
-                child: DebugFloatingMenu(),
-              ),
+              if (kDebugMode)
+                const Positioned.fill(
+                  child: DebugFloatingMenu(),
+                ),
             ],
           );
         },
