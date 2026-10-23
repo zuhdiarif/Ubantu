@@ -267,9 +267,12 @@ class _HomeViewState extends State<HomeView> {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildCategoryCard(
-                title: 'Antar jemput',
-                imageAsset: 'assets/images/ic_antar_jemput.png',
+              child: GestureDetector(
+                onTap: () => context.push(AppRouter.antarJemput),
+                child: _buildCategoryCard(
+                  title: 'Antar jemput',
+                  imageAsset: 'assets/images/ic_antar_jemput.png',
+                ),
               ),
             ),
           ],
