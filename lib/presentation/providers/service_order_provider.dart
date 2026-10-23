@@ -114,6 +114,53 @@ class ServiceOrderProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> createBersihKosOrder({
+    required String locationKos,
+    required String jobDetail,
+    required DateTime scheduledAt,
+    required BarterType barterType,
+    required String barterDescription,
+    String? photoUrl,
+    String? locationDestination,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final userId = SupabaseService.instance.isInitialized
+        ? SupabaseService.instance.client.auth.currentUser?.id ?? ''
+        : '';
+
+    final order = ServiceOrderModel(
+      id: '',
+      requesterId: userId,
+      category: ServiceCategory.bersihKos,
+      status: MoveServiceStatus.waiting,
+      locationOrigin: locationKos,
+      locationDestination: locationDestination ?? locationKos,
+      scheduledAt: scheduledAt,
+      itemDescription: jobDetail,
+      barterType: barterType,
+      barterDescription: barterDescription,
+      barterPhotoUrl: photoUrl,
+      createdAt: DateTime.now(),
+    );
+
+    final result = await _createOrderUseCase.execute(order);
+
+    _isLoading = false;
+
+    if (result.isSuccess) {
+      _myOrders = [result.data!, ..._myOrders];
+      notifyListeners();
+      return true;
+    } else {
+      _errorMessage = result.errorMessage;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> acceptOrder(String orderId) async {
     _isLoading = true;
     _errorMessage = null;

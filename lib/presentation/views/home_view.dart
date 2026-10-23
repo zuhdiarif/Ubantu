@@ -247,9 +247,12 @@ class _HomeViewState extends State<HomeView> {
         Row(
           children: [
             Expanded(
-              child: _buildCategoryCard(
-                title: 'Bersih kos',
-                imageAsset: 'assets/images/ic_bersih_kos.png',
+              child: GestureDetector(
+                onTap: () => context.push(AppRouter.bersihKos),
+                child: _buildCategoryCard(
+                  title: 'Bersih kos',
+                  imageAsset: 'assets/images/ic_bersih_kos.png',
+                ),
               ),
             ),
             const SizedBox(width: 12),
