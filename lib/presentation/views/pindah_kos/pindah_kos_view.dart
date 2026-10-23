@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/theme/app_colors.dart';
-import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
@@ -19,23 +18,23 @@ class _PindahKosViewState extends State<PindahKosView> {
 
   final List<Map<String, String>> _banners = [
     {
-      'title': 'Pindah Kos Mudah!',
-      'subtitle': 'Dibantu sesama mahasiswa UB',
+      'title': 'Bantu bareng, ringankan beban! ',
+      'subtitle': 'UBantu hadir untuk membantu mahasiswa',
     },
     {
-      'title': 'Barter Makanan & Barang',
-      'subtitle': 'Tidak perlu uang, cukup barter',
+      'title': 'Promo Spesial Mahasiswa!',
+      'subtitle': 'Pindah kos lebih hemat & tanpa repot',
     },
     {
-      'title': 'Aman & Terpercaya',
-      'subtitle': 'Semua mitra terverifikasi KTM',
+      'title': 'Barter Praktis & Cepat',
+      'subtitle': 'Cukup barter makanan atau barang',
     },
   ];
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ServiceOrderProvider>();
-    final activeOrder = provider.myOrders.where(
+    final activeOrders = provider.myOrders.where(
       (o) =>
           o.category == ServiceCategory.pindahKos &&
           (o.status == MoveServiceStatus.waiting ||
@@ -44,44 +43,103 @@ class _PindahKosViewState extends State<PindahKosView> {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E281C)),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => context.pop(),
         ),
-        title: Text(
+        title: const Text(
           'Pindah Kos',
-          style: AppTypography.h5.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E281C),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w700,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF1E281C),
+            icon: SvgPicture.asset(
+              'assets/pindah_kos_flow/mdi_bell-outline.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(
+                Colors.black,
+                BlendMode.srcIn,
+              ),
             ),
             onPressed: () {},
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildBannerCarousel(),
-            const SizedBox(height: 24),
-            _buildRequestButton(context),
-            if (activeOrder.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _buildActiveOrderSection(context, activeOrder.first),
-            ],
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBannerCarousel(),
+                    const SizedBox(height: 12),
+                    _buildCarouselIndicators(),
+                    const SizedBox(height: 28),
+                    const Text(
+                      'Fitur lainnya',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _buildOtherFeatures(context),
+                    if (activeOrders.isNotEmpty) ...[
+                      const SizedBox(height: 28),
+                      _buildActiveOrderSection(context, activeOrders.first),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => context.push(AppRouter.pindahKosForm),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF263225),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Meminta Bantuan',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -89,150 +147,268 @@ class _PindahKosViewState extends State<PindahKosView> {
   }
 
   Widget _buildBannerCarousel() {
-    return Column(
+    return SizedBox(
+      height: 185,
+      child: PageView.builder(
+        itemCount: _banners.length,
+        onPageChanged: (idx) => setState(() => _bannerIndex = idx),
+        itemBuilder: (context, idx) {
+          final banner = _banners[idx];
+          return Container(
+            width: double.infinity,
+            clipBehavior: Clip.antiAlias,
+            decoration: ShapeDecoration(
+              color: const Color(0xFF263225),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -10,
+                  top: -20,
+                  bottom: -20,
+                  child: Image.asset(
+                    'assets/pindah_kos_flow/illust-banner-promo.png',
+                    width: 200,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: 200,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          banner['title']!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w700,
+                            height: 1.25,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          banner['subtitle']!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w400,
+                            height: 1.25,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: ShapeDecoration(
+                            color: const Color(0xFFF8FAF4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Lihat Promo',
+                            style: TextStyle(
+                              color: Color(0xFF263225),
+                              fontSize: 12,
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w600,
+                              height: 1.50,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCarouselIndicators() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_banners.length, (idx) {
+        final isActive = _bannerIndex == idx;
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: 7,
+          height: 7,
+          decoration: ShapeDecoration(
+            color: isActive ? const Color(0xFF263225) : const Color(0xFFD9D9D9),
+            shape: const OvalBorder(),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildOtherFeatures(BuildContext context) {
+    return Row(
       children: [
-        SizedBox(
-          height: 140,
-          child: PageView.builder(
-            itemCount: _banners.length,
-            onPageChanged: (idx) => setState(() => _bannerIndex = idx),
-            itemBuilder: (context, idx) {
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF283626),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _banners[idx]['title']!,
-                      style: AppTypography.h5.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _banners[idx]['subtitle']!,
-                      style: AppTypography.body2.copyWith(
-                        color: Colors.white.withValues(alpha: 0.8),
-                      ),
-                    ),
-                  ],
-                ),
+        Expanded(
+          child: _buildFeatureCard(
+            title: 'Bersih kos',
+            subtitle: 'Bantu bersihkan kos kamu',
+            imagePath: 'assets/pindah_kos_flow/illust-bersih-kos.png',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Layanan Bersih Kos segera hadir!')),
               );
             },
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            _banners.length,
-            (idx) => AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: _bannerIndex == idx ? 18 : 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: _bannerIndex == idx
-                    ? const Color(0xFF283626)
-                    : const Color(0xFFCDD3C8),
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: _buildFeatureCard(
+            title: 'Antar jemput',
+            subtitle: 'Bantu antar jemput kamu',
+            imagePath: 'assets/pindah_kos_flow/illust-antar-jemput.png',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Layanan Antar Jemput segera hadir!')),
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRequestButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => context.push(AppRouter.pindahKosForm),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Meminta Bantuan'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF283626),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+  Widget _buildFeatureCard({
+    required String title,
+    required String subtitle,
+    required String imagePath,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: ShapeDecoration(
+          color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: AppTypography.body1.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          shadows: const [
+            BoxShadow(
+              color: Color(0x1F000000),
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              imagePath,
+              width: 44,
+              height: 44,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.cleaning_services, size: 36),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 12,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF5C6658),
+                      fontSize: 11,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildActiveOrderSection(
-    BuildContext context,
-    serviceOrderModel,
-  ) {
+  Widget _buildActiveOrderSection(BuildContext context, dynamic order) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Aktivitas Aktif',
-          style: AppTypography.h5.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E281C),
+        const Text(
+          'Pesanan Aktif Kamu',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 16,
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE8EBE4)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: Color(0xFF263225), width: 0.5),
+            ),
+            shadows: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 6,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF0F4EC),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.local_shipping_rounded,
-                      color: Color(0xFF283626),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pindah Kos',
-                          style: AppTypography.body1.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E281C),
-                          ),
-                        ),
-                        Text(
-                          serviceOrderModel.locationOrigin,
-                          style: AppTypography.caption.copyWith(
-                            color: const Color(0xFF5C6658),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  const Text(
+                    'Pindah Kos',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Container(
@@ -245,39 +421,57 @@ class _PindahKosViewState extends State<PindahKosView> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
-                      serviceOrderModel.status == MoveServiceStatus.waiting
+                      order.status == MoveServiceStatus.waiting
                           ? 'Menunggu'
-                          : serviceOrderModel.status ==
-                                  MoveServiceStatus.accepted
+                          : order.status == MoveServiceStatus.accepted
                               ? 'Diterima'
                               : 'Berlangsung',
-                      style: AppTypography.caption.copyWith(
-                        color: const Color(0xFF283626),
-                        fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                        color: Color(0xFF263225),
+                        fontSize: 12,
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Dari: ${order.locationOrigin}',
+                style: const TextStyle(
+                  color: Color(0xFF5C6658),
+                  fontSize: 12,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+              Text(
+                'Ke: ${order.locationDestination}',
+                style: const TextStyle(
+                  color: Color(0xFF5C6658),
+                  fontSize: 12,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
               ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () {
-                    if (serviceOrderModel.status == MoveServiceStatus.waiting) {
+                    if (order.status == MoveServiceStatus.waiting) {
                       context.push(AppRouter.pindahKosWaiting);
                     } else {
                       context.push(AppRouter.pindahKosInProgress);
                     }
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF283626),
-                    side: const BorderSide(color: Color(0xFF283626)),
+                    foregroundColor: const Color(0xFF263225),
+                    side: const BorderSide(color: Color(0xFF263225)),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Lihat Detail'),
+                  child: const Text('Lihat Detail Status'),
                 ),
               ),
             ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/debug_floating_menu.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/di/service_locator.dart';
@@ -50,6 +51,14 @@ class UbantuApp extends StatelessWidget {
         title: 'Ubantu',
         debugShowCheckedModeBanner: false,
         routerConfig: AppRouter.router,
+        builder: (context, child) {
+          return Stack(
+            children: [
+              ?child,
+              const DebugFloatingMenu(),
+            ],
+          );
+        },
         theme: ThemeData(
           fontFamily: AppTypography.fontFamily,
           scaffoldBackgroundColor: AppColors.background,

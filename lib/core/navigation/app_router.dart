@@ -9,6 +9,7 @@ import 'package:ubantu/presentation/views/onboarding_view.dart';
 import 'package:ubantu/presentation/views/otp_verification_view.dart';
 import 'package:ubantu/presentation/views/pindah_kos/pindah_kos_form_view.dart';
 import 'package:ubantu/presentation/views/pindah_kos/pindah_kos_in_progress_view.dart';
+import 'package:ubantu/presentation/views/pindah_kos/pindah_kos_selesai_view.dart';
 import 'package:ubantu/presentation/views/pindah_kos/pindah_kos_view.dart';
 import 'package:ubantu/presentation/views/pindah_kos/pindah_kos_waiting_view.dart';
 import 'package:ubantu/presentation/views/register_view.dart';
@@ -51,6 +52,7 @@ class AppRouter {
   static const String pindahKosForm = '/pindah-kos/form';
   static const String pindahKosWaiting = '/pindah-kos/waiting';
   static const String pindahKosInProgress = '/pindah-kos/in-progress';
+  static const String pindahKosSelesai = '/pindah-kos/selesai';
 
   static final router = GoRouter(
     initialLocation: onboarding,
@@ -131,6 +133,10 @@ class AppRouter {
       GoRoute(
         path: pindahKosInProgress,
         builder: (context, state) => const PindahKosInProgressView(),
+      ),
+      GoRoute(
+        path: pindahKosSelesai,
+        builder: (context, state) => const PindahKosSelesaiView(),
       ),
     ],
   );
