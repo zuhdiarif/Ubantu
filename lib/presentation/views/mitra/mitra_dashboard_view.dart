@@ -772,29 +772,32 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primarySage.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
+      child: Material(
+        color: Colors.transparent,
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primarySage.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppColors.primaryDark),
           ),
-          child: Icon(icon, color: AppColors.primaryDark),
+          title: Text(
+            title,
+            style: AppTypography.body2.copyWith(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: AppTypography.caption.copyWith(color: Colors.grey.shade600),
+          ),
+          trailing: const Icon(
+            Icons.chevron_right,
+            color: Colors.grey,
+            size: 20,
+          ),
+          onTap: () => context.push(route),
         ),
-        title: Text(
-          title,
-          style: AppTypography.body2.copyWith(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: AppTypography.caption.copyWith(color: Colors.grey.shade600),
-        ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: Colors.grey,
-          size: 20,
-        ),
-        onTap: () => context.push(route),
       ),
     );
   }
