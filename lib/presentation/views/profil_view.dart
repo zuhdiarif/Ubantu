@@ -85,6 +85,11 @@ class ProfilView extends StatelessWidget {
                 onTap: () {},
               ),
               _buildProfileOption(
+                icon: Icons.engineering_rounded,
+                title: 'Mode Mitra (Bantu Mahasiswa Lain)',
+                onTap: () => context.push(AppRouter.mitraDashboard),
+              ),
+              _buildProfileOption(
                 icon: Icons.shield_outlined,
                 title: 'Verifikasi KTM UB',
                 onTap: () => context.push(AppRouter.ktmVerification),

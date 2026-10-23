@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
@@ -300,10 +301,21 @@ class MitraActiveOrderView extends StatelessWidget {
             onPressed: () {
               context.push(
                 AppRouter.chatRoom,
-                extra: {
-                  'roomId': 'room_active_${order.id}',
-                  'otherUserName': 'Mahasiswa UB (Pemesan)',
-                },
+                extra: ChatRoomModel(
+                  id: 'room_${order.id}',
+                  orderId: order.id,
+                  orderNumber: 'UB-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : '8890'}',
+                  serviceTitle: 'Layanan ${order.category.name}',
+                  serviceStatus: order.status.name,
+                  otherUserName: 'Mahasiswa UB (Pemesan)',
+                  otherUserFaculty: 'Universitas Brawijaya',
+                  lastMessage: 'Halo! Saya mitra yang akan membantu order Anda.',
+                  lastMessageTime: DateTime.now(),
+                  itemSummary: order.itemDescription,
+                  pickupLocation: order.locationOrigin,
+                  destinationLocation: order.locationDestination,
+                  totalPrice: order.barterDescription,
+                ),
               );
             },
           ),

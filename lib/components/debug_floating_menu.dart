@@ -52,6 +52,16 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
       ],
     },
     {
+      'title': 'Fitur Mitra (Helper Mode)',
+      'routes': [
+        {'name': '1. Dashboard Mitra UB', 'route': AppRouter.mitraDashboard, 'icon': Icons.dashboard_rounded},
+        {'name': '2. Kelola Order Aktif', 'route': AppRouter.mitraActiveOrder, 'icon': Icons.navigation_rounded},
+        {'name': '3. Dompet & Rekap Barter', 'route': AppRouter.mitraEarnings, 'icon': Icons.account_balance_wallet_rounded},
+        {'name': '4. Performa & Ulasan', 'route': AppRouter.mitraPerformance, 'icon': Icons.military_tech_rounded},
+        {'name': '5. Kategori & Kendaraan', 'route': AppRouter.mitraRegister, 'icon': Icons.checklist_rounded},
+      ],
+    },
+    {
       'title': 'Aplikasi & Fitur Utama',
       'routes': [
         {'name': 'Beranda Utama', 'route': AppRouter.home, 'icon': Icons.home_rounded},
