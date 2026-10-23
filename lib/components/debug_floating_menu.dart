@@ -45,6 +45,13 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
       ],
     },
     {
+      'title': 'Fitur Chat & Percakapan',
+      'routes': [
+        {'name': '1. Inbox Percakapan', 'route': AppRouter.chatInbox, 'icon': Icons.inbox_rounded},
+        {'name': '2. Ruang Chat Interaktif', 'route': AppRouter.chatRoom, 'icon': Icons.chat_rounded},
+      ],
+    },
+    {
       'title': 'Aplikasi & Fitur Utama',
       'routes': [
         {'name': 'Beranda Utama', 'route': AppRouter.home, 'icon': Icons.home_rounded},

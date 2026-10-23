@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/debug_floating_menu.dart';
@@ -7,6 +8,7 @@ import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/barter_provider.dart';
+import 'package:ubantu/presentation/providers/chat_provider.dart';
 import 'package:ubantu/presentation/providers/loyalty_provider.dart';
 import 'package:ubantu/presentation/providers/profile_provider.dart';
 import 'package:ubantu/presentation/providers/rating_provider.dart';
@@ -46,6 +48,11 @@ class UbantuApp extends StatelessWidget {
             repository: ServiceLocator.instance.serviceOrderRepository,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => ChatProvider(
+            repository: ServiceLocator.instance.chatRepository,
+          ),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Ubantu',
@@ -56,9 +63,10 @@ class UbantuApp extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               ?child,
-              const Positioned.fill(
-                child: DebugFloatingMenu(),
-              ),
+              if (kDebugMode)
+                const Positioned.fill(
+                  child: DebugFloatingMenu(),
+                ),
             ],
           );
         },

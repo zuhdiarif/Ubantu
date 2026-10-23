@@ -177,16 +177,34 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
                       const SizedBox(height: 8),
                       const Text('Verifikasi KTM: Terverifikasi'),
                       const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF263225),
-                            foregroundColor: Colors.white,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                context.push(AppRouter.chatRoom);
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFF263225)),
+                                foregroundColor: const Color(0xFF263225),
+                              ),
+                              icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                              label: const Text('Chat'),
+                            ),
                           ),
-                          child: const Text('Tutup'),
-                        ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF263225),
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Tutup'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
