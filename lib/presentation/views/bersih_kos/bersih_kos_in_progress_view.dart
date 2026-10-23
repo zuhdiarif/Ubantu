@@ -158,7 +158,7 @@ class _BersihKosInProgressViewState extends State<BersihKosInProgressView> {
                   backgroundColor: Color(0xFFE2F1D8),
                   child: Icon(Icons.chat_bubble_rounded, size: 18, color: Color(0xFF263225)),
                 ),
-                onPressed: () {},
+                onPressed: () => context.push(AppRouter.chatRoom),
               ),
               IconButton(
                 icon: const CircleAvatar(

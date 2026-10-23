@@ -21,6 +21,9 @@ import 'package:ubantu/presentation/views/register_view.dart';
 import 'package:ubantu/presentation/views/sos_active_tracking_view.dart';
 import 'package:ubantu/presentation/views/sos_finish_dialog_view.dart';
 import 'package:ubantu/presentation/views/sos_form_view.dart';
+import 'package:ubantu/domain/models/chat_room_model.dart';
+import 'package:ubantu/presentation/views/chat/chat_room_view.dart';
+import 'package:ubantu/presentation/views/chat/inbox_view.dart';
 
 class AppAuthNotifier extends ChangeNotifier {
   static final AppAuthNotifier instance = AppAuthNotifier._();
@@ -63,6 +66,8 @@ class AppRouter {
   static const String bersihKosWaiting = '/bersih-kos/waiting';
   static const String bersihKosInProgress = '/bersih-kos/in-progress';
   static const String bersihKosSelesai = '/bersih-kos/selesai';
+  static const String chatInbox = '/chat';
+  static const String chatRoom = '/chat/room';
 
   static final router = GoRouter(
     initialLocation: onboarding,
@@ -167,6 +172,17 @@ class AppRouter {
       GoRoute(
         path: bersihKosSelesai,
         builder: (context, state) => const BersihKosSelesaiView(),
+      ),
+      GoRoute(
+        path: chatInbox,
+        builder: (context, state) => const InboxView(),
+      ),
+      GoRoute(
+        path: chatRoom,
+        builder: (context, state) {
+          final room = state.extra as ChatRoomModel?;
+          return ChatRoomView(initialRoom: room);
+        },
       ),
     ],
   );
