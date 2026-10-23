@@ -35,6 +35,16 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
       ],
     },
     {
+      'title': 'Alur Antar Jemput (5 Layar)',
+      'routes': [
+        {'name': '1. Promo Antar Jemput', 'route': AppRouter.antarJemput, 'icon': Icons.two_wheeler_rounded},
+        {'name': '2. Formulir Antar Jemput', 'route': AppRouter.antarJemputForm, 'icon': Icons.assignment_rounded},
+        {'name': '3. Menunggu Helper Antar', 'route': AppRouter.antarJemputWaiting, 'icon': Icons.hourglass_top_rounded},
+        {'name': '4. Antar Jemput Berlangsung', 'route': AppRouter.antarJemputInProgress, 'icon': Icons.navigation_rounded},
+        {'name': '5. Selesai & Ulasan Antar', 'route': AppRouter.antarJemputSelesai, 'icon': Icons.star_rounded},
+      ],
+    },
+    {
       'title': 'Aplikasi & Fitur Utama',
       'routes': [
         {'name': 'Beranda Utama', 'route': AppRouter.home, 'icon': Icons.home_rounded},

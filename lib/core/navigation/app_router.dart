@@ -7,6 +7,11 @@ import 'package:ubantu/presentation/views/login_view.dart';
 import 'package:ubantu/presentation/views/main_navigation_view.dart';
 import 'package:ubantu/presentation/views/onboarding_view.dart';
 import 'package:ubantu/presentation/views/otp_verification_view.dart';
+import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_form_view.dart';
+import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_in_progress_view.dart';
+import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_selesai_view.dart';
+import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_view.dart';
+import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_waiting_view.dart';
 import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_form_view.dart';
 import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_in_progress_view.dart';
 import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_selesai_view.dart';
@@ -63,6 +68,11 @@ class AppRouter {
   static const String bersihKosWaiting = '/bersih-kos/waiting';
   static const String bersihKosInProgress = '/bersih-kos/in-progress';
   static const String bersihKosSelesai = '/bersih-kos/selesai';
+  static const String antarJemput = '/antar-jemput';
+  static const String antarJemputForm = '/antar-jemput/form';
+  static const String antarJemputWaiting = '/antar-jemput/waiting';
+  static const String antarJemputInProgress = '/antar-jemput/in-progress';
+  static const String antarJemputSelesai = '/antar-jemput/selesai';
 
   static final router = GoRouter(
     initialLocation: onboarding,
@@ -167,6 +177,26 @@ class AppRouter {
       GoRoute(
         path: bersihKosSelesai,
         builder: (context, state) => const BersihKosSelesaiView(),
+      ),
+      GoRoute(
+        path: antarJemput,
+        builder: (context, state) => const AntarJemputView(),
+      ),
+      GoRoute(
+        path: antarJemputForm,
+        builder: (context, state) => const AntarJemputFormView(),
+      ),
+      GoRoute(
+        path: antarJemputWaiting,
+        builder: (context, state) => const AntarJemputWaitingView(),
+      ),
+      GoRoute(
+        path: antarJemputInProgress,
+        builder: (context, state) => const AntarJemputInProgressView(),
+      ),
+      GoRoute(
+        path: antarJemputSelesai,
+        builder: (context, state) => const AntarJemputSelesaiView(),
       ),
     ],
   );
