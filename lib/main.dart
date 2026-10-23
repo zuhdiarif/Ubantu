@@ -53,9 +53,12 @@ class UbantuApp extends StatelessWidget {
         routerConfig: AppRouter.router,
         builder: (context, child) {
           return Stack(
+            fit: StackFit.expand,
             children: [
               ?child,
-              const DebugFloatingMenu(),
+              const Positioned.fill(
+                child: DebugFloatingMenu(),
+              ),
             ],
           );
         },

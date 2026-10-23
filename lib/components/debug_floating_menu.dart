@@ -9,9 +9,9 @@ class DebugFloatingMenu extends StatefulWidget {
 }
 
 class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
-  Offset _position = const Offset(16, 120);
+  double? _x;
+  double? _y;
   bool _isOpen = false;
-  bool _isInitialized = false;
 
   final List<Map<String, dynamic>> _routeGroups = [
     {
@@ -46,16 +46,6 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
     },
   ];
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      final size = MediaQuery.of(context).size;
-      _position = Offset(size.width - 68, size.height - 160);
-      _isInitialized = true;
-    }
-  }
-
   void _navigateTo(String route) {
     setState(() => _isOpen = false);
     AppRouter.router.push(route);
@@ -64,20 +54,25 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    final screenW = size.width > 0 ? size.width : 390.0;
+    final screenH = size.height > 0 ? size.height : 800.0;
 
-    return Material(
-      type: MaterialType.transparency,
-      child: Stack(
-        children: [
-          if (_isOpen)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () => setState(() => _isOpen = false),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.4),
-                ),
+    _x ??= (screenW - 72.0).clamp(16.0, screenW - 72.0);
+    _y ??= (screenH - 180.0).clamp(60.0, screenH - 100.0);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (_isOpen)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _isOpen = false),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.5),
               ),
             ),
+          ),
           if (_isOpen)
             Center(
               child: Material(
@@ -198,61 +193,66 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
             ),
           ),
           Positioned(
-            left: _position.dx,
-            top: _position.dy,
+            left: _x,
+            top: _y,
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onPanUpdate: (details) {
                 setState(() {
-                  final newX = (_position.dx + details.delta.dx).clamp(8.0, size.width - 60.0);
-                  final newY = (_position.dy + details.delta.dy).clamp(30.0, size.height - 70.0);
-                  _position = Offset(newX, newY);
+                  _x = (_x! + details.delta.dx).clamp(8.0, screenW - 64.0);
+                  _y = (_y! + details.delta.dy).clamp(30.0, screenH - 64.0);
                 });
               },
               onTap: () => setState(() => _isOpen = !_isOpen),
-              child: Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF263225),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF86B049), width: 2),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x4D000000),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        _isOpen ? Icons.close_rounded : Icons.alt_route_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF4A261),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+              child: Material(
+                color: Colors.transparent,
+                elevation: 10,
+                shape: const CircleBorder(),
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF263225),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFF86B049), width: 2.5),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x66000000),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
                       ),
                     ],
+                  ),
+                  child: Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(
+                          _isOpen ? Icons.close_rounded : Icons.alt_route_rounded,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                        Positioned(
+                          right: 2,
+                          top: 2,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4A261),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }

@@ -212,21 +212,44 @@ void main() {
   });
 
   testWidgets('DebugFloatingMenu toggles modal and displays routes', (tester) async {
+    bool backgroundTapped = false;
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: Scaffold(
-          body: DebugFloatingMenu(),
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              Center(
+                child: ElevatedButton(
+                  onPressed: () => backgroundTapped = true,
+                  child: const Text('Background Button'),
+                ),
+              ),
+              const Positioned.fill(
+                child: DebugFloatingMenu(),
+              ),
+            ],
+          ),
         ),
       ),
     );
     await tester.pump();
 
     expect(find.byType(DebugFloatingMenu), findsOneWidget);
+    await tester.tap(find.text('Background Button'));
+    await tester.pump();
+    expect(backgroundTapped, isTrue);
+
     await tester.tap(find.byIcon(Icons.alt_route_rounded));
     await tester.pump();
 
     expect(find.text('Navigasi Debug'), findsOneWidget);
     expect(find.text('Alur Pindah Kos (5 Layar)'), findsOneWidget);
     expect(find.text('1. Promo & Beranda'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.close_rounded).first);
+    await tester.pump();
+
+    expect(find.text('Navigasi Debug'), findsNothing);
   });
 }
