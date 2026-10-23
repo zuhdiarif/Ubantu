@@ -14,6 +14,11 @@ import 'package:ubantu/domain/usecases/get_active_orders_usecase.dart';
 import 'package:ubantu/domain/usecases/get_tasks_usecase.dart';
 import 'package:ubantu/domain/usecases/login_usecase.dart';
 import 'package:ubantu/domain/usecases/submit_sos_usecase.dart';
+import 'package:ubantu/data/repositories/chat_repository_impl.dart';
+import 'package:ubantu/domain/repositories/chat_repository.dart';
+import 'package:ubantu/domain/usecases/get_chat_messages_usecase.dart';
+import 'package:ubantu/domain/usecases/get_chat_rooms_usecase.dart';
+import 'package:ubantu/domain/usecases/send_chat_message_usecase.dart';
 import 'package:ubantu/domain/usecases/update_order_status_usecase.dart';
 
 class ServiceLocator {
@@ -30,6 +35,7 @@ class ServiceLocator {
   late final ISosRepository sosRepository = SosRepositoryImpl();
   late final IServiceOrderRepository serviceOrderRepository =
       ServiceOrderRepositoryImpl(service: supabaseOrderService);
+  late final IChatRepository chatRepository = ChatRepositoryImpl();
 
   late final LoginUseCase loginUseCase = LoginUseCase(authRepository);
   late final GetTasksUseCase getTasksUseCase = GetTasksUseCase(taskRepository);
@@ -42,4 +48,10 @@ class ServiceLocator {
       AcceptOrderUseCase(serviceOrderRepository);
   late final UpdateOrderStatusUseCase updateOrderStatusUseCase =
       UpdateOrderStatusUseCase(serviceOrderRepository);
+  late final GetChatRoomsUseCase getChatRoomsUseCase =
+      GetChatRoomsUseCase(chatRepository);
+  late final GetChatMessagesUseCase getChatMessagesUseCase =
+      GetChatMessagesUseCase(chatRepository);
+  late final SendChatMessageUseCase sendChatMessageUseCase =
+      SendChatMessageUseCase(chatRepository);
 }

@@ -7,6 +7,7 @@ import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/barter_provider.dart';
+import 'package:ubantu/presentation/providers/chat_provider.dart';
 import 'package:ubantu/presentation/providers/loyalty_provider.dart';
 import 'package:ubantu/presentation/providers/profile_provider.dart';
 import 'package:ubantu/presentation/providers/rating_provider.dart';
@@ -44,6 +45,11 @@ class UbantuApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ServiceOrderProvider(
             repository: ServiceLocator.instance.serviceOrderRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ChatProvider(
+            repository: ServiceLocator.instance.chatRepository,
           ),
         ),
       ],
