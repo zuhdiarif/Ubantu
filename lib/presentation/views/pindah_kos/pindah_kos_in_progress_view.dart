@@ -1,7 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/models/chat_room_model.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/providers/chat_provider.dart';
+import 'package:ubantu/presentation/providers/service_order_provider.dart';
 
 class PindahKosInProgressView extends StatefulWidget {
   const PindahKosInProgressView({super.key});
@@ -12,18 +19,95 @@ class PindahKosInProgressView extends StatefulWidget {
 }
 
 class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
-  int _currentStep = 3;
+  Timer? _pollTimer;
 
-  final List<Map<String, String>> _statusSteps = [
-    {'title': 'Menyetujui bantuan', 'time': '10.15'},
-    {'title': 'Menuju lokasi', 'time': '10.20'},
-    {'title': 'Tiba di lokasi', 'time': '10.30'},
-    {'title': 'Saling membantu', 'time': '10.35'},
-    {'title': 'Bantuan selesai', 'time': ''},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      final provider = context.read<ServiceOrderProvider>();
+      final activeOrder = provider.myOrders
+          .where(
+            (o) =>
+                o.category == ServiceCategory.pindahKos &&
+                (o.status == MoveServiceStatus.accepted ||
+                    o.status == MoveServiceStatus.inProgress ||
+                    o.status == MoveServiceStatus.completed),
+          )
+          .firstOrNull;
+
+      if (activeOrder != null && activeOrder.id.isNotEmpty) {
+        final updated = await provider.checkOrderStatus(activeOrder.id);
+        if (!mounted) return;
+        if (updated != null && updated.status == MoveServiceStatus.completed) {
+          _pollTimer?.cancel();
+          context.go(AppRouter.pindahKosSelesai);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<ServiceOrderProvider>();
+    ChatProvider? chatProvider;
+    try {
+      chatProvider = context.watch<ChatProvider>();
+    } catch (_) {}
+    final hasUnread = chatProvider?.hasUnreadMessages ?? false;
+    final activeOrder = provider.myOrders
+        .where(
+          (o) =>
+              o.category == ServiceCategory.pindahKos &&
+              (o.status == MoveServiceStatus.accepted ||
+                  o.status == MoveServiceStatus.inProgress ||
+                  o.status == MoveServiceStatus.completed),
+        )
+        .firstOrNull;
+
+    if (activeOrder != null &&
+        activeOrder.status == MoveServiceStatus.completed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _pollTimer?.cancel();
+          context.go(AppRouter.pindahKosSelesai);
+        }
+      });
+    }
+
+    final int currentStepIndex = switch (activeOrder?.status) {
+      MoveServiceStatus.accepted => 1,
+      MoveServiceStatus.inProgress => 3,
+      MoveServiceStatus.completed => 4,
+      _ => 1,
+    };
+
+    final orderTime = activeOrder?.scheduledAt ?? DateTime.now();
+    final t0 = '${orderTime.hour.toString().padLeft(2, '0')}.${orderTime.minute.toString().padLeft(2, '0')}';
+    final t1 = '${orderTime.add(const Duration(minutes: 5)).hour.toString().padLeft(2, '0')}.${orderTime.add(const Duration(minutes: 5)).minute.toString().padLeft(2, '0')}';
+    final t2 = '${orderTime.add(const Duration(minutes: 15)).hour.toString().padLeft(2, '0')}.${orderTime.add(const Duration(minutes: 15)).minute.toString().padLeft(2, '0')}';
+    final t3 = '${orderTime.add(const Duration(minutes: 20)).hour.toString().padLeft(2, '0')}.${orderTime.add(const Duration(minutes: 20)).minute.toString().padLeft(2, '0')}';
+
+    final List<Map<String, String>> statusSteps = [
+      {'title': 'Menyetujui bantuan', 'time': t0},
+      {'title': 'Menuju lokasi', 'time': currentStepIndex >= 1 ? t1 : ''},
+      {'title': 'Tiba di lokasi', 'time': currentStepIndex >= 2 ? t2 : ''},
+      {'title': 'Saling membantu', 'time': currentStepIndex >= 3 ? t3 : ''},
+      {'title': 'Bantuan selesai', 'time': ''},
+    ];
+
+    final helperName = activeOrder?.helperId != null ? 'Nasya' : 'Nasya';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -54,7 +138,7 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: _buildHelperCard(context),
+              child: _buildHelperCard(context, activeOrder, helperName),
             ),
             Expanded(
               child: Stack(
@@ -64,7 +148,14 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
                   ),
                   Align(
                     alignment: Alignment.bottomCenter,
-                    child: _buildStatusPanel(context),
+                    child: _buildStatusPanel(
+                      context,
+                      activeOrder,
+                      helperName,
+                      statusSteps,
+                      currentStepIndex,
+                      hasUnread,
+                    ),
                   ),
                 ],
               ),
@@ -75,144 +166,88 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
     );
   }
 
-  Widget _buildHelperCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: ShapeDecoration(
-        color: const Color(0xFF263225),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+  Widget _buildHelperCard(
+    BuildContext context,
+    ServiceOrderModel? activeOrder,
+    String helperName,
+  ) {
+    return InkWell(
+      onTap: () {
+        context.push(AppRouter.bantuanDetail, extra: activeOrder);
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: ShapeDecoration(
+          color: const Color(0xFF263225),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              ClipOval(
-                child: Image.asset(
-                  'assets/pindah_kos_flow/placeholder-user-profile-pic.jpg',
-                  width: 52,
-                  height: 52,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const CircleAvatar(
-                    radius: 26,
-                    backgroundColor: Color(0xFFD9D9D9),
-                    child: Icon(Icons.person, color: Color(0xFF263225)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Raihan',
-                    style: TextStyle(
-                      color: Color(0xFFF8FAF4),
-                      fontSize: 16,
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w700,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                ClipOval(
+                  child: Image.asset(
+                    'assets/pindah_kos_flow/placeholder-user-profile-pic.jpg',
+                    width: 52,
+                    height: 52,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Color(0xFFD9D9D9),
+                      child: Icon(Icons.person, color: Color(0xFF263225)),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/pindah_kos_flow/bintang-kuning-filled.svg',
-                        width: 14,
-                        height: 14,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                          Icons.star,
-                          size: 14,
-                          color: Color(0xFFF86F1A),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text(
-                        '4.8 (23)',
-                        style: TextStyle(
-                          color: Color(0xFFF8FAF4),
-                          fontSize: 12,
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          InkWell(
-            onTap: () {
-              showModalBottomSheet(
-                context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
-                builder: (ctx) => Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Detail Helper',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w700,
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      helperName,
+                      style: const TextStyle(
+                        color: Color(0xFFF8FAF4),
+                        fontSize: 16,
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        SvgPicture.asset(
+                          'assets/pindah_kos_flow/bintang-kuning-filled.svg',
+                          width: 14,
+                          height: 14,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const Icon(
+                            Icons.star,
+                            size: 14,
+                            color: Color(0xFFF86F1A),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text('Nama: Raihan Lazuardi'),
-                      const SizedBox(height: 8),
-                      const Text('Fakultas: Ilmu Komputer, Universitas Brawijaya'),
-                      const SizedBox(height: 8),
-                      const Text('Kendaraan: Honda Beat (N 1234 UB)'),
-                      const SizedBox(height: 8),
-                      const Text('Verifikasi KTM: Terverifikasi'),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                Navigator.of(ctx).pop();
-                                context.push(AppRouter.chatRoom);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Color(0xFF263225)),
-                                foregroundColor: const Color(0xFF263225),
-                              ),
-                              icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                              label: const Text('Chat'),
-                            ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          '4.8 (23)',
+                          style: TextStyle(
+                            color: Color(0xFFF8FAF4),
+                            fontSize: 12,
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w400,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(ctx).pop(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF263225),
-                                foregroundColor: Colors.white,
-                              ),
-                              child: const Text('Tutup'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              );
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
+              ],
+            ),
+            Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: ShapeDecoration(
                 color: const Color(0xFFF8FAF4),
@@ -231,8 +266,8 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -283,7 +318,14 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
     );
   }
 
-  Widget _buildStatusPanel(BuildContext context) {
+  Widget _buildStatusPanel(
+    BuildContext context,
+    ServiceOrderModel? activeOrder,
+    String helperName,
+    List<Map<String, String>> statusSteps,
+    int currentStepIndex,
+    bool hasUnread,
+  ) {
     return Container(
       width: double.infinity,
       decoration: const ShapeDecoration(
@@ -302,7 +344,7 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
           ),
         ],
       ),
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,24 +390,32 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton.icon(
+                  ElevatedButton(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Membuka chat dengan Raihan...')),
-                      );
+                      if (activeOrder != null) {
+                        context.push(
+                          AppRouter.chatRoom,
+                          extra: ChatRoomModel(
+                            id: activeOrder.id,
+                            orderId: activeOrder.id,
+                            orderNumber:
+                                'UB-${activeOrder.id.length > 4 ? activeOrder.id.substring(0, 4).toUpperCase() : '8890'}',
+                            serviceTitle: 'Layanan Pindah Kos',
+                            serviceStatus: activeOrder.status.name,
+                            otherUserName: helperName,
+                            otherUserFaculty: 'Universitas Brawijaya',
+                            lastMessage: '',
+                            lastMessageTime: DateTime.now(),
+                            itemSummary: activeOrder.itemDescription,
+                            pickupLocation: activeOrder.locationOrigin,
+                            destinationLocation: activeOrder.locationDestination,
+                            totalPrice: activeOrder.barterDescription,
+                          ),
+                        );
+                      } else {
+                        context.push(AppRouter.chatRoom);
+                      }
                     },
-                    icon: const Icon(
-                      Icons.chat_bubble_rounded,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Chat',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF263225),
                       foregroundColor: Colors.white,
@@ -376,6 +426,35 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.chat_bubble_rounded,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Chat',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (hasUnread) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF44336),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -383,16 +462,14 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
           ),
           const SizedBox(height: 14),
           Column(
-            children: List.generate(_statusSteps.length, (idx) {
-              final step = _statusSteps[idx];
-              final isDone = idx < _currentStep;
-              final isCurrent = idx == _currentStep;
-              final isLast = idx == _statusSteps.length - 1;
+            children: List.generate(statusSteps.length, (idx) {
+              final step = statusSteps[idx];
+              final isDone = idx < currentStepIndex;
+              final isCurrent = idx == currentStepIndex;
+              final isLast = idx == statusSteps.length - 1;
 
-              return GestureDetector(
-                onTap: () => setState(() => _currentStep = idx),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Column(
                     children: [
@@ -491,36 +568,8 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
                     ),
                   ),
                 ],
-              ),
-            );
-          }),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {
-                context.push(AppRouter.pindahKosSelesai);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF263225),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Selesaikan Bantuan',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
+              );
+            }),
           ),
         ],
       ),

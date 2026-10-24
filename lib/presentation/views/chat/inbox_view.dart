@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -15,6 +16,7 @@ class InboxView extends StatefulWidget {
 
 class _InboxViewState extends State<InboxView> {
   final TextEditingController _searchController = TextEditingController();
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -22,10 +24,18 @@ class _InboxViewState extends State<InboxView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ChatProvider>().loadRooms();
     });
+
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      if (_searchController.text.isEmpty) {
+        context.read<ChatProvider>().loadRooms(isPolling: true);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }

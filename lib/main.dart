@@ -9,6 +9,7 @@ import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/barter_provider.dart';
 import 'package:ubantu/presentation/providers/chat_provider.dart';
+import 'package:ubantu/presentation/providers/mitra_provider.dart';
 import 'package:ubantu/presentation/providers/loyalty_provider.dart';
 import 'package:ubantu/presentation/providers/profile_provider.dart';
 import 'package:ubantu/presentation/providers/rating_provider.dart';
@@ -53,20 +54,27 @@ class UbantuApp extends StatelessWidget {
             repository: ServiceLocator.instance.chatRepository,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => MitraProvider(
+            repository: ServiceLocator.instance.mitraRepository,
+          ),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Ubantu',
         debugShowCheckedModeBanner: false,
         routerConfig: AppRouter.router,
         builder: (context, child) {
+          if (!kDebugMode) {
+            return child ?? const SizedBox.shrink();
+          }
           return Stack(
             fit: StackFit.expand,
             children: [
               ?child,
-              if (kDebugMode)
-                const Positioned.fill(
-                  child: DebugFloatingMenu(),
-                ),
+              const Positioned.fill(
+                child: DebugFloatingMenu(),
+              ),
             ],
           );
         },

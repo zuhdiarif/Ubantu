@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isOrderCardExpanded = true;
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -38,10 +40,20 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       }
       _scrollToBottom();
     });
+
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (!mounted) return;
+      final chatProvider = context.read<ChatProvider>();
+      final active = chatProvider.activeRoom ?? widget.initialRoom;
+      if (active != null) {
+        chatProvider.loadMessages(active.id, isPolling: true);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();

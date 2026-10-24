@@ -256,4 +256,62 @@ class ServiceOrderProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  ServiceOrderModel? getOrderById(String orderId) {
+    try {
+      return _myOrders.firstWhere((o) => o.id == orderId);
+    } catch (_) {
+      try {
+        return _activeOrders.firstWhere((o) => o.id == orderId);
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  Future<void> refreshActiveOrders() async {
+    final result = await _getActiveOrdersUseCase.execute();
+    if (result.isSuccess && result.data != null) {
+      _activeOrders = result.data!;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshMyOrders([String? userId]) async {
+    final uid = userId ??
+        (SupabaseService.instance.isInitialized
+            ? SupabaseService.instance.client.auth.currentUser?.id ?? ''
+            : '');
+    final result = await _repository.getOrderHistory(uid);
+    if (result.isSuccess && result.data != null) {
+      _myOrders = result.data!;
+      notifyListeners();
+    }
+  }
+
+  Future<ServiceOrderModel?> checkOrderStatus(String orderId) async {
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        final res = await SupabaseService.instance.client
+            .from('service_orders')
+            .select()
+            .eq('id', orderId)
+            .maybeSingle();
+        if (res != null) {
+          final updated = ServiceOrderModel.fromJson(res);
+          final idx = _myOrders.indexWhere((o) => o.id == orderId);
+          if (idx != -1) {
+            _myOrders[idx] = updated;
+          } else {
+            _myOrders.insert(0, updated);
+          }
+          _activeOrders = _activeOrders.where((o) => o.id != orderId).toList();
+          notifyListeners();
+          return updated;
+        }
+      } catch (_) {}
+    }
+    return getOrderById(orderId);
+  }
 }
+

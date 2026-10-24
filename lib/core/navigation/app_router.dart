@@ -27,8 +27,15 @@ import 'package:ubantu/presentation/views/sos_active_tracking_view.dart';
 import 'package:ubantu/presentation/views/sos_finish_dialog_view.dart';
 import 'package:ubantu/presentation/views/sos_form_view.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/views/bantuan_detail_view.dart';
 import 'package:ubantu/presentation/views/chat/chat_room_view.dart';
 import 'package:ubantu/presentation/views/chat/inbox_view.dart';
+import 'package:ubantu/presentation/views/mitra/mitra_active_order_view.dart';
+import 'package:ubantu/presentation/views/mitra/mitra_category_registration_view.dart';
+import 'package:ubantu/presentation/views/mitra/mitra_dashboard_view.dart';
+import 'package:ubantu/presentation/views/mitra/mitra_earnings_view.dart';
+import 'package:ubantu/presentation/views/mitra/mitra_performance_view.dart';
 
 class AppAuthNotifier extends ChangeNotifier {
   static final AppAuthNotifier instance = AppAuthNotifier._();
@@ -78,6 +85,12 @@ class AppRouter {
   static const String antarJemputSelesai = '/antar-jemput/selesai';
   static const String chatInbox = '/chat';
   static const String chatRoom = '/chat/room';
+  static const String mitraDashboard = '/mitra/dashboard';
+  static const String mitraActiveOrder = '/mitra/active-order';
+  static const String mitraEarnings = '/mitra/earnings';
+  static const String mitraPerformance = '/mitra/performance';
+  static const String mitraRegister = '/mitra/register';
+  static const String bantuanDetail = '/bantuan-detail';
 
   static final router = GoRouter(
     initialLocation: onboarding,
@@ -210,8 +223,39 @@ class AppRouter {
       GoRoute(
         path: chatRoom,
         builder: (context, state) {
-          final room = state.extra as ChatRoomModel?;
+          final room = state.extra is ChatRoomModel
+              ? state.extra as ChatRoomModel
+              : null;
           return ChatRoomView(initialRoom: room);
+        },
+      ),
+      GoRoute(
+        path: mitraDashboard,
+        builder: (context, state) => const MitraDashboardView(),
+      ),
+      GoRoute(
+        path: mitraActiveOrder,
+        builder: (context, state) => const MitraActiveOrderView(),
+      ),
+      GoRoute(
+        path: mitraEarnings,
+        builder: (context, state) => const MitraEarningsView(),
+      ),
+      GoRoute(
+        path: mitraPerformance,
+        builder: (context, state) => const MitraPerformanceView(),
+      ),
+      GoRoute(
+        path: mitraRegister,
+        builder: (context, state) => const MitraCategoryRegistrationView(),
+      ),
+      GoRoute(
+        path: bantuanDetail,
+        builder: (context, state) {
+          final order = state.extra is ServiceOrderModel
+              ? state.extra as ServiceOrderModel
+              : null;
+          return BantuanDetailView(order: order);
         },
       ),
     ],

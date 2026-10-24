@@ -37,22 +37,30 @@ class ChatProvider extends ChangeNotifier {
   bool get isSendingMessage => _isSendingMessage;
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
+  bool get hasUnreadMessages => _rooms.any((room) => room.unreadCount > 0);
+  int get totalUnreadCount => _rooms.fold(0, (sum, room) => sum + room.unreadCount);
 
-  Future<void> loadRooms() async {
-    _isLoadingRooms = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> loadRooms({bool isPolling = false}) async {
+    if (!isPolling) {
+      _isLoadingRooms = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     final result = await _getChatRoomsUseCase.execute();
     if (result.isSuccess && result.data != null) {
       _rooms = result.data!;
       _applySearch();
-    } else {
+    } else if (!isPolling) {
       _errorMessage = result.errorMessage;
     }
 
-    _isLoadingRooms = false;
-    notifyListeners();
+    if (!isPolling) {
+      _isLoadingRooms = false;
+      notifyListeners();
+    } else {
+      notifyListeners();
+    }
   }
 
   void searchRooms(String query) {
@@ -82,20 +90,26 @@ class ChatProvider extends ChangeNotifier {
     markAsRead(room.id);
   }
 
-  Future<void> loadMessages(String roomId) async {
-    _isLoadingMessages = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> loadMessages(String roomId, {bool isPolling = false}) async {
+    if (!isPolling) {
+      _isLoadingMessages = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     final result = await _getChatMessagesUseCase.execute(roomId);
     if (result.isSuccess && result.data != null) {
       _activeMessages = result.data!;
-    } else {
+    } else if (!isPolling) {
       _errorMessage = result.errorMessage;
     }
 
-    _isLoadingMessages = false;
-    notifyListeners();
+    if (!isPolling) {
+      _isLoadingMessages = false;
+      notifyListeners();
+    } else {
+      notifyListeners();
+    }
   }
 
   Future<bool> sendMessage(String roomId, String text, {String? attachmentUrl}) async {
@@ -114,12 +128,15 @@ class ChatProvider extends ChangeNotifier {
     _isSendingMessage = false;
 
     if (result.isSuccess && result.data != null) {
-      _activeMessages.add(result.data!);
+      final sentMsg = result.data!;
+      if (!_activeMessages.any((m) => m.id == sentMsg.id)) {
+        _activeMessages.add(sentMsg);
+      }
       final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
       if (roomIndex != -1) {
         _rooms[roomIndex] = _rooms[roomIndex].copyWith(
           lastMessage: cleanText,
-          lastMessageTime: DateTime.now(),
+          lastMessageTime: sentMsg.createdAt,
         );
         _applySearch();
       }
@@ -155,7 +172,7 @@ class ChatProvider extends ChangeNotifier {
     bool isActive = true,
   }) async {
     final existing = _rooms.cast<ChatRoomModel?>().firstWhere(
-          (r) => r?.orderId == orderId,
+          (r) => r?.orderId == orderId || r?.id == orderId,
           orElse: () => null,
         );
 
@@ -165,7 +182,7 @@ class ChatProvider extends ChangeNotifier {
     }
 
     final newRoom = ChatRoomModel(
-      id: 'room-$orderId',
+      id: orderId,
       orderId: orderId,
       orderNumber: orderNumber,
       serviceTitle: serviceTitle,

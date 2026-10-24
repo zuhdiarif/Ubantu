@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -5,8 +6,53 @@ import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
 
-class PindahKosWaitingView extends StatelessWidget {
+class PindahKosWaitingView extends StatefulWidget {
   const PindahKosWaitingView({super.key});
+
+  @override
+  State<PindahKosWaitingView> createState() => _PindahKosWaitingViewState();
+}
+
+class _PindahKosWaitingViewState extends State<PindahKosWaitingView> {
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      final provider = context.read<ServiceOrderProvider>();
+      final activeOrder = provider.myOrders
+          .where(
+            (o) =>
+                o.category == ServiceCategory.pindahKos &&
+                (o.status == MoveServiceStatus.waiting ||
+                    o.status == MoveServiceStatus.accepted ||
+                    o.status == MoveServiceStatus.inProgress),
+          )
+          .firstOrNull;
+
+      if (activeOrder != null && activeOrder.id.isNotEmpty) {
+        final updated = await provider.checkOrderStatus(activeOrder.id);
+        if (!mounted) return;
+        if (updated != null &&
+            (updated.status == MoveServiceStatus.accepted ||
+                updated.status == MoveServiceStatus.inProgress)) {
+          _pollTimer?.cancel();
+          context.go(AppRouter.pindahKosInProgress);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +66,17 @@ class PindahKosWaitingView extends StatelessWidget {
                   o.status == MoveServiceStatus.inProgress),
         )
         .firstOrNull;
+
+    if (activeOrder != null &&
+        (activeOrder.status == MoveServiceStatus.accepted ||
+            activeOrder.status == MoveServiceStatus.inProgress)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _pollTimer?.cancel();
+          context.go(AppRouter.pindahKosInProgress);
+        }
+      });
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -159,42 +216,16 @@ class PindahKosWaitingView extends StatelessWidget {
                       'Pastikan lokasi dan detail barang sudah benar agar proses lebih cepat.',
                       style: TextStyle(
                         color: Colors.black,
-                        fontSize: 14,
+                        fontSize: 12,
                         fontFamily: 'Plus Jakarta Sans',
                         fontWeight: FontWeight.w400,
+                        height: 1.20,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.push(AppRouter.pindahKosInProgress);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF263225),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    'Lihat Bantuan Berlangsung',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -223,6 +254,7 @@ class PindahKosWaitingView extends StatelessWidget {
                       ),
                     );
                     if (confirmed == true && context.mounted) {
+                      _pollTimer?.cancel();
                       if (activeOrder != null) {
                         await provider.updateStatus(
                           activeOrder.id,

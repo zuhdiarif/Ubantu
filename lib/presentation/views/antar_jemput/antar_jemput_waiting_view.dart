@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/presentation/providers/service_order_provider.dart';
 
 class AntarJemputWaitingView extends StatefulWidget {
   const AntarJemputWaitingView({super.key});
@@ -13,6 +17,7 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _pulseAnimation;
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -25,16 +30,67 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
     _pulseAnimation = Tween<double>(begin: 0.92, end: 1.08).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
+
+    _startPolling();
+  }
+
+  void _startPolling() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      final provider = context.read<ServiceOrderProvider>();
+      final activeOrder = provider.myOrders
+          .where(
+            (o) =>
+                o.category == ServiceCategory.antarJemput &&
+                (o.status == MoveServiceStatus.waiting ||
+                    o.status == MoveServiceStatus.accepted ||
+                    o.status == MoveServiceStatus.inProgress),
+          )
+          .firstOrNull;
+
+      if (activeOrder != null && activeOrder.id.isNotEmpty) {
+        final updated = await provider.checkOrderStatus(activeOrder.id);
+        if (!mounted) return;
+        if (updated != null &&
+            (updated.status == MoveServiceStatus.accepted ||
+                updated.status == MoveServiceStatus.inProgress)) {
+          _pollTimer?.cancel();
+          context.go(AppRouter.antarJemputInProgress);
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _animController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<ServiceOrderProvider>();
+    final activeOrder = provider.myOrders
+        .where(
+          (o) =>
+              o.category == ServiceCategory.antarJemput &&
+              (o.status == MoveServiceStatus.waiting ||
+                  o.status == MoveServiceStatus.accepted ||
+                  o.status == MoveServiceStatus.inProgress),
+        )
+        .firstOrNull;
+
+    if (activeOrder != null &&
+        (activeOrder.status == MoveServiceStatus.accepted ||
+            activeOrder.status == MoveServiceStatus.inProgress)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _pollTimer?.cancel();
+          context.go(AppRouter.antarJemputInProgress);
+        }
+      });
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -110,43 +166,49 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
               ),
             ),
             const SizedBox(height: 24),
-            _buildOrderSummaryCard(),
+            _buildOrderSummaryCard(activeOrder),
             const SizedBox(height: 16),
             _buildTipsCard(),
             const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
               height: 48,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  context.push(AppRouter.antarJemputInProgress);
-                },
-                icon: const Icon(Icons.check_circle_rounded, size: 18),
-                label: const Text(
-                  'Simulasi Helper Ditemukan',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF263225),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
               child: OutlinedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Batalkan Permintaan?'),
+                      content: const Text(
+                        'Apakah kamu yakin ingin membatalkan permintaan antar jemput ini?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(false),
+                          child: const Text('Tidak'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(ctx).pop(true),
+                          child: const Text(
+                            'Batalkan',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true && context.mounted) {
+                    _pollTimer?.cancel();
+                    if (activeOrder != null) {
+                      await provider.updateStatus(
+                        activeOrder.id,
+                        MoveServiceStatus.cancelled,
+                      );
+                    }
+                    if (context.mounted) {
+                      Navigator.of(context).pop();
+                    }
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFFD3D8D0)),
@@ -172,7 +234,14 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
     );
   }
 
-  Widget _buildOrderSummaryCard() {
+  Widget _buildOrderSummaryCard(dynamic activeOrder) {
+    final pickup = activeOrder?.pickupLocation?.isNotEmpty == true
+        ? activeOrder.pickupLocation
+        : 'Gerbang Utama UB, Jl. Veteran';
+    final dest = activeOrder?.destinationLocation?.isNotEmpty == true
+        ? activeOrder.destinationLocation
+        : 'Stasiun Malang Kota Baru';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -219,10 +288,10 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
             children: [
               const Icon(Icons.my_location_rounded, size: 16, color: Color(0xFF263225)),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Jemput: Gerbang Utama UB, Jl. Veteran',
-                  style: TextStyle(fontSize: 12, fontFamily: 'Plus Jakarta Sans'),
+                  'Jemput: $pickup',
+                  style: const TextStyle(fontSize: 12, fontFamily: 'Plus Jakarta Sans'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -234,10 +303,10 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
             children: [
               const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFFF86F1A)),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Tujuan: Stasiun Malang Kota Baru',
-                  style: TextStyle(fontSize: 12, fontFamily: 'Plus Jakarta Sans'),
+                  'Tujuan: $dest',
+                  style: const TextStyle(fontSize: 12, fontFamily: 'Plus Jakarta Sans'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

@@ -19,6 +19,8 @@ import 'package:ubantu/domain/repositories/chat_repository.dart';
 import 'package:ubantu/domain/usecases/get_chat_messages_usecase.dart';
 import 'package:ubantu/domain/usecases/get_chat_rooms_usecase.dart';
 import 'package:ubantu/domain/usecases/send_chat_message_usecase.dart';
+import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
+import 'package:ubantu/domain/repositories/mitra_repository.dart';
 import 'package:ubantu/domain/usecases/update_order_status_usecase.dart';
 
 class ServiceLocator {
@@ -36,6 +38,7 @@ class ServiceLocator {
   late final IServiceOrderRepository serviceOrderRepository =
       ServiceOrderRepositoryImpl(service: supabaseOrderService);
   late final IChatRepository chatRepository = ChatRepositoryImpl();
+  late final IMitraRepository mitraRepository = MitraRepositoryImpl();
 
   late final LoginUseCase loginUseCase = LoginUseCase(authRepository);
   late final GetTasksUseCase getTasksUseCase = GetTasksUseCase(taskRepository);

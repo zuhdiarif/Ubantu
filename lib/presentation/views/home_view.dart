@@ -4,6 +4,10 @@ import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/providers/mitra_provider.dart';
+import 'package:ubantu/presentation/providers/service_order_provider.dart';
 import 'package:ubantu/presentation/providers/task_provider.dart';
 
 class HomeView extends StatefulWidget {
@@ -16,6 +20,14 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int _modeTab = 0;
   int _activityTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ServiceOrderProvider>().loadActiveOrders();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -512,6 +524,67 @@ class _HomeViewState extends State<HomeView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF283626),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFA8C686),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.engineering_rounded,
+                  color: Color(0xFF283626),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Dashboard Mitra Jasa UB',
+                      style: AppTypography.body1.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Kelola ketersediaan online, terima order & kumpulkan barter.',
+                      style: AppTypography.caption.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFA8C686),
+                  foregroundColor: const Color(0xFF283626),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () => context.push(AppRouter.mitraDashboard),
+                child: const Text(
+                  'Buka',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
         Text(
           'Orang yang Butuh Bantuan',
           style: AppTypography.h5.copyWith(
@@ -520,59 +593,372 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         const SizedBox(height: 14),
-        ...provider.tasks.map((task) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE8EBE4)),
-            ),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(0xFFE2F1D8),
-                  child: Icon(Icons.person_rounded, color: Color(0xFF283626)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        task.title,
-                        style: AppTypography.body1.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1E281C),
-                        ),
-                      ),
-                      Text(
-                        'Oleh: ${task.requesterName}',
-                        style: AppTypography.caption.copyWith(
-                          color: const Color(0xFF5C6658),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () => context.push(AppRouter.helpDetail),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF283626),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('Bantu'),
-                ),
-              ],
-            ),
-          );
-        }),
+        ..._buildOrderList(context, provider),
       ],
     );
+  }
+
+  List<Widget> _buildOrderList(BuildContext context, TaskProvider taskProvider) {
+    final orderProvider = context.watch<ServiceOrderProvider>();
+    final orders = orderProvider.activeOrders;
+
+    if (orders.isNotEmpty) {
+      return orders.map((order) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE8EBE4)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: const Color(0xFFE2F1D8),
+                    child: Icon(
+                      _getCategoryIcon(order.category),
+                      color: const Color(0xFF283626),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE2F1D8),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _getCategoryName(order.category),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF283626),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Menunggu Bantuan',
+                              style: AppTypography.caption.copyWith(
+                                color: const Color(0xFF86B049),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          order.itemDescription,
+                          style: AppTypography.body1.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1E281C),
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _showOrderHelpDialog(order),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF283626),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                    child: const Text(
+                      'Bantu',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.location_on_outlined,
+                    size: 14,
+                    color: Color(0xFF5C6658),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${order.locationOrigin} → ${order.locationDestination}',
+                      style: AppTypography.caption.copyWith(
+                        color: const Color(0xFF5C6658),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              if (order.barterDescription.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.card_giftcard_rounded,
+                      size: 14,
+                      color: AppColors.accentOrange,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Barter: ${order.barterDescription}',
+                        style: AppTypography.caption.copyWith(
+                          color: AppColors.accentOrange,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        );
+      }).toList();
+    }
+
+    if (taskProvider.tasks.isNotEmpty) {
+      return taskProvider.tasks.map((task) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE8EBE4)),
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 20,
+                backgroundColor: Color(0xFFE2F1D8),
+                child: Icon(Icons.person_rounded, color: Color(0xFF283626)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: AppTypography.body1.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E281C),
+                      ),
+                    ),
+                    Text(
+                      'Oleh: ${task.requesterName}',
+                      style: AppTypography.caption.copyWith(
+                        color: const Color(0xFF5C6658),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => context.push(AppRouter.helpDetail),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF283626),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Bantu'),
+              ),
+            ],
+          ),
+        );
+      }).toList();
+    }
+
+    return [
+      Container(
+        padding: const EdgeInsets.all(24),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            Icon(Icons.volunteer_activism_outlined, size: 48, color: Colors.grey.shade400),
+            const SizedBox(height: 12),
+            Text(
+              'Belum Ada yang Butuh Bantuan',
+              style: AppTypography.body1.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tarik ke bawah untuk memperbarui daftar permintaan bantuan.',
+              style: AppTypography.caption.copyWith(color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    ];
+  }
+
+  void _showOrderHelpDialog(ServiceOrderModel order) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Detail Permintaan Bantuan',
+              style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildDetailRow('Layanan', _getCategoryName(order.category)),
+            _buildDetailRow('Keterangan', order.itemDescription),
+            _buildDetailRow('Lokasi Penjemputan', order.locationOrigin),
+            _buildDetailRow('Lokasi Tujuan', order.locationDestination),
+            _buildDetailRow('Imbalan Barter', order.barterDescription),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF283626),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final nav = Navigator.of(sheetContext);
+                  final orderProv = context.read<ServiceOrderProvider>();
+                  final mitraProv = context.read<MitraProvider>();
+                  nav.pop();
+                  final success = await orderProv.acceptOrder(order.id);
+                  if (success) {
+                    await mitraProv.acceptOrder(order.id);
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Bantuan berhasil diambil! Menuju ke halaman order aktif.',
+                        ),
+                        backgroundColor: Color(0xFF283626),
+                      ),
+                    );
+                    if (mounted) {
+                      context.push('/mitra/active-order');
+                    }
+                  }
+                },
+                child: const Text(
+                  'Ambil Bantuan Ini',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: AppTypography.caption.copyWith(color: Colors.grey.shade600),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTypography.body2.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCategoryName(ServiceCategory cat) {
+    switch (cat) {
+      case ServiceCategory.pindahKos:
+        return 'Pindah Kos';
+      case ServiceCategory.bersihKos:
+        return 'Bersih Kos';
+      case ServiceCategory.antarJemput:
+        return 'Antar Jemput';
+    }
+  }
+
+  IconData _getCategoryIcon(ServiceCategory cat) {
+    switch (cat) {
+      case ServiceCategory.pindahKos:
+        return Icons.local_shipping_rounded;
+      case ServiceCategory.bersihKos:
+        return Icons.cleaning_services_rounded;
+      case ServiceCategory.antarJemput:
+        return Icons.two_wheeler_rounded;
+    }
   }
 }
