@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -21,13 +22,35 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int _modeTab = 0;
   int _activityTab = 0;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ServiceOrderProvider>().loadActiveOrders();
+      _refreshData();
     });
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        _refreshData();
+      }
+    });
+  }
+
+  Future<void> _refreshData() async {
+    final user = context.read<AuthProvider>().currentUser;
+    final userId = user?.id ?? '';
+    await Future.wait([
+      context.read<ServiceOrderProvider>().loadActiveOrders(),
+      if (userId.isNotEmpty)
+        context.read<ServiceOrderProvider>().loadMyOrders(userId),
+    ]);
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -39,25 +62,30 @@ class _HomeViewState extends State<HomeView> {
       child: SafeArea(
         top: true,
         bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildModeToggle(taskProvider),
-              const SizedBox(height: 20),
-              if (_modeTab == 0) ...[
-                _buildPromoBanner(),
-                const SizedBox(height: 24),
-                _buildLayananPopulerSection(),
-                const SizedBox(height: 24),
-                _buildAktivitasSayaSection(),
-              ] else ...[
-                _buildOrangButuhBantuanSection(taskProvider),
+        child: RefreshIndicator(
+          onRefresh: _refreshData,
+          color: AppColors.primaryGreen,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildModeToggle(taskProvider),
+                const SizedBox(height: 20),
+                if (_modeTab == 0) ...[
+                  _buildPromoBanner(),
+                  const SizedBox(height: 24),
+                  _buildLayananPopulerSection(),
+                  const SizedBox(height: 24),
+                  _buildAktivitasSayaSection(),
+                ] else ...[
+                  _buildOrangButuhBantuanSection(taskProvider),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -161,6 +189,7 @@ class _HomeViewState extends State<HomeView> {
                   _modeTab = 1;
                 });
                 taskProvider.switchMode(1);
+                context.read<ServiceOrderProvider>().loadActiveOrders();
               },
               child: Container(
                 decoration: BoxDecoration(

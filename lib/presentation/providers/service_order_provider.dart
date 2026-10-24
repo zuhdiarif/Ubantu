@@ -105,6 +105,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     if (result.isSuccess) {
       _myOrders = [result.data!, ..._myOrders];
+      _activeOrders = [result.data!, ..._activeOrders];
       notifyListeners();
       return true;
     } else {
@@ -152,6 +153,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     if (result.isSuccess) {
       _myOrders = [result.data!, ..._myOrders];
+      _activeOrders = [result.data!, ..._activeOrders];
       notifyListeners();
       return true;
     } else {
@@ -203,6 +205,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     if (result.isSuccess) {
       _myOrders = [result.data!, ..._myOrders];
+      _activeOrders = [result.data!, ..._activeOrders];
       notifyListeners();
       return true;
     } else {
