@@ -28,7 +28,7 @@ class _InboxViewState extends State<InboxView> {
     _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
       if (_searchController.text.isEmpty) {
-        context.read<ChatProvider>().loadRooms();
+        context.read<ChatProvider>().loadRooms(isPolling: true);
       }
     });
   }

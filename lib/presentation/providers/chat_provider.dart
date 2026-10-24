@@ -40,21 +40,27 @@ class ChatProvider extends ChangeNotifier {
   bool get hasUnreadMessages => _rooms.any((room) => room.unreadCount > 0);
   int get totalUnreadCount => _rooms.fold(0, (sum, room) => sum + room.unreadCount);
 
-  Future<void> loadRooms() async {
-    _isLoadingRooms = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> loadRooms({bool isPolling = false}) async {
+    if (!isPolling) {
+      _isLoadingRooms = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     final result = await _getChatRoomsUseCase.execute();
     if (result.isSuccess && result.data != null) {
       _rooms = result.data!;
       _applySearch();
-    } else {
+    } else if (!isPolling) {
       _errorMessage = result.errorMessage;
     }
 
-    _isLoadingRooms = false;
-    notifyListeners();
+    if (!isPolling) {
+      _isLoadingRooms = false;
+      notifyListeners();
+    } else {
+      notifyListeners();
+    }
   }
 
   void searchRooms(String query) {

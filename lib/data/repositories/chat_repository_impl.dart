@@ -5,150 +5,9 @@ import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements IChatRepository {
-  final List<ChatRoomModel> _mockRooms = [
-    ChatRoomModel(
-      id: 'room-1',
-      orderId: 'order-1',
-      orderNumber: '#UB2026001',
-      serviceTitle: 'Antar Barang',
-      serviceStatus: 'SEDANG BERLANGSUNG',
-      otherUserName: 'Budi Santoso',
-      otherUserFaculty: 'Fakultas Teknik UB',
-      lastMessage: 'Baik mas, ditunggu yaa',
-      lastMessageTime: DateTime.now().subtract(const Duration(minutes: 15)),
-      unreadCount: 1,
-      isActive: true,
-      itemSummary: 'Paket Dokumen & Alat Tulis',
-      pickupLocation: 'Mall Olympic Garden',
-      destinationLocation: 'Kost Griya Mahasiswa',
-      totalPrice: 'Rp 65.000',
-    ),
-    ChatRoomModel(
-      id: 'room-2',
-      orderId: 'order-2',
-      orderNumber: '#UB2026002',
-      serviceTitle: 'Antar Barang',
-      serviceStatus: 'SELESAI',
-      otherUserName: 'Putra Budiman',
-      otherUserFaculty: 'Fakultas Ilmu Komputer UB',
-      lastMessage: 'Saya sudah sampai di lokasi kak',
-      lastMessageTime: DateTime.now().subtract(const Duration(days: 1)),
-      unreadCount: 0,
-      isActive: false,
-      closedAt: DateTime.now().subtract(const Duration(hours: 10)),
-      itemSummary: 'Paket Dokumen & Alat Tulis',
-      pickupLocation: 'Kost Griya Mahasiswa',
-      destinationLocation: 'Kost Griya Mahasiswa',
-      totalPrice: 'Rp 65.000',
-    ),
-    ChatRoomModel(
-      id: 'room-3',
-      orderId: 'order-3',
-      orderNumber: '#UB2026003',
-      serviceTitle: 'Pindah Kos',
-      serviceStatus: 'SELESAI',
-      otherUserName: 'Windah B.',
-      otherUserFaculty: 'Fakultas Pertanian UB',
-      lastMessage: 'Saya di depan lobby ya kak',
-      lastMessageTime: DateTime.now().subtract(const Duration(days: 3)),
-      unreadCount: 0,
-      isActive: false,
-      closedAt: DateTime.now().subtract(const Duration(days: 2)),
-      itemSummary: 'Bantu Angkut Lemari & Kasur',
-      pickupLocation: 'Jl. MT Haryono Gang 4',
-      destinationLocation: 'Jl. Sumbersari No. 12',
-      totalPrice: 'Barter Barang',
-    ),
-  ];
+  final List<ChatRoomModel> _mockRooms = [];
 
-  final Map<String, List<ChatMessageModel>> _mockMessages = {
-    'room-1': [
-      ChatMessageModel(
-        id: 'msg-1',
-        roomId: 'room-1',
-        senderId: 'driver-1',
-        senderName: 'Budi Santoso',
-        message: 'Halo kak, saya sudah sampai di depan griya ya.',
-        isMe: false,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2, minutes: 20)),
-      ),
-      ChatMessageModel(
-        id: 'msg-2',
-        roomId: 'room-1',
-        senderId: 'user-me',
-        senderName: 'Saya',
-        message: 'Baik mas, tunggu sebentar ya saya turun dulu',
-        isMe: true,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 40)),
-      ),
-      ChatMessageModel(
-        id: 'msg-3',
-        roomId: 'room-1',
-        senderId: 'driver-1',
-        senderName: 'Budi Santoso',
-        message: 'Siap kak, saya tunggu dekat pos satpam ya',
-        isMe: false,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-      ),
-    ],
-    'room-2': [
-      ChatMessageModel(
-        id: 'msg-201',
-        roomId: 'room-2',
-        senderId: 'driver-2',
-        senderName: 'Putra Budiman',
-        message: 'Halo kak, saya sudah sampai di depan griya ya.',
-        isMe: false,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-      ),
-      ChatMessageModel(
-        id: 'msg-202',
-        roomId: 'room-2',
-        senderId: 'user-me',
-        senderName: 'Saya',
-        message: 'Baik mas, tunggu sebentar ya saya turun dulu',
-        isMe: true,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 1)),
-      ),
-      ChatMessageModel(
-        id: 'msg-203',
-        roomId: 'room-2',
-        senderId: 'driver-2',
-        senderName: 'Putra Budiman',
-        message: 'Siap kak, saya tunggu dekat pos satpam ya',
-        isMe: false,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-    ],
-    'room-3': [
-      ChatMessageModel(
-        id: 'msg-301',
-        roomId: 'room-3',
-        senderId: 'driver-3',
-        senderName: 'Windah B.',
-        message: 'Halo kak, posisi saya sudah jalan ke lokasi kos ya.',
-        isMe: false,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-      ChatMessageModel(
-        id: 'msg-302',
-        roomId: 'room-3',
-        senderId: 'driver-3',
-        senderName: 'Windah B.',
-        message: 'Saya di depan lobby ya kak',
-        isMe: false,
-        isRead: true,
-        createdAt: DateTime.now().subtract(const Duration(days: 3, minutes: -10)),
-      ),
-    ],
-  };
+  final Map<String, List<ChatMessageModel>> _mockMessages = {};
 
   @override
   Future<AppResult<List<ChatRoomModel>>> getChatRooms() async {
@@ -157,21 +16,27 @@ class ChatRepositoryImpl implements IChatRepository {
         final client = SupabaseService.instance.client;
         final currentUserId = client.auth.currentUser?.id;
 
+        if (currentUserId == null) {
+          return AppResult.success([]);
+        }
+
         final List<ChatRoomModel> resultRooms = [];
 
         try {
           final ordersRes = await client
               .from('service_orders')
               .select()
+              .or('requester_id.eq.$currentUserId,helper_id.eq.$currentUserId')
               .order('created_at', ascending: false);
 
           for (final order in ordersRes) {
             final orderId = order['id'] as String;
-            final roomId = 'room_$orderId';
+            final roomId = orderId;
 
             String lastMsg = '';
             DateTime lastTime = DateTime.tryParse(order['created_at']?.toString() ?? '') ?? DateTime.now();
             int unread = 0;
+            bool hasMessages = false;
 
             try {
               final msgsRes = await client
@@ -181,6 +46,7 @@ class ChatRepositoryImpl implements IChatRepository {
                   .order('created_at', ascending: false);
 
               if (msgsRes.isNotEmpty) {
+                hasMessages = true;
                 lastMsg = msgsRes.first['message'] as String? ?? '';
                 lastTime = DateTime.tryParse(msgsRes.first['created_at']?.toString() ?? '') ?? lastTime;
                 unread = msgsRes
@@ -189,9 +55,13 @@ class ChatRepositoryImpl implements IChatRepository {
               }
             } catch (_) {}
 
-            final isRequester = currentUserId != null ? order['requester_id'] == currentUserId : true;
+            if (!hasMessages) {
+              continue;
+            }
+
+            final isRequester = order['requester_id'] == currentUserId;
             final otherName = isRequester
-                ? (order['helper_id'] != null ? 'Nasya (Mitra UB)' : 'Menunggu Petugas')
+                ? (order['helper_id'] != null ? 'Mitra Ubantu' : 'Petugas Ubantu')
                 : 'Mahasiswa UB (Pemesan)';
 
             final statusStr = order['status']?.toString() ?? '';
@@ -215,7 +85,7 @@ class ChatRepositoryImpl implements IChatRepository {
                 serviceStatus: isCompleted ? 'SELESAI' : 'SEDANG BERLANGSUNG',
                 otherUserName: otherName,
                 otherUserFaculty: 'Universitas Brawijaya',
-                lastMessage: lastMsg.isNotEmpty ? lastMsg : 'Mulai percakapan order',
+                lastMessage: lastMsg,
                 lastMessageTime: lastTime,
                 unreadCount: unread,
                 isActive: isActive,
@@ -232,31 +102,62 @@ class ChatRepositoryImpl implements IChatRepository {
           final res = await client
               .from('chat_rooms')
               .select()
+              .or('customer_id.eq.$currentUserId,helper_id.eq.$currentUserId')
               .order('updated_at', ascending: false);
 
           for (final json in res) {
-            final room = ChatRoomModel.fromJson(json);
-            if (!resultRooms.any((r) => r.id == room.id)) {
-              resultRooms.add(room);
+            final roomId = json['id'] as String;
+            if (!resultRooms.any((r) => r.id == roomId)) {
+              final msgsRes = await client
+                  .from('chat_messages')
+                  .select()
+                  .eq('room_id', roomId)
+                  .order('created_at', ascending: false);
+
+              if (msgsRes.isNotEmpty) {
+                final lastMsg = msgsRes.first['message'] as String? ?? '';
+                final lastTime = DateTime.tryParse(msgsRes.first['created_at']?.toString() ?? '') ?? DateTime.now();
+                final unread = msgsRes
+                    .where((m) => m['sender_id'] != currentUserId && m['is_read'] == false)
+                    .length;
+                final baseRoom = ChatRoomModel.fromJson(json);
+                resultRooms.add(baseRoom.copyWith(
+                  lastMessage: lastMsg,
+                  lastMessageTime: lastTime,
+                  unreadCount: unread,
+                ));
+              }
             }
           }
         } catch (_) {}
 
-        if (resultRooms.isNotEmpty) {
-          for (final r in resultRooms) {
-            final idx = _mockRooms.indexWhere((m) => m.id == r.id);
-            if (idx != -1) {
-              _mockRooms[idx] = r;
-            } else {
-              _mockRooms.insert(0, r);
-            }
+        for (final localRoom in _mockRooms) {
+          final hasMessages = (_mockMessages[localRoom.id] ?? []).isNotEmpty;
+          if (hasMessages && !resultRooms.any((r) => r.id == localRoom.id)) {
+            resultRooms.add(localRoom);
           }
-          return AppResult.success(resultRooms);
         }
+
+        resultRooms.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+
+        for (final r in resultRooms) {
+          final idx = _mockRooms.indexWhere((m) => m.id == r.id);
+          if (idx != -1) {
+            _mockRooms[idx] = r;
+          } else {
+            _mockRooms.insert(0, r);
+          }
+        }
+        return AppResult.success(resultRooms);
       }
-      return AppResult.success(List.from(_mockRooms));
+
+      final localRoomsWithMessages = _mockRooms.where((r) {
+        final msgs = _mockMessages[r.id] ?? [];
+        return msgs.isNotEmpty;
+      }).toList();
+      return AppResult.success(localRoomsWithMessages);
     } catch (_) {
-      return AppResult.success(List.from(_mockRooms));
+      return AppResult.success([]);
     }
   }
 

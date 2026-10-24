@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/debug_floating_menu.dart';
 import 'package:ubantu/core/errors/app_result.dart';
+import 'package:ubantu/data/repositories/chat_repository_impl.dart';
 import 'package:ubantu/domain/models/chat_message_model.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/repositories/chat_repository.dart';
@@ -249,6 +250,13 @@ void main() {
       expect(result.data?.message, 'Halo saya segera kesana');
       expect(result.data?.isMe, true);
     });
+
+    test('ChatRepositoryImpl returns clean empty rooms for new account', () async {
+      final repo = ChatRepositoryImpl();
+      final result = await repo.getChatRooms();
+      expect(result.isSuccess, true);
+      expect(result.data, isEmpty);
+    });
   });
 
   group('ChatProvider State Management Tests', () {
@@ -377,6 +385,16 @@ void main() {
 
       expect(find.text('Putra Budiman'), findsOneWidget);
       expect(find.text('Budi Santoso'), findsNothing);
+    });
+
+    testWidgets('InboxView renders empty state when user has no conversation history',
+        (tester) async {
+      repo.rooms.clear();
+      await tester.pumpWidget(createWidgetUnderTest(const InboxView()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Belum ada percakapan'), findsOneWidget);
     });
 
     testWidgets('ChatRoomView renders active order card, route, messages, and input',
