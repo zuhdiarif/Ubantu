@@ -157,17 +157,101 @@ class ChatRepositoryImpl implements IChatRepository {
         final client = SupabaseService.instance.client;
         final currentUserId = client.auth.currentUser?.id;
 
-        if (currentUserId != null) {
+        final List<ChatRoomModel> resultRooms = [];
+
+        try {
+          final ordersRes = await client
+              .from('service_orders')
+              .select()
+              .order('created_at', ascending: false);
+
+          for (final order in ordersRes) {
+            final orderId = order['id'] as String;
+            final roomId = 'room_$orderId';
+
+            String lastMsg = '';
+            DateTime lastTime = DateTime.tryParse(order['created_at']?.toString() ?? '') ?? DateTime.now();
+            int unread = 0;
+
+            try {
+              final msgsRes = await client
+                  .from('chat_messages')
+                  .select()
+                  .eq('room_id', roomId)
+                  .order('created_at', ascending: false);
+
+              if (msgsRes.isNotEmpty) {
+                lastMsg = msgsRes.first['message'] as String? ?? '';
+                lastTime = DateTime.tryParse(msgsRes.first['created_at']?.toString() ?? '') ?? lastTime;
+                unread = msgsRes
+                    .where((m) => m['sender_id'] != currentUserId && m['is_read'] == false)
+                    .length;
+              }
+            } catch (_) {}
+
+            final isRequester = currentUserId != null ? order['requester_id'] == currentUserId : true;
+            final otherName = isRequester
+                ? (order['helper_id'] != null ? 'Nasya (Mitra UB)' : 'Menunggu Petugas')
+                : 'Mahasiswa UB (Pemesan)';
+
+            final statusStr = order['status']?.toString() ?? '';
+            final isCompleted = statusStr == 'completed';
+            final isActive = !isCompleted && statusStr != 'cancelled';
+
+            final category = order['category']?.toString() ?? 'bantuan';
+            final categoryDisplay = switch (category) {
+              'pindahKos' => 'Pindah Kos',
+              'bersihKos' => 'Bersih Kos',
+              'antarJemput' => 'Antar Jemput',
+              _ => category,
+            };
+
+            resultRooms.add(
+              ChatRoomModel(
+                id: roomId,
+                orderId: orderId,
+                orderNumber: '#UB-${orderId.length > 4 ? orderId.substring(0, 4).toUpperCase() : '8890'}',
+                serviceTitle: 'Layanan $categoryDisplay',
+                serviceStatus: isCompleted ? 'SELESAI' : 'SEDANG BERLANGSUNG',
+                otherUserName: otherName,
+                otherUserFaculty: 'Universitas Brawijaya',
+                lastMessage: lastMsg.isNotEmpty ? lastMsg : 'Mulai percakapan order',
+                lastMessageTime: lastTime,
+                unreadCount: unread,
+                isActive: isActive,
+                itemSummary: order['item_description']?.toString() ?? 'Layanan Ubantu',
+                pickupLocation: order['location_origin']?.toString() ?? 'Universitas Brawijaya',
+                destinationLocation: order['location_destination']?.toString() ?? 'Kost Mahasiswa',
+                totalPrice: order['barter_description']?.toString() ?? 'Barter',
+              ),
+            );
+          }
+        } catch (_) {}
+
+        try {
           final res = await client
               .from('chat_rooms')
               .select()
-              .or('customer_id.eq.$currentUserId,helper_id.eq.$currentUserId')
               .order('updated_at', ascending: false);
 
-          if (res.isNotEmpty) {
-            final rooms = res.map((json) => ChatRoomModel.fromJson(json)).toList();
-            return AppResult.success(rooms);
+          for (final json in res) {
+            final room = ChatRoomModel.fromJson(json);
+            if (!resultRooms.any((r) => r.id == room.id)) {
+              resultRooms.add(room);
+            }
           }
+        } catch (_) {}
+
+        if (resultRooms.isNotEmpty) {
+          for (final r in resultRooms) {
+            final idx = _mockRooms.indexWhere((m) => m.id == r.id);
+            if (idx != -1) {
+              _mockRooms[idx] = r;
+            } else {
+              _mockRooms.insert(0, r);
+            }
+          }
+          return AppResult.success(resultRooms);
         }
       }
       return AppResult.success(List.from(_mockRooms));
@@ -206,6 +290,7 @@ class ChatRepositoryImpl implements IChatRepository {
           final messages = res
               .map((json) => ChatMessageModel.fromJson(json, currentUserId: currentUserId))
               .toList();
+          _mockMessages[roomId] = messages;
           return AppResult.success(messages);
         }
       }
@@ -290,6 +375,21 @@ class ChatRepositoryImpl implements IChatRepository {
   @override
   Future<AppResult<bool>> markMessagesAsRead(String roomId) async {
     try {
+      final currentUserId = SupabaseService.instance.isInitialized
+          ? SupabaseService.instance.client.auth.currentUser?.id
+          : null;
+
+      if (SupabaseService.instance.isInitialized && currentUserId != null) {
+        final client = SupabaseService.instance.client;
+        try {
+          await client
+              .from('chat_messages')
+              .update({'is_read': true})
+              .eq('room_id', roomId)
+              .neq('sender_id', currentUserId);
+        } catch (_) {}
+      }
+
       final roomIdx = _mockRooms.indexWhere((r) => r.id == roomId);
       if (roomIdx != -1) {
         _mockRooms[roomIdx] = _mockRooms[roomIdx].copyWith(unreadCount: 0);

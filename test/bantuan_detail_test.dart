@@ -10,10 +10,6 @@ import 'package:ubantu/presentation/views/bantuan_detail_view.dart';
 
 class MockOrderRepo implements IServiceOrderRepository {
   @override
-  Future<AppResult<List<ServiceOrderModel>>> getMyOrders({String? userId}) async =>
-      AppResult.success([]);
-
-  @override
   Future<AppResult<List<ServiceOrderModel>>> getActiveOrders() async =>
       AppResult.success([]);
 
@@ -36,25 +32,6 @@ class MockOrderRepo implements IServiceOrderRepository {
         requesterId: 'test',
         category: ServiceCategory.bersihKos,
         status: status,
-        locationOrigin: 'Origin',
-        locationDestination: 'Destination',
-        scheduledAt: DateTime.now(),
-        itemDescription: 'Desc',
-        barterType: BarterType.makanan,
-        barterDescription: 'Nasi',
-        createdAt: DateTime.now(),
-      ),
-    );
-  }
-
-  @override
-  Future<AppResult<ServiceOrderModel>> getOrderById(String orderId) async {
-    return AppResult.success(
-      ServiceOrderModel(
-        id: orderId,
-        requesterId: 'test',
-        category: ServiceCategory.bersihKos,
-        status: MoveServiceStatus.inProgress,
         locationOrigin: 'Origin',
         locationDestination: 'Destination',
         scheduledAt: DateTime.now(),

@@ -7,6 +7,7 @@ import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/providers/chat_provider.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
 
 class MitraActiveOrderView extends StatelessWidget {
@@ -287,37 +288,65 @@ class MitraActiveOrderView extends StatelessWidget {
               ],
             ),
           ),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryDark,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-            label: const Text('Chat'),
-            onPressed: () {
-              context.push(
-                AppRouter.chatRoom,
-                extra: ChatRoomModel(
-                  id: 'room_${order.id}',
-                  orderId: order.id,
-                  orderNumber: 'UB-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : '8890'}',
-                  serviceTitle: 'Layanan ${order.category.name}',
-                  serviceStatus: order.status.name,
-                  otherUserName: 'Mahasiswa UB (Pemesan)',
-                  otherUserFaculty: 'Universitas Brawijaya',
-                  lastMessage: 'Halo! Saya mitra yang akan membantu order Anda.',
-                  lastMessageTime: DateTime.now(),
-                  itemSummary: order.itemDescription,
-                  pickupLocation: order.locationOrigin,
-                  destinationLocation: order.locationDestination,
-                  totalPrice: order.barterDescription,
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryDark,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              );
-            },
+                icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+                label: const Text('Chat'),
+                onPressed: () {
+                  context.push(
+                    AppRouter.chatRoom,
+                    extra: ChatRoomModel(
+                      id: 'room_${order.id}',
+                      orderId: order.id,
+                      orderNumber: 'UB-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : '8890'}',
+                      serviceTitle: 'Layanan ${order.category.name}',
+                      serviceStatus: order.status.name,
+                      otherUserName: 'Mahasiswa UB (Pemesan)',
+                      otherUserFaculty: 'Universitas Brawijaya',
+                      lastMessage: 'Halo! Saya mitra yang akan membantu order Anda.',
+                      lastMessageTime: DateTime.now(),
+                      itemSummary: order.itemDescription,
+                      pickupLocation: order.locationOrigin,
+                      destinationLocation: order.locationDestination,
+                      totalPrice: order.barterDescription,
+                    ),
+                  );
+                },
+              ),
+              Builder(
+                builder: (ctx) {
+                  ChatProvider? cp;
+                  try {
+                    cp = ctx.watch<ChatProvider>();
+                  } catch (_) {}
+                  if (cp?.hasUnreadMessages == true) {
+                    return Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF44336),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ],
           ),
         ],
       ),
