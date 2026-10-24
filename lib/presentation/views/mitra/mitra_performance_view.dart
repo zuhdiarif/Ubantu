@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
+import 'package:ubantu/presentation/providers/rating_provider.dart';
 
 class MitraPerformanceView extends StatelessWidget {
   const MitraPerformanceView({super.key});
@@ -45,7 +46,7 @@ class MitraPerformanceView extends StatelessWidget {
               style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _buildReviewsList(),
+            _buildReviewsList(context),
           ],
         ),
       ),
@@ -258,8 +259,90 @@ class MitraPerformanceView extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewsList() {
-    final mockReviews = [
+  Widget _buildReviewsList(BuildContext context) {
+    RatingProvider? ratingProvider;
+    try {
+      ratingProvider = context.watch<RatingProvider>();
+    } catch (_) {}
+
+    final ratings = ratingProvider?.ratings ?? [];
+
+    if (ratings.isNotEmpty) {
+      return ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: ratings.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final review = ratings[index];
+          final stars = review.score.toInt().clamp(1, 5);
+
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          review.reviewerName.isNotEmpty
+                              ? review.reviewerName
+                              : 'Mahasiswa UB',
+                          style: AppTypography.body2.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Mahasiswa Universitas Brawijaya',
+                          style: AppTypography.caption.copyWith(
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: List.generate(
+                        stars,
+                        (i) => const Icon(
+                          Icons.star_rounded,
+                          color: Colors.amber,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  review.reviewText,
+                  style: AppTypography.body2.copyWith(
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
+                  style: AppTypography.overline.copyWith(
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    final initialReviews = [
       {
         'name': 'Bima Aditya',
         'faculty': 'Fakultas Ekonomi dan Bisnis UB',
@@ -297,10 +380,10 @@ class MitraPerformanceView extends StatelessWidget {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: mockReviews.length,
+      itemCount: initialReviews.length,
       separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final review = mockReviews[index];
+        final review = initialReviews[index];
         final stars = review['rating'] as int;
 
         return Container(
