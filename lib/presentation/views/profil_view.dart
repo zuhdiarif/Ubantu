@@ -130,22 +130,25 @@ class ProfilView extends StatelessWidget {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
+      child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8EBE4)),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: textColor),
-        title: Text(
-          title,
-          style: AppTypography.body1.copyWith(
-            fontWeight: FontWeight.w600,
-            color: textColor,
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE8EBE4)),
         ),
-        trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-        onTap: onTap,
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          leading: Icon(icon, color: textColor),
+          title: Text(
+            title,
+            style: AppTypography.body1.copyWith(
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
+          ),
+          trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+          onTap: onTap,
+        ),
       ),
     );
   }

@@ -85,6 +85,71 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<MitraProfileModel>> getMitraProfile() async {
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        final currentUserId =
+            SupabaseService.instance.client.auth.currentUser?.id;
+        if (currentUserId != null) {
+          final profileData = await SupabaseService.instance.client
+              .from('profiles')
+              .select()
+              .eq('id', currentUserId)
+              .maybeSingle();
+
+          final ordersRes = await SupabaseService.instance.client
+              .from('service_orders')
+              .select('id')
+              .eq('helper_id', currentUserId)
+              .eq('status', MoveServiceStatus.completed.name);
+          final completedCount = (ordersRes as List).length;
+
+          final ratingsRes = await SupabaseService.instance.client
+              .from('ratings')
+              .select('score')
+              .eq('target_user_id', currentUserId);
+          final ratingList = (ratingsRes as List);
+          final totalRev = ratingList.length;
+          double avgRating = 5.0;
+          if (totalRev > 0) {
+            final sum = ratingList.fold<double>(
+              0.0,
+              (acc, curr) =>
+                  acc + ((curr['score'] as num?)?.toDouble() ?? 5.0),
+            );
+            avgRating = double.parse((sum / totalRev).toStringAsFixed(1));
+          }
+
+          final authUser = SupabaseService.instance.client.auth.currentUser;
+          final rawName = profileData?['full_name'] as String? ??
+              profileData?['username'] as String? ??
+              authUser?.userMetadata?['full_name'] as String? ??
+              authUser?.email?.split('@').first ??
+              'Mitra UB';
+          final realName = rawName.contains('(Mitra UB)')
+              ? rawName
+              : '$rawName (Mitra UB)';
+          final realFaculty = profileData?['faculty'] as String? ??
+              'Universitas Brawijaya';
+          final realPhone = profileData?['phone_number'] as String? ??
+              authUser?.phone ??
+              '';
+          final realPoints = (profileData?['barter_points'] as num?)?.toInt() ??
+              (completedCount * 10);
+
+          _profile = _profile.copyWith(
+            id: currentUserId,
+            userId: currentUserId,
+            name: realName,
+            faculty: realFaculty,
+            phone: realPhone,
+            totalOrdersCompleted: completedCount,
+            totalReviews: totalRev,
+            rating: totalRev > 0 ? avgRating : 5.0,
+            totalBarterPoints: realPoints,
+          );
+        }
+      } catch (_) {}
+    }
     return AppResult.success(_profile);
   }
 
@@ -107,30 +172,30 @@ class MitraRepositoryImpl implements IMitraRepository {
     if (SupabaseService.instance.isInitialized) {
       try {
         final currentUserId =
-            SupabaseService.instance.client.auth.currentUser?.id ?? _profile.id;
+            SupabaseService.instance.client.auth.currentUser?.id;
         final response = await SupabaseService.instance.client
             .from('service_orders')
             .select()
-            .eq('helper_id', currentUserId)
-            .inFilter('status', [
-              MoveServiceStatus.accepted.name,
-              MoveServiceStatus.inProgress.name,
-            ])
+            .eq('status', MoveServiceStatus.waiting.name)
             .order('created_at', ascending: false);
 
         final List<ServiceOrderModel> remoteOrders = (response as List)
             .map((e) => ServiceOrderModel.fromJson(e as Map<String, dynamic>))
+            .where((order) {
+              if (currentUserId != null && order.requesterId == currentUserId) {
+                return false;
+              }
+              if (_profile.selectedCategories.isNotEmpty &&
+                  !_profile.selectedCategories.contains(order.category)) {
+                return false;
+              }
+              return true;
+            })
             .toList();
 
         _incomingOrders.clear();
         _incomingOrders.addAll(remoteOrders);
-        if (_activeOrder != null &&
-            (_activeOrder!.status == MoveServiceStatus.accepted ||
-                _activeOrder!.status == MoveServiceStatus.inProgress)) {
-          if (!_incomingOrders.any((o) => o.id == _activeOrder!.id)) {
-            _incomingOrders.insert(0, _activeOrder!);
-          }
-        }
+        return AppResult.success(List.unmodifiable(_incomingOrders));
       } catch (_) {}
     }
     return AppResult.success(List.unmodifiable(_incomingOrders));
@@ -138,16 +203,94 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<ServiceOrderModel?>> getActiveOrder() async {
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        final currentUserId =
+            SupabaseService.instance.client.auth.currentUser?.id;
+        if (currentUserId != null) {
+          final res = await SupabaseService.instance.client
+              .from('service_orders')
+              .select()
+              .eq('helper_id', currentUserId)
+              .inFilter('status', [
+                MoveServiceStatus.accepted.name,
+                MoveServiceStatus.inProgress.name,
+              ])
+              .order('created_at', ascending: false)
+              .limit(1)
+              .maybeSingle();
+
+          if (res != null) {
+            _activeOrder = ServiceOrderModel.fromJson(res);
+          } else {
+            _activeOrder = null;
+          }
+        }
+      } catch (_) {}
+    }
     return AppResult.success(_activeOrder);
   }
 
   @override
   Future<AppResult<List<ServiceOrderModel>>> getCompletedOrders() async {
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        final currentUserId =
+            SupabaseService.instance.client.auth.currentUser?.id;
+        if (currentUserId != null) {
+          final res = await SupabaseService.instance.client
+              .from('service_orders')
+              .select()
+              .eq('helper_id', currentUserId)
+              .eq('status', MoveServiceStatus.completed.name)
+              .order('created_at', ascending: false);
+
+          final List<ServiceOrderModel> completed = (res as List)
+              .map((e) => ServiceOrderModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+          _completedOrders.clear();
+          _completedOrders.addAll(completed);
+        }
+      } catch (_) {}
+    }
     return AppResult.success(List.unmodifiable(_completedOrders));
   }
 
   @override
   Future<AppResult<List<MitraEarningItemModel>>> getEarningsHistory() async {
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        final currentUserId =
+            SupabaseService.instance.client.auth.currentUser?.id;
+        if (currentUserId != null) {
+          final res = await SupabaseService.instance.client
+              .from('service_orders')
+              .select()
+              .eq('helper_id', currentUserId)
+              .eq('status', MoveServiceStatus.completed.name)
+              .order('created_at', ascending: false);
+
+          final items = (res as List).map((row) {
+            final order =
+                ServiceOrderModel.fromJson(row as Map<String, dynamic>);
+            return MitraEarningItemModel(
+              id: 'earn-${order.id}',
+              orderId: order.id,
+              orderNumber:
+                  'UB-ORD-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : order.id}',
+              serviceTitle: 'Layanan ${_categoryTitle(order.category)}',
+              date: order.createdAt,
+              barterDescription: order.barterDescription,
+              pointsEarned: 10,
+              customerName: 'Mahasiswa UB',
+            );
+          }).toList();
+          _earningsHistory.clear();
+          _earningsHistory.addAll(items);
+          return AppResult.success(List.unmodifiable(_earningsHistory));
+        }
+      } catch (_) {}
+    }
     return AppResult.success(List.unmodifiable(_earningsHistory));
   }
 
@@ -179,15 +322,13 @@ class MitraRepositoryImpl implements IMitraRepository {
     if (selected != null) {
       final updated = selected.copyWith(
         status: MoveServiceStatus.accepted,
-        helperId: _profile.id,
+        helperId: SupabaseService.instance.isInitialized
+            ? SupabaseService.instance.client.auth.currentUser?.id ??
+                _profile.id
+            : _profile.id,
       );
       _activeOrder = updated;
-      final existingIdx = _incomingOrders.indexWhere((o) => o.id == updated.id);
-      if (existingIdx != -1) {
-        _incomingOrders[existingIdx] = updated;
-      } else {
-        _incomingOrders.insert(0, updated);
-      }
+      _incomingOrders.removeWhere((o) => o.id == updated.id);
       return AppResult.success(true);
     }
 
@@ -206,7 +347,7 @@ class MitraRepositoryImpl implements IMitraRepository {
       helperId: _profile.id,
     );
     _activeOrder = dummy;
-    _incomingOrders.insert(0, dummy);
+    _incomingOrders.removeWhere((o) => o.id == orderId);
     return AppResult.success(true);
   }
 
@@ -231,7 +372,7 @@ class MitraRepositoryImpl implements IMitraRepository {
           orderId: finished.id,
           orderNumber:
               'UB-ORD-${finished.id.length > 4 ? finished.id.substring(0, 4).toUpperCase() : '9901'}',
-          serviceTitle: 'Layanan ${finished.category.name}',
+          serviceTitle: 'Layanan ${_categoryTitle(finished.category)}',
           date: DateTime.now(),
           barterDescription: finished.barterDescription,
           pointsEarned: 10,
@@ -266,5 +407,16 @@ class MitraRepositoryImpl implements IMitraRepository {
       return AppResult.success(true);
     }
     return AppResult.failure('Order aktif tidak cocok');
+  }
+
+  String _categoryTitle(ServiceCategory cat) {
+    switch (cat) {
+      case ServiceCategory.pindahKos:
+        return 'Pindah Kos';
+      case ServiceCategory.bersihKos:
+        return 'Bersih Kos';
+      case ServiceCategory.antarJemput:
+        return 'Antar Jemput';
+    }
   }
 }
