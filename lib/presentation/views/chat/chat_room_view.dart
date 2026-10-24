@@ -22,15 +22,18 @@ class ChatRoomView extends StatefulWidget {
   State<ChatRoomView> createState() => _ChatRoomViewState();
 }
 
-class _ChatRoomViewState extends State<ChatRoomView> {
+class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   bool _isOrderCardExpanded = true;
   Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _focusNode.addListener(_handleFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final chatProvider = context.read<ChatProvider>();
       if (widget.initialRoom != null) {
@@ -51,8 +54,35 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     });
   }
 
+  void _handleFocusChange() {
+    if (_focusNode.hasFocus) {
+      if (_isOrderCardExpanded) {
+        setState(() {
+          _isOrderCardExpanded = false;
+        });
+      }
+      _scrollToBottom();
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final bottomInset = View.of(context).viewInsets.bottom;
+    if (bottomInset > 0) {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted) {
+          _scrollToBottom();
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _focusNode.removeListener(_handleFocusChange);
+    _focusNode.dispose();
     _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
@@ -289,46 +319,30 @@ class _ChatRoomViewState extends State<ChatRoomView> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFFAFA),
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         top: false,
         child: Column(
           children: [
             _buildTopBar(context, room),
-            Expanded(
-              child: Stack(
-                children: [
-                  Column(
-                    children: [
-                      SizedBox(
-                        height: room.isActive
-                            ? (_isOrderCardExpanded ? 240 : 48)
-                            : 0,
-                      ),
-                      if (!room.isActive) ...[
-                        _buildCompletedNoticeBanner(),
-                        const SizedBox(height: 8),
-                        _buildDateDivider('Hari ini'),
-                      ],
-                      Expanded(
-                        child: _buildMessagesList(chatProvider, room),
-                      ),
-                      if (!room.isActive) ...[
-                        _buildOrderSummaryCard(context, room),
-                        _buildClosedNotice(),
-                      ],
-                      _buildBottomInput(context, room),
-                    ],
-                  ),
-                  if (room.isActive)
-                    Positioned(
-                      top: 12,
-                      left: 16,
-                      right: 16,
-                      child: _buildActiveOrderCard(context, room),
-                    ),
-                ],
+            if (room.isActive)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: _buildActiveOrderCard(context, room),
               ),
+            if (!room.isActive) ...[
+              _buildCompletedNoticeBanner(),
+              const SizedBox(height: 8),
+              _buildDateDivider('Hari ini'),
+            ],
+            Expanded(
+              child: _buildMessagesList(chatProvider, room),
             ),
+            if (!room.isActive) ...[
+              _buildOrderSummaryCard(context, room),
+              _buildClosedNotice(),
+            ],
+            _buildBottomInput(context, room),
           ],
         ),
       ),
@@ -1045,6 +1059,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               ),
               child: TextField(
                 controller: _textController,
+                focusNode: _focusNode,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _handleSendMessage(room),
                 style: const TextStyle(
