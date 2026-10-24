@@ -1,4 +1,4 @@
-package com.example.ubantu
+package id.raion.ubantu
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -65,14 +65,16 @@ class UbantuApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         routerConfig: AppRouter.router,
         builder: (context, child) {
+          if (!kDebugMode) {
+            return child ?? const SizedBox.shrink();
+          }
           return Stack(
             fit: StackFit.expand,
             children: [
               ?child,
-              if (kDebugMode)
-                const Positioned.fill(
-                  child: DebugFloatingMenu(),
-                ),
+              const Positioned.fill(
+                child: DebugFloatingMenu(),
+              ),
             ],
           );
         },
