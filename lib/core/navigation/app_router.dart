@@ -27,6 +27,8 @@ import 'package:ubantu/presentation/views/sos_active_tracking_view.dart';
 import 'package:ubantu/presentation/views/sos_finish_dialog_view.dart';
 import 'package:ubantu/presentation/views/sos_form_view.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/views/bantuan_detail_view.dart';
 import 'package:ubantu/presentation/views/chat/chat_room_view.dart';
 import 'package:ubantu/presentation/views/chat/inbox_view.dart';
 import 'package:ubantu/presentation/views/mitra/mitra_active_order_view.dart';
@@ -88,6 +90,7 @@ class AppRouter {
   static const String mitraEarnings = '/mitra/earnings';
   static const String mitraPerformance = '/mitra/performance';
   static const String mitraRegister = '/mitra/register';
+  static const String bantuanDetail = '/bantuan-detail';
 
   static final router = GoRouter(
     initialLocation: onboarding,
@@ -245,6 +248,15 @@ class AppRouter {
       GoRoute(
         path: mitraRegister,
         builder: (context, state) => const MitraCategoryRegistrationView(),
+      ),
+      GoRoute(
+        path: bantuanDetail,
+        builder: (context, state) {
+          final order = state.extra is ServiceOrderModel
+              ? state.extra as ServiceOrderModel
+              : null;
+          return BantuanDetailView(order: order);
+        },
       ),
     ],
   );

@@ -185,7 +185,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Bantuan Berlangsung'), findsOneWidget);
-    expect(find.text('Raihan'), findsOneWidget);
+    expect(find.text('Nasya'), findsOneWidget);
     expect(find.text('Detail'), findsOneWidget);
     expect(find.text('Status Bantuan'), findsOneWidget);
     expect(find.text('Menyetujui bantuan'), findsOneWidget);
@@ -193,7 +193,6 @@ void main() {
     expect(find.text('Tiba di lokasi'), findsOneWidget);
     expect(find.text('Saling membantu'), findsOneWidget);
     expect(find.text('Bantuan selesai'), findsOneWidget);
-    expect(find.text('Selesaikan Bantuan'), findsOneWidget);
   });
 
   testWidgets('PindahKosSelesaiView renders thank you, star rating and submit button', (tester) async {

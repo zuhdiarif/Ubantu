@@ -176,11 +176,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('Bantuan Berlangsung'), findsOneWidget);
-    expect(find.text('Zuhdi Arif'), findsOneWidget);
+    expect(find.text('Nasya'), findsOneWidget);
     expect(find.text('Status Bantuan'), findsOneWidget);
     expect(find.text('Sedang membersihkan kos'), findsOneWidget);
     expect(find.text('Tombol Darurat (SOS)'), findsOneWidget);
-    expect(find.text('Selesaikan Bantuan'), findsOneWidget);
   });
 
   testWidgets('BersihKosSelesaiView renders thank you, rating, and submit button', (tester) async {

@@ -37,6 +37,8 @@ class ChatProvider extends ChangeNotifier {
   bool get isSendingMessage => _isSendingMessage;
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
+  bool get hasUnreadMessages => _rooms.any((room) => room.unreadCount > 0);
+  int get totalUnreadCount => _rooms.fold(0, (sum, room) => sum + room.unreadCount);
 
   Future<void> loadRooms() async {
     _isLoadingRooms = true;
