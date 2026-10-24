@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/modular_address_card.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
@@ -13,8 +14,8 @@ class AntarJemputFormView extends StatefulWidget {
 }
 
 class _AntarJemputFormViewState extends State<AntarJemputFormView> {
-  final TextEditingController _originController = TextEditingController(text: 'Gerbang Utama UB, Jl. Veteran');
-  final TextEditingController _destinationController = TextEditingController(text: 'Stasiun Malang Kota Baru');
+  final TextEditingController _originController = TextEditingController();
+  final TextEditingController _destinationController = TextEditingController();
   final TextEditingController _detailController = TextEditingController();
   final TextEditingController _barterDescController = TextEditingController();
 
@@ -279,108 +280,23 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
   }
 
   Widget _buildLocationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Lokasi',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 10),
-        _buildLocationInputCard(
-          tag: 'Dari',
-          subtitle: '(Titik Jemput)',
-          controller: _originController,
-          icon: Icons.my_location_rounded,
-          iconColor: const Color(0xFF263225),
-        ),
-        const SizedBox(height: 10),
-        _buildLocationInputCard(
-          tag: 'Ke',
-          subtitle: '(Titik Tujuan / Antar)',
-          controller: _destinationController,
-          icon: Icons.location_on_rounded,
-          iconColor: const Color(0xFFF86F1A),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLocationInputCard({
-    required String tag,
-    required String subtitle,
-    required TextEditingController controller,
-    required IconData icon,
-    required Color iconColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: ShapeDecoration(
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(width: 0.8, color: Color(0xFFD3D8D0)),
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: iconColor.withValues(alpha: 0.12),
-            child: Icon(icon, color: iconColor, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      tag,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 13,
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Color(0xFF70776D),
-                        fontSize: 11,
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-                TextField(
-                  controller: controller,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.only(top: 4, bottom: 2),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return ModularAddressCard(
+      mode: AddressCardMode.dual,
+      originController: _originController,
+      destinationController: _destinationController,
+      title: 'Lokasi',
+      originLabel: 'Dari',
+      originSubtitle: '(Titik Jemput)',
+      destinationLabel: 'Ke',
+      destinationSubtitle: '(Titik Tujuan / Antar)',
+      originHint: 'Masukkan alamat',
+      destinationHint: 'Masukkan alamat',
+      originValidator: (val) => val == null || val.trim().isEmpty
+          ? 'Lokasi jemput wajib diisi'
+          : null,
+      destinationValidator: (val) => val == null || val.trim().isEmpty
+          ? 'Lokasi tujuan wajib diisi'
+          : null,
     );
   }
 

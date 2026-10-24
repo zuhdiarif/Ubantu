@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/modular_address_card.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
@@ -307,216 +308,22 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
   }
 
   Widget _buildLocationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Lokasi',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Stack(
-          children: [
-            Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: ShapeDecoration(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      side: const BorderSide(
-                        width: 0.50,
-                        color: Color(0xFF263225),
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/pindah_kos_flow/carbon_location.svg',
-                        width: 24,
-                        height: 24,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.location_on, color: Color(0xFF263225)),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Text(
-                                  'Dari ',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  '(Kos Semula)',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 12,
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            TextFormField(
-                              controller: _originController,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontFamily: 'Plus Jakarta Sans',
-                                color: Colors.black,
-                              ),
-                              validator: (val) => val == null || val.trim().isEmpty
-                                  ? 'Lokasi asal wajib diisi'
-                                  : null,
-                              decoration: const InputDecoration(
-                                hintText: 'Jl. Kaliurang Km 5, Malang',
-                                hintStyle: TextStyle(
-                                  color: Color(0xFFAEABAA),
-                                  fontSize: 12,
-                                  fontFamily: 'Plus Jakarta Sans',
-                                ),
-                                isDense: true,
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.only(top: 4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: ShapeDecoration(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      side: const BorderSide(
-                        width: 0.50,
-                        color: Color(0xFF263225),
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/pindah_kos_flow/pin-lokasi.svg',
-                        width: 24,
-                        height: 24,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.flag, color: Color(0xFF263225)),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Text(
-                                  'Ke ',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  '(Kos Tujuan)',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 12,
-                                    fontFamily: 'Plus Jakarta Sans',
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            TextFormField(
-                              controller: _destinationController,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontFamily: 'Plus Jakarta Sans',
-                                color: Colors.black,
-                              ),
-                              validator: (val) => val == null || val.trim().isEmpty
-                                  ? 'Lokasi tujuan wajib diisi'
-                                  : null,
-                              decoration: const InputDecoration(
-                                hintText: 'Jl. Gajayana No.12, Malang',
-                                hintStyle: TextStyle(
-                                  color: Color(0xFFAEABAA),
-                                  fontSize: 12,
-                                  fontFamily: 'Plus Jakarta Sans',
-                                ),
-                                isDense: true,
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.only(top: 4),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              right: 18,
-              top: 50,
-              child: GestureDetector(
-                onTap: _swapLocations,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF263225),
-                      width: 0.8,
-                    ),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1F000000),
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: SvgPicture.asset(
-                      'assets/pindah_kos_flow/arrow-up-and-down.svg',
-                      width: 18,
-                      height: 18,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const Icon(Icons.swap_vert, size: 20),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+    return ModularAddressCard(
+      mode: AddressCardMode.dual,
+      originController: _originController,
+      destinationController: _destinationController,
+      title: 'Lokasi',
+      originLabel: 'Dari',
+      originSubtitle: '(Kos Semula)',
+      destinationLabel: 'Ke',
+      destinationSubtitle: '(Kos Tujuan)',
+      originValidator: (val) => val == null || val.trim().isEmpty
+          ? 'Lokasi asal wajib diisi'
+          : null,
+      destinationValidator: (val) => val == null || val.trim().isEmpty
+          ? 'Lokasi tujuan wajib diisi'
+          : null,
+      onSwap: _swapLocations,
     );
   }
 
