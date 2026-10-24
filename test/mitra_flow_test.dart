@@ -254,7 +254,7 @@ void main() {
       expect(find.text('Rating'), findsOneWidget);
       expect(find.text('Poin Barter'), findsOneWidget);
       expect(find.text('Order Masuk'), findsOneWidget);
-      expect(find.text('Terima Bantuan'), findsWidgets);
+      expect(find.text('Kelola / Lanjutkan Bantuan'), findsWidgets);
       expect(find.text('Menu Fitur Mitra'), findsOneWidget);
       expect(find.text('Dompet & Rekap Barter'), findsOneWidget);
     });

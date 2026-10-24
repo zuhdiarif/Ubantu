@@ -67,6 +67,11 @@ class MitraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setActiveOrder(ServiceOrderModel? order) {
+    _activeOrder = order;
+    notifyListeners();
+  }
+
   Future<void> toggleOnlineStatus(bool value) async {
     final result = await _repository.toggleOnlineStatus(value);
     if (result.isSuccess) {

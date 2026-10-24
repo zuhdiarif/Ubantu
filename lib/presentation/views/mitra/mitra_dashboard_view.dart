@@ -500,9 +500,10 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
             ),
             if (orders.isNotEmpty)
               Text(
-                'Tersedia di Sekitar UB',
+                'Sedang Diambil (Belum Tuntas)',
                 style: AppTypography.caption.copyWith(
                   color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
           ],
@@ -510,10 +511,10 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
         const SizedBox(height: 12),
         if (orders.isEmpty)
           const CustomEmptyState(
-            icon: Icons.inbox_outlined,
-            title: 'Belum Ada Order Masuk',
+            icon: Icons.assignment_outlined,
+            title: 'Belum Ada Order yang Diambil',
             message:
-                'Pastikan status Anda tetap Online agar mahasiswa UB dapat menghubungi bantuan Anda.',
+                'Pesanan baru muncul di tab "Membantu" pada Beranda utama. Ambil pesanan di sana untuk mulai membantu.',
           )
         else
           ListView.separated(
@@ -663,54 +664,26 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
             ),
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey.shade700,
-                    side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () => provider.declineOrder(order.id),
-                  child: const Text('Tolak'),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  icon: const Icon(Icons.check_circle_outline, size: 18),
-                  label: const Text(
-                    'Terima Bantuan',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: () async {
-                    final success = await provider.acceptOrder(order.id);
-                    if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Order diterima! Silakan mulai menuju lokasi pemesan.',
-                          ),
-                          backgroundColor: AppColors.primaryGreen,
-                        ),
-                      );
-                      context.push('/mitra/active-order');
-                    }
-                  },
-                ),
+              icon: const Icon(Icons.navigation_rounded, size: 18),
+              label: const Text(
+                'Kelola / Lanjutkan Bantuan',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            ],
+              onPressed: () {
+                provider.setActiveOrder(order);
+                context.push('/mitra/active-order');
+              },
+            ),
           ),
         ],
       ),

@@ -34,7 +34,7 @@ class MitraRepositoryImpl implements IMitraRepository {
       id: 'ord-mitra-01',
       requesterId: 'req_mahasiswa_1',
       category: ServiceCategory.pindahKos,
-      status: MoveServiceStatus.waiting,
+      status: MoveServiceStatus.accepted,
       locationOrigin: 'Kos Griya UB, Jl. Watugong No. 12',
       locationDestination: 'Kos Permata, Jl. Sigura-gura IV',
       scheduledAt: DateTime.now().add(const Duration(hours: 2)),
@@ -42,34 +42,7 @@ class MitraRepositoryImpl implements IMitraRepository {
       barterType: BarterType.makanan,
       barterDescription: 'Nasi Padang Ampera + Es Teh Manis',
       createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-    ),
-    ServiceOrderModel(
-      id: 'ord-mitra-02',
-      requesterId: 'req_mahasiswa_2',
-      category: ServiceCategory.bersihKos,
-      status: MoveServiceStatus.waiting,
-      locationOrigin: 'Kos Melati Indah, Jl. Kerto Raharjo No. 8',
-      locationDestination: 'Kos Melati Indah, Jl. Kerto Raharjo No. 8',
-      scheduledAt: DateTime.now().add(const Duration(hours: 4)),
-      itemDescription:
-          'Sapu & pel lantai kamar kos (3x4m) dan buang kardus sampah pindahan',
-      barterType: BarterType.makanan,
-      barterDescription: 'Ayam Geprek Kak Rose Level 2 + Jus Alpukat',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 32)),
-    ),
-    ServiceOrderModel(
-      id: 'ord-mitra-03',
-      requesterId: 'req_mahasiswa_3',
-      category: ServiceCategory.antarJemput,
-      status: MoveServiceStatus.waiting,
-      locationOrigin: 'Gerbang Veteran UB',
-      locationDestination: 'Stasiun Malang Kota Baru',
-      scheduledAt: DateTime.now().add(const Duration(hours: 5)),
-      itemDescription:
-          'Tebengan motor bawa 1 ransel sedang ke stasiun sore hari',
-      barterType: BarterType.barang,
-      barterDescription: 'Voucher Kopi Kenangan 25rb / Kuota Indosat',
-      createdAt: DateTime.now().subtract(const Duration(minutes: 48)),
+      helperId: 'mitra_ahmad_fauzi',
     ),
   ];
 
@@ -133,21 +106,29 @@ class MitraRepositoryImpl implements IMitraRepository {
   Future<AppResult<List<ServiceOrderModel>>> getIncomingOrders() async {
     if (SupabaseService.instance.isInitialized) {
       try {
+        final currentUserId =
+            SupabaseService.instance.client.auth.currentUser?.id ?? _profile.id;
         final response = await SupabaseService.instance.client
             .from('service_orders')
             .select()
-            .eq('status', MoveServiceStatus.waiting.name)
+            .eq('helper_id', currentUserId)
+            .inFilter('status', [
+              MoveServiceStatus.accepted.name,
+              MoveServiceStatus.inProgress.name,
+            ])
             .order('created_at', ascending: false);
 
         final List<ServiceOrderModel> remoteOrders = (response as List)
             .map((e) => ServiceOrderModel.fromJson(e as Map<String, dynamic>))
             .toList();
 
-        if (remoteOrders.isNotEmpty) {
-          for (final ro in remoteOrders) {
-            if (!_incomingOrders.any((o) => o.id == ro.id)) {
-              _incomingOrders.insert(0, ro);
-            }
+        _incomingOrders.clear();
+        _incomingOrders.addAll(remoteOrders);
+        if (_activeOrder != null &&
+            (_activeOrder!.status == MoveServiceStatus.accepted ||
+                _activeOrder!.status == MoveServiceStatus.inProgress)) {
+          if (!_incomingOrders.any((o) => o.id == _activeOrder!.id)) {
+            _incomingOrders.insert(0, _activeOrder!);
           }
         }
       } catch (_) {}
@@ -172,30 +153,60 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<bool>> acceptOrder(String orderId) async {
+    ServiceOrderModel? selected;
     final index = _incomingOrders.indexWhere((o) => o.id == orderId);
-    if (index == -1) {
-      return AppResult.failure('Order tidak ditemukan');
+    if (index != -1) {
+      selected = _incomingOrders[index];
     }
-
-    final selected = _incomingOrders.removeAt(index);
-    final updated = selected.copyWith(
-      status: MoveServiceStatus.accepted,
-      helperId: _profile.id,
-    );
-    _activeOrder = updated;
 
     if (SupabaseService.instance.isInitialized) {
       try {
-        await SupabaseService.instance.client
+        final currentUserId =
+            SupabaseService.instance.client.auth.currentUser?.id ?? _profile.id;
+        final res = await SupabaseService.instance.client
             .from('service_orders')
             .update({
-              'helper_id': _profile.id,
+              'helper_id': currentUserId,
               'status': MoveServiceStatus.accepted.name,
             })
-            .eq('id', orderId);
+            .eq('id', orderId)
+            .select()
+            .single();
+        selected = ServiceOrderModel.fromJson(res);
       } catch (_) {}
     }
 
+    if (selected != null) {
+      final updated = selected.copyWith(
+        status: MoveServiceStatus.accepted,
+        helperId: _profile.id,
+      );
+      _activeOrder = updated;
+      final existingIdx = _incomingOrders.indexWhere((o) => o.id == updated.id);
+      if (existingIdx != -1) {
+        _incomingOrders[existingIdx] = updated;
+      } else {
+        _incomingOrders.insert(0, updated);
+      }
+      return AppResult.success(true);
+    }
+
+    final dummy = ServiceOrderModel(
+      id: orderId,
+      requesterId: 'req_mahasiswa_accepted',
+      category: ServiceCategory.bersihKos,
+      status: MoveServiceStatus.accepted,
+      locationOrigin: 'Kos Mahasiswa UB',
+      locationDestination: 'Kos Mahasiswa UB',
+      scheduledAt: DateTime.now().add(const Duration(hours: 1)),
+      itemDescription: 'Bantuan diterima',
+      barterType: BarterType.makanan,
+      barterDescription: 'Sesuai kesepakatan',
+      createdAt: DateTime.now(),
+      helperId: _profile.id,
+    );
+    _activeOrder = dummy;
+    _incomingOrders.insert(0, dummy);
     return AppResult.success(true);
   }
 
@@ -234,8 +245,13 @@ class MitraRepositoryImpl implements IMitraRepository {
         );
 
         _activeOrder = null;
+        _incomingOrders.removeWhere((o) => o.id == orderId);
       } else {
         _activeOrder = _activeOrder!.copyWith(status: status);
+        final idx = _incomingOrders.indexWhere((o) => o.id == orderId);
+        if (idx != -1) {
+          _incomingOrders[idx] = _activeOrder!;
+        }
       }
 
       if (SupabaseService.instance.isInitialized) {
