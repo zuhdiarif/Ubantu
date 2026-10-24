@@ -354,7 +354,7 @@ class BantuanDetailView extends StatelessWidget {
                             context.push(
                               AppRouter.chatRoom,
                               extra: ChatRoomModel(
-                                id: 'room_${currentOrder.id}',
+                                id: currentOrder.id,
                                 orderId: currentOrder.id,
                                 orderNumber:
                                     'UB-${currentOrder.id.length > 4 ? currentOrder.id.substring(0, 4).toUpperCase() : '8890'}',
@@ -362,7 +362,7 @@ class BantuanDetailView extends StatelessWidget {
                                 serviceStatus: currentOrder.status.name,
                                 otherUserName: helperName,
                                 otherUserFaculty: 'Universitas Brawijaya',
-                                lastMessage: 'Halo! Saya petugas yang membantu Anda.',
+                                lastMessage: '',
                                 lastMessageTime: DateTime.now(),
                                 itemSummary: currentOrder.itemDescription,
                                 pickupLocation: currentOrder.locationOrigin,

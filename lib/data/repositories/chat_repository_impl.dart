@@ -260,14 +260,113 @@ class ChatRepositoryImpl implements IChatRepository {
     }
   }
 
+  bool _isValidUuid(String value) {
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    );
+    return uuidRegex.hasMatch(value);
+  }
+
+  Future<void> _ensureRoomExists(String roomId) async {
+    if (!SupabaseService.instance.isInitialized) return;
+    final client = SupabaseService.instance.client;
+    final currentUserId = client.auth.currentUser?.id;
+    if (currentUserId == null) return;
+
+    try {
+      final existing = await client
+          .from('chat_rooms')
+          .select('id, customer_id, helper_id')
+          .eq('id', roomId)
+          .maybeSingle();
+
+      if (existing != null) {
+        final existingHelperId = existing['helper_id'] as String?;
+        final existingCustomerId = existing['customer_id'] as String?;
+        if (existingHelperId == null && currentUserId != existingCustomerId) {
+          await client
+              .from('chat_rooms')
+              .update({'helper_id': currentUserId})
+              .eq('id', roomId);
+        }
+        return;
+      }
+
+      String customerId = currentUserId;
+      String? helperId;
+      String orderNumber = '#UB-${roomId.length > 4 ? roomId.substring(0, 4).toUpperCase() : '8890'}';
+      String serviceTitle = 'Layanan Ubantu';
+      String itemSummary = 'Layanan Ubantu';
+      String pickupLocation = 'Universitas Brawijaya';
+      String destinationLocation = 'Kost Mahasiswa';
+
+      try {
+        final orderData = await client
+            .from('service_orders')
+            .select()
+            .eq('id', roomId)
+            .maybeSingle();
+
+        if (orderData != null) {
+          final reqId = orderData['requester_id'] as String?;
+          final hlpId = orderData['helper_id'] as String?;
+          if (reqId != null && reqId.isNotEmpty) {
+            customerId = reqId;
+          }
+          if (hlpId != null && hlpId.isNotEmpty && _isValidUuid(hlpId)) {
+            helperId = hlpId;
+          } else if (currentUserId != customerId) {
+            helperId = currentUserId;
+          }
+          final cat = orderData['category']?.toString() ?? 'bantuan';
+          serviceTitle = 'Layanan ${cat == 'pindahKos' ? 'Pindah Kos' : (cat == 'bersihKos' ? 'Bersih Kos' : 'Antar Jemput')}';
+          itemSummary = orderData['item_description']?.toString() ?? itemSummary;
+          pickupLocation = orderData['location_origin']?.toString() ?? pickupLocation;
+          destinationLocation = orderData['location_destination']?.toString() ?? destinationLocation;
+        }
+      } catch (_) {}
+
+      await client.from('chat_rooms').upsert({
+        'id': roomId,
+        'customer_id': customerId,
+        'helper_id': helperId,
+        'order_number': orderNumber,
+        'service_title': serviceTitle,
+        'service_status': 'in_progress',
+        'is_active': true,
+        'item_summary': itemSummary,
+        'pickup_location': pickupLocation,
+        'destination_location': destinationLocation,
+      });
+    } catch (_) {}
+  }
+
   @override
   Future<AppResult<ChatRoomModel?>> getChatRoomByOrderId(String orderId) async {
     try {
       final found = _mockRooms.cast<ChatRoomModel?>().firstWhere(
-            (r) => r?.orderId == orderId,
+            (r) => r?.orderId == orderId || r?.id == orderId,
             orElse: () => null,
           );
-      return AppResult.success(found);
+      if (found != null) {
+        return AppResult.success(found);
+      }
+
+      if (SupabaseService.instance.isInitialized && _isValidUuid(orderId)) {
+        final client = SupabaseService.instance.client;
+        final res = await client
+            .from('chat_rooms')
+            .select()
+            .eq('id', orderId)
+            .maybeSingle();
+
+        if (res != null) {
+          final room = ChatRoomModel.fromJson(res);
+          return AppResult.success(room);
+        }
+      }
+
+      return AppResult.success(null);
     } catch (e) {
       return AppResult.failure(e.toString());
     }
@@ -276,7 +375,7 @@ class ChatRepositoryImpl implements IChatRepository {
   @override
   Future<AppResult<List<ChatMessageModel>>> getMessages(String roomId) async {
     try {
-      if (SupabaseService.instance.isInitialized) {
+      if (SupabaseService.instance.isInitialized && _isValidUuid(roomId)) {
         final client = SupabaseService.instance.client;
         final currentUserId = client.auth.currentUser?.id;
 
@@ -286,13 +385,11 @@ class ChatRepositoryImpl implements IChatRepository {
             .eq('room_id', roomId)
             .order('created_at', ascending: true);
 
-        if (res.isNotEmpty) {
-          final messages = res
-              .map((json) => ChatMessageModel.fromJson(json, currentUserId: currentUserId))
-              .toList();
-          _mockMessages[roomId] = messages;
-          return AppResult.success(messages);
-        }
+        final messages = res
+            .map((json) => ChatMessageModel.fromJson(json, currentUserId: currentUserId))
+            .toList();
+        _mockMessages[roomId] = messages;
+        return AppResult.success(messages);
       }
 
       final list = _mockMessages[roomId] ?? [];
@@ -314,11 +411,51 @@ class ChatRepositoryImpl implements IChatRepository {
           ? SupabaseService.instance.client.auth.currentUser?.id ?? 'user-me'
           : 'user-me';
 
-      final newMsg = ChatMessageModel(
+      final userMeta = SupabaseService.instance.isInitialized
+          ? SupabaseService.instance.client.auth.currentUser?.userMetadata
+          : null;
+      final senderName = (userMeta?['full_name'] as String?)?.isNotEmpty == true
+          ? userMeta!['full_name'] as String
+          : 'Saya';
+
+      if (SupabaseService.instance.isInitialized && _isValidUuid(roomId)) {
+        await _ensureRoomExists(roomId);
+
+        final client = SupabaseService.instance.client;
+        final insertRes = await client.from('chat_messages').insert({
+          'room_id': roomId,
+          'sender_id': currentUserId,
+          'sender_name': senderName,
+          'message': message,
+          'attachment_url': attachmentUrl,
+          'is_read': false,
+        }).select().single();
+
+        final sentMsg = ChatMessageModel.fromJson(insertRes, currentUserId: currentUserId);
+
+        if (!_mockMessages.containsKey(roomId)) {
+          _mockMessages[roomId] = [];
+        }
+        if (!_mockMessages[roomId]!.any((m) => m.id == sentMsg.id)) {
+          _mockMessages[roomId]!.add(sentMsg);
+        }
+
+        final roomIdx = _mockRooms.indexWhere((r) => r.id == roomId);
+        if (roomIdx != -1) {
+          _mockRooms[roomIdx] = _mockRooms[roomIdx].copyWith(
+            lastMessage: message,
+            lastMessageTime: sentMsg.createdAt,
+          );
+        }
+
+        return AppResult.success(sentMsg);
+      }
+
+      final fallbackMsg = ChatMessageModel(
         id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
         roomId: roomId,
         senderId: currentUserId,
-        senderName: 'Saya',
+        senderName: senderName,
         message: message,
         isMe: true,
         isRead: false,
@@ -329,7 +466,9 @@ class ChatRepositoryImpl implements IChatRepository {
       if (!_mockMessages.containsKey(roomId)) {
         _mockMessages[roomId] = [];
       }
-      _mockMessages[roomId]!.add(newMsg);
+      if (!_mockMessages[roomId]!.any((m) => m.id == fallbackMsg.id)) {
+        _mockMessages[roomId]!.add(fallbackMsg);
+      }
 
       final roomIdx = _mockRooms.indexWhere((r) => r.id == roomId);
       if (roomIdx != -1) {
@@ -339,20 +478,8 @@ class ChatRepositoryImpl implements IChatRepository {
         );
       }
 
-      if (SupabaseService.instance.isInitialized) {
-        final client = SupabaseService.instance.client;
-        await client.from('chat_messages').insert({
-          'room_id': roomId,
-          'sender_id': currentUserId,
-          'sender_name': 'Saya',
-          'message': message,
-          'attachment_url': attachmentUrl,
-          'is_read': false,
-        });
-      }
-
-      return AppResult.success(newMsg);
-    } catch (e) {
+      return AppResult.success(fallbackMsg);
+    } catch (_) {
       final fallbackMsg = ChatMessageModel(
         id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
         roomId: roomId,
@@ -364,10 +491,14 @@ class ChatRepositoryImpl implements IChatRepository {
         createdAt: DateTime.now(),
         attachmentUrl: attachmentUrl,
       );
+
       if (!_mockMessages.containsKey(roomId)) {
         _mockMessages[roomId] = [];
       }
-      _mockMessages[roomId]!.add(fallbackMsg);
+      if (!_mockMessages[roomId]!.any((m) => m.id == fallbackMsg.id)) {
+        _mockMessages[roomId]!.add(fallbackMsg);
+      }
+
       return AppResult.success(fallbackMsg);
     }
   }
@@ -379,7 +510,7 @@ class ChatRepositoryImpl implements IChatRepository {
           ? SupabaseService.instance.client.auth.currentUser?.id
           : null;
 
-      if (SupabaseService.instance.isInitialized && currentUserId != null) {
+      if (SupabaseService.instance.isInitialized && currentUserId != null && _isValidUuid(roomId)) {
         final client = SupabaseService.instance.client;
         try {
           await client

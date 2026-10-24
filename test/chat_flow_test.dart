@@ -328,9 +328,9 @@ void main() {
         pickupLocation: 'Asrama UB',
         destinationLocation: 'Kost Sigura-gura',
       );
-      expect(created?.id, 'room-order-new-99');
+      expect(created?.id, 'order-new-99');
       expect(created?.otherUserName, 'Mahasiswa Baru');
-      expect(provider.activeRoom?.id, 'room-order-new-99');
+      expect(provider.activeRoom?.id, 'order-new-99');
     });
   });
 

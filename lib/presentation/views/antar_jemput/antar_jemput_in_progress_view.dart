@@ -268,7 +268,7 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
                         context.push(
                           AppRouter.chatRoom,
                           extra: ChatRoomModel(
-                            id: 'room_${activeOrder.id}',
+                            id: activeOrder.id,
                             orderId: activeOrder.id,
                             orderNumber:
                                 'UB-${activeOrder.id.length > 4 ? activeOrder.id.substring(0, 4).toUpperCase() : '8890'}',
@@ -276,7 +276,7 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
                             serviceStatus: activeOrder.status.name,
                             otherUserName: helperName,
                             otherUserFaculty: 'Universitas Brawijaya',
-                            lastMessage: 'Halo! Saya petugas yang membantu Anda.',
+                            lastMessage: '',
                             lastMessageTime: DateTime.now(),
                             itemSummary: activeOrder.itemDescription,
                             pickupLocation: activeOrder.locationOrigin,

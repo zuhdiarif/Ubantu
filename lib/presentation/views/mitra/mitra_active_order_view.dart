@@ -306,14 +306,14 @@ class MitraActiveOrderView extends StatelessWidget {
                   context.push(
                     AppRouter.chatRoom,
                     extra: ChatRoomModel(
-                      id: 'room_${order.id}',
+                      id: order.id,
                       orderId: order.id,
                       orderNumber: 'UB-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : '8890'}',
                       serviceTitle: 'Layanan ${order.category.name}',
                       serviceStatus: order.status.name,
                       otherUserName: 'Mahasiswa UB (Pemesan)',
                       otherUserFaculty: 'Universitas Brawijaya',
-                      lastMessage: 'Halo! Saya mitra yang akan membantu order Anda.',
+                      lastMessage: '',
                       lastMessageTime: DateTime.now(),
                       itemSummary: order.itemDescription,
                       pickupLocation: order.locationOrigin,

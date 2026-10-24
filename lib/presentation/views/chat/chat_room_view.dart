@@ -46,7 +46,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       final chatProvider = context.read<ChatProvider>();
       final active = chatProvider.activeRoom ?? widget.initialRoom;
       if (active != null) {
-        chatProvider.loadMessages(active.id);
+        chatProvider.loadMessages(active.id, isPolling: true);
       }
     });
   }
