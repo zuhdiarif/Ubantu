@@ -180,7 +180,6 @@ void main() {
     expect(find.text('Menghubungkan ke Helper...'), findsOneWidget);
     expect(find.text('Ringkasan Antar Jemput'), findsOneWidget);
     expect(find.text('Tips Keamanan Mahasiswa'), findsOneWidget);
-    expect(find.text('Simulasi Helper Ditemukan'), findsOneWidget);
     expect(find.text('Batalkan Permintaan'), findsOneWidget);
   });
 

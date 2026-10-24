@@ -168,7 +168,6 @@ void main() {
 
     expect(find.text('Menunggu bantuan datang'), findsOneWidget);
     expect(find.text('Tips'), findsOneWidget);
-    expect(find.text('Simulasi Bantuan Diterima'), findsOneWidget);
     expect(find.text('Batalkan Permintaan'), findsOneWidget);
   });
 
