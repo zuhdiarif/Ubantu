@@ -201,9 +201,14 @@ class _InboxViewState extends State<InboxView> {
 
   Widget _buildRoomItem(BuildContext context, ChatRoomModel room) {
     return InkWell(
-      onTap: () {
-        context.read<ChatProvider>().setActiveRoom(room);
-        context.push(AppRouter.chatRoom, extra: room);
+      onTap: () async {
+        final chatProvider = context.read<ChatProvider>();
+        chatProvider.setActiveRoom(room);
+        await context.push(AppRouter.chatRoom, extra: room);
+        if (mounted) {
+          await chatProvider.markAsRead(room.id);
+          chatProvider.loadRooms(isPolling: true);
+        }
       },
       borderRadius: BorderRadius.circular(10),
       child: Column(
@@ -324,10 +329,12 @@ class _InboxViewState extends State<InboxView> {
                       const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF86B049),
-                          shape: BoxShape.circle,
+                        constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF86B049),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        alignment: Alignment.center,
                         child: Text(
                           '${room.unreadCount}',
                           style: const TextStyle(

@@ -63,7 +63,6 @@ class _BersihKosInProgressViewState extends State<BersihKosInProgressView> {
     try {
       chatProvider = context.watch<ChatProvider>();
     } catch (_) {}
-    final hasUnread = chatProvider?.hasUnreadMessages ?? false;
     final activeOrder = provider.myOrders
         .where(
           (o) =>
@@ -73,6 +72,7 @@ class _BersihKosInProgressViewState extends State<BersihKosInProgressView> {
                   o.status == MoveServiceStatus.completed),
         )
         .firstOrNull;
+    final hasUnread = chatProvider?.rooms.any((r) => (r.orderId == activeOrder?.id || r.id == activeOrder?.id) && r.unreadCount > 0) ?? false;
 
     if (activeOrder != null &&
         activeOrder.status == MoveServiceStatus.completed) {

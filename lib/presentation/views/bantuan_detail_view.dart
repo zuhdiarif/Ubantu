@@ -64,7 +64,7 @@ class BantuanDetailView extends StatelessWidget {
         ? currentOrder!.itemDescription
         : 'Bantu bersihkan kamar kos, alat sudah disiapkan';
 
-    final bool hasUnreadForRoom = chatProvider?.hasUnreadMessages ?? false;
+    final bool hasUnreadForRoom = chatProvider?.rooms.any((r) => (r.orderId == currentOrder?.id || r.id == currentOrder?.id) && r.unreadCount > 0) ?? false;
 
     return Scaffold(
       backgroundColor: Colors.white,

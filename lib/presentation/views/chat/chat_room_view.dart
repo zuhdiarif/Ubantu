@@ -50,6 +50,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
       final active = chatProvider.activeRoom ?? widget.initialRoom;
       if (active != null) {
         chatProvider.loadMessages(active.id, isPolling: true);
+        chatProvider.markAsRead(active.id);
       }
     });
   }

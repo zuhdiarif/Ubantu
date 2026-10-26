@@ -329,7 +329,8 @@ class MitraActiveOrderView extends StatelessWidget {
                   try {
                     cp = ctx.watch<ChatProvider>();
                   } catch (_) {}
-                  if (cp?.hasUnreadMessages == true) {
+                  final orderHasUnread = cp?.rooms.any((r) => (r.orderId == order.id || r.id == order.id) && r.unreadCount > 0) ?? false;
+                  if (orderHasUnread) {
                     return Positioned(
                       top: -2,
                       right: -2,
