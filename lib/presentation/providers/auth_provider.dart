@@ -30,7 +30,7 @@ class AuthProvider extends ChangeNotifier {
         _signInWithGoogleUseCase = SignInWithGoogleUseCase(repository) {
     _currentUser = _repository.getCurrentUser();
     if (_currentUser != null) {
-      AppAuthNotifier.instance.setLoggedIn(true);
+      AppAuthNotifier.instance.initLoggedIn(true);
     }
     _initAuthListener();
   }

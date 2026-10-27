@@ -483,43 +483,52 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Text(
-                  'Order Masuk',
-                  style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySage,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${orders.length}',
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primaryDark,
+            Expanded(
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Order Masuk',
+                      style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySage,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${orders.length}',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             FilterChip(
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               avatar: Icon(
                 Icons.female_rounded,
-                size: 16,
+                size: 14,
                 color: _filterWomenOnly ? Colors.white : const Color(0xFFC2185B),
               ),
               label: const Text('Khusus Mahasiswi'),
               labelStyle: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: _filterWomenOnly ? Colors.white : const Color(0xFFC2185B),
               ),

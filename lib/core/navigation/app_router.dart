@@ -45,6 +45,10 @@ class AppAuthNotifier extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool get isLoggedIn => _isLoggedIn;
 
+  void initLoggedIn(bool value) {
+    _isLoggedIn = value;
+  }
+
   void setLoggedIn(bool value) {
     if (_isLoggedIn != value) {
       _isLoggedIn = value;

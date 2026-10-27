@@ -722,24 +722,31 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'Orang yang Butuh Bantuan',
-              style: AppTypography.h5.copyWith(
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF1E281C),
+            Expanded(
+              child: Text(
+                'Orang yang Butuh Bantuan',
+                style: AppTypography.h5.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E281C),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 8),
             FilterChip(
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               avatar: Icon(
                 Icons.female_rounded,
-                size: 16,
+                size: 14,
                 color: provider.isFemaleOnlyFilter ? Colors.white : const Color(0xFFC2185B),
               ),
               label: const Text('Women-Only'),
               labelStyle: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: FontWeight.bold,
                 color: provider.isFemaleOnlyFilter ? Colors.white : const Color(0xFFC2185B),
               ),
