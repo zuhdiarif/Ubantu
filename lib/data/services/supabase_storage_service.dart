@@ -54,4 +54,22 @@ class SupabaseStorageService {
       return AppResult.failure(e.toString());
     }
   }
+
+  Future<AppResult<String>> uploadOrderPhoto(File file, String category) async {
+    try {
+      if (SupabaseService.instance.isInitialized) {
+        final fileExt = file.path.split('.').last;
+        final fileName = 'order_${category}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+        final path = 'orders/$fileName';
+
+        await _effectiveClient.storage.from('order_photos').upload(path, file);
+        final publicUrl = _effectiveClient.storage.from('order_photos').getPublicUrl(path);
+
+        return AppResult.success(publicUrl);
+      }
+      return AppResult.success(file.path);
+    } catch (_) {
+      return AppResult.success(file.path);
+    }
+  }
 }

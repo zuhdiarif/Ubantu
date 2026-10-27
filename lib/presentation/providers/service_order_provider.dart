@@ -73,6 +73,7 @@ class ServiceOrderProvider extends ChangeNotifier {
     required DateTime scheduledAt,
     required BarterType barterType,
     required String barterDescription,
+    String? photoUrl,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -94,6 +95,7 @@ class ServiceOrderProvider extends ChangeNotifier {
       itemDescription: itemDescription,
       barterType: barterType,
       barterDescription: barterDescription,
+      barterPhotoUrl: photoUrl,
       vehicleType: vehicleType,
       weightKg: weightKg,
       createdAt: DateTime.now(),

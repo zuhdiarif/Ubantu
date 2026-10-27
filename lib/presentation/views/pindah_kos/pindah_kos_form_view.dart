@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/modular_address_card.dart';
+import 'package:ubantu/components/photo_upload_card.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
@@ -31,6 +32,7 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
   _VehicleOption _selectedVehicle = _VehicleOption.motor;
   double _motorSelectedWeight = 20.0;
   BarterType _selectedBarterType = BarterType.makanan;
+  String? _photoUrl;
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -174,6 +176,7 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
       barterDescription: _barterDescController.text.trim().isEmpty
           ? 'Sesuai kesepakatan'
           : _barterDescController.text.trim(),
+      photoUrl: _photoUrl,
     );
 
     if (!mounted) return;
@@ -254,6 +257,8 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
                       _buildVehicleSection(),
                       const SizedBox(height: 24),
                       _buildItemDescriptionSection(),
+                      const SizedBox(height: 24),
+                      _buildPhotoUploadSection(),
                       const SizedBox(height: 24),
                       _buildDateTimeSection(),
                       const SizedBox(height: 24),
@@ -593,6 +598,17 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
     );
   }
 
+  Widget _buildPhotoUploadSection() {
+    return PhotoUploadCard(
+      title: 'Foto Barang Pindahan (opsional)',
+      subtitle: 'Format JPG, PNG (Maksimal 5MB)',
+      currentPhotoUrl: _photoUrl,
+      category: 'pindah_kos',
+      accentColor: const Color(0xFF263225),
+      onPhotoChanged: (url) => setState(() => _photoUrl = url),
+    );
+  }
+
   Widget _buildDateTimeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -766,7 +782,7 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
             const SizedBox(width: 8),
             Expanded(
               child: _buildBarterItem(
-                type: BarterType.barang,
+                type: BarterType.jasa,
                 label: 'Jasa',
                 color: const Color(0xFF23A23F),
                 iconAsset: 'assets/pindah_kos_flow/teenyicons_tick-circle-solid.svg',

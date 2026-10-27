@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/modular_address_card.dart';
+import 'package:ubantu/components/photo_upload_card.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
@@ -27,7 +28,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
   );
 
   BarterType _selectedBarterType = BarterType.makanan;
-  bool _isPhotoUploaded = false;
+  String? _photoUrl;
 
   @override
   void dispose() {
@@ -91,7 +92,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
       barterDescription: _barterDescController.text.trim().isEmpty
           ? 'Sesuai kesepakatan'
           : _barterDescController.text.trim(),
-      photoUrl: _isPhotoUploaded ? 'https://placehold.co/400x300.png' : null,
+      photoUrl: _photoUrl,
     );
 
     if (!mounted) return;
@@ -285,62 +286,13 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
   }
 
   Widget _buildFotoKondisiSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Foto Kondisi Kos (opsional)',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _isPhotoUploaded = !_isPhotoUploaded;
-            });
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            decoration: ShapeDecoration(
-              color: _isPhotoUploaded ? const Color(0xFFF1F6EC) : Colors.white,
-              shape: RoundedRectangleBorder(
-                side: BorderSide(
-                  width: 0.50,
-                  color: _isPhotoUploaded ? const Color(0xFF86B049) : const Color(0xFF263225),
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _isPhotoUploaded ? Icons.check_circle_rounded : Icons.cloud_upload_outlined,
-                  size: 34,
-                  color: _isPhotoUploaded ? const Color(0xFF86B049) : const Color(0xFFAEABAA),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _isPhotoUploaded ? 'Foto kondisi kos terpilih (1 file)' : 'Upload file',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _isPhotoUploaded ? const Color(0xFF263225) : const Color(0xFFAEABAA),
-                    fontSize: 12,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: _isPhotoUploaded ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return PhotoUploadCard(
+      title: 'Foto Kondisi Kos (opsional)',
+      subtitle: 'Format JPG, PNG (Maksimal 5MB)',
+      currentPhotoUrl: _photoUrl,
+      category: 'bersih_kos',
+      accentColor: const Color(0xFF86B049),
+      onPhotoChanged: (url) => setState(() => _photoUrl = url),
     );
   }
 
@@ -439,7 +391,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
     final barterOptions = [
       {'type': BarterType.makanan, 'title': 'Makanan', 'icon': Icons.restaurant_rounded, 'color': const Color(0xFF293EE2)},
       {'type': BarterType.barang, 'title': 'Barang', 'icon': Icons.inventory_2_rounded, 'color': const Color(0xFFF86F1A)},
-      {'type': BarterType.lainnya, 'title': 'Jasa', 'icon': Icons.handshake_rounded, 'color': const Color(0xFF23A23F)},
+      {'type': BarterType.jasa, 'title': 'Jasa', 'icon': Icons.handshake_rounded, 'color': const Color(0xFF23A23F)},
       {'type': BarterType.lainnya, 'title': 'Lainnya', 'icon': Icons.more_horiz_rounded, 'color': const Color(0xFF858585)},
     ];
 
