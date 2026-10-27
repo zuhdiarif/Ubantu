@@ -54,8 +54,7 @@ class AppAuthNotifier extends ChangeNotifier {
 
   void notify() {
     try {
-      if (WidgetsBinding.instance.schedulerPhase ==
-          SchedulerPhase.persistentCallbacks) {
+      if (WidgetsBinding.instance.schedulerPhase != SchedulerPhase.idle) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
         });
