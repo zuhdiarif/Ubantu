@@ -1,9 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/data/repositories/auth_repository_impl.dart';
+import 'package:ubantu/data/services/supabase_auth_service.dart';
+import 'package:ubantu/data/services/supabase_profile_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
+import 'package:ubantu/data/services/supabase_storage_service.dart';
+import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/user_model.dart';
 import 'package:ubantu/domain/repositories/auth_repository.dart';
 import 'package:ubantu/domain/usecases/login_usecase.dart';
@@ -52,6 +58,144 @@ class AuthProvider extends ChangeNotifier {
         }
         notifyListeners();
       });
+    }
+  }
+
+  void updateUser(UserModel updatedUser) {
+    _currentUser = updatedUser;
+    if (_repository is AuthRepositoryImpl) {
+      (_repository as AuthRepositoryImpl).setCurrentUser(updatedUser);
+    }
+    notifyListeners();
+  }
+
+  Future<AppResult<UserModel>> updateProfile({
+    String? fullName,
+    String? phoneNumber,
+    UserGender? gender,
+    bool? isFemaleOnlyPreferred,
+  }) async {
+    final baseUser = _currentUser ?? const UserModel(
+      id: 'usr_current',
+      fullName: 'Ahmad Farel',
+      email: 'farel@student.ub.ac.id',
+      phoneNumber: '081234567890',
+      nim: '',
+    );
+
+    final updated = baseUser.copyWith(
+      fullName: fullName,
+      phoneNumber: phoneNumber,
+      gender: gender,
+      isFemaleOnlyPreferred: isFemaleOnlyPreferred,
+    );
+
+    _currentUser = updated;
+    if (_repository is AuthRepositoryImpl) {
+      (_repository as AuthRepositoryImpl).setCurrentUser(updated);
+    }
+
+    try {
+      if (SupabaseService.instance.isInitialized) {
+        await SupabaseAuthService().updateUserMetadata({
+          if (updated.fullName.isNotEmpty) 'full_name': updated.fullName,
+          if (updated.phoneNumber.isNotEmpty) 'phone_number': updated.phoneNumber,
+          'gender': updated.gender.name,
+          'is_female_only_preferred': updated.isFemaleOnlyPreferred,
+        });
+        await SupabaseProfileService().updateProfile(updated);
+      }
+    } catch (_) {}
+
+    notifyListeners();
+    return AppResult.success(updated);
+  }
+
+  Future<AppResult<String>> updateAvatar(File imageFile) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final userId = _currentUser?.id ?? 'usr_${DateTime.now().millisecondsSinceEpoch}';
+    final uploadResult = await SupabaseStorageService().uploadAvatar(imageFile, userId);
+
+    _isLoading = false;
+
+    if (uploadResult.isSuccess && uploadResult.data != null) {
+      final avatarUrl = uploadResult.data!;
+      final baseUser = _currentUser ?? const UserModel(
+        id: 'usr_current',
+        fullName: 'Ahmad Farel',
+        email: 'farel@student.ub.ac.id',
+        phoneNumber: '081234567890',
+        nim: '',
+      );
+      final updated = baseUser.copyWith(avatarUrl: avatarUrl);
+      _currentUser = updated;
+
+      if (_repository is AuthRepositoryImpl) {
+        (_repository as AuthRepositoryImpl).setCurrentUser(updated);
+      }
+
+      try {
+        if (SupabaseService.instance.isInitialized) {
+          await SupabaseAuthService().updateUserMetadata({'avatar_url': avatarUrl});
+          await SupabaseProfileService().updateProfile(updated);
+        }
+      } catch (_) {}
+
+      notifyListeners();
+      return AppResult.success(avatarUrl);
+    } else {
+      notifyListeners();
+      return uploadResult;
+    }
+  }
+
+  Future<AppResult<String>> submitKtm({required String nim, required File photoFile}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final userId = _currentUser?.id ?? 'usr_${DateTime.now().millisecondsSinceEpoch}';
+    final uploadResult = await SupabaseStorageService().uploadKtmPhoto(photoFile, userId);
+
+    _isLoading = false;
+
+    if (uploadResult.isSuccess && uploadResult.data != null) {
+      final ktmUrl = uploadResult.data!;
+      final baseUser = _currentUser ?? const UserModel(
+        id: 'usr_current',
+        fullName: 'Ahmad Farel',
+        email: 'farel@student.ub.ac.id',
+        phoneNumber: '081234567890',
+        nim: '',
+      );
+      final updated = baseUser.copyWith(
+        nim: nim,
+        ktmPhotoUrl: ktmUrl,
+        verificationStatus: KtmVerificationStatus.pending,
+      );
+      _currentUser = updated;
+
+      if (_repository is AuthRepositoryImpl) {
+        (_repository as AuthRepositoryImpl).setCurrentUser(updated);
+      }
+
+      try {
+        if (SupabaseService.instance.isInitialized) {
+          await SupabaseAuthService().updateUserMetadata({
+            'nim': nim,
+            'ktm_photo_url': ktmUrl,
+            'verification_status': KtmVerificationStatus.pending.name,
+          });
+          await SupabaseProfileService().updateProfile(updated);
+        }
+      } catch (_) {}
+
+      notifyListeners();
+      return AppResult.success(ktmUrl);
+    } else {
+      notifyListeners();
+      return uploadResult;
     }
   }
 

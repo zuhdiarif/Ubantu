@@ -128,4 +128,8 @@ class AuthRepositoryImpl implements IAuthRepository {
     }
     return _signUpReturnedSession;
   }
+
+  void setCurrentUser(UserModel user) {
+    _currentUser = user;
+  }
 }

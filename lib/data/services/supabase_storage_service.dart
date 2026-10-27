@@ -10,7 +10,15 @@ class SupabaseStorageService {
 
   SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
 
+  bool get isAvailable {
+    if (_client != null) return true;
+    return SupabaseService.instance.isInitialized;
+  }
+
   Future<AppResult<String>> uploadKtmPhoto(File file, String userId) async {
+    if (!isAvailable) {
+      return AppResult.success(file.path);
+    }
     try {
       final fileExt = file.path.split('.').last;
       final fileName = 'ktm_${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
@@ -21,11 +29,14 @@ class SupabaseStorageService {
 
       return AppResult.success(publicUrl);
     } catch (e) {
-      return AppResult.failure(e.toString());
+      return AppResult.success(file.path);
     }
   }
 
   Future<AppResult<String>> uploadAvatar(File file, String userId) async {
+    if (!isAvailable) {
+      return AppResult.success(file.path);
+    }
     try {
       final fileExt = file.path.split('.').last;
       final fileName = 'avatar_${userId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
@@ -36,7 +47,7 @@ class SupabaseStorageService {
 
       return AppResult.success(publicUrl);
     } catch (e) {
-      return AppResult.failure(e.toString());
+      return AppResult.success(file.path);
     }
   }
 

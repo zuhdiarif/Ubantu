@@ -33,6 +33,13 @@ class SupabaseAuthService {
     final fullName = meta['full_name'] as String? ?? user.email?.split('@').first ?? '';
     final phone = user.phone ?? (meta['phone_number'] as String? ?? '');
     final nim = meta['nim'] as String? ?? '';
+    final avatarUrl = meta['avatar_url'] as String? ?? meta['picture'] as String?;
+    final ktmPhotoUrl = meta['ktm_photo_url'] as String?;
+    final roleStr = meta['role'] as String?;
+    final genderStr = meta['gender'] as String?;
+    final isFemaleOnly = meta['is_female_only_preferred'] as bool? ?? false;
+    final rewardPoints = meta['reward_points'] as int? ?? 0;
+    final verificationStatusStr = meta['verification_status'] as String?;
 
     return UserModel(
       id: user.id,
@@ -40,8 +47,50 @@ class SupabaseAuthService {
       email: user.email ?? '',
       phoneNumber: phone,
       nim: nim,
-      verificationStatus: nim.isNotEmpty ? KtmVerificationStatus.verified : KtmVerificationStatus.unverified,
+      avatarUrl: avatarUrl,
+      ktmPhotoUrl: ktmPhotoUrl,
+      verificationStatus: verificationStatusStr != null
+          ? KtmVerificationStatus.values.firstWhere(
+              (e) => e.name == verificationStatusStr,
+              orElse: () => nim.isNotEmpty
+                  ? KtmVerificationStatus.verified
+                  : KtmVerificationStatus.unverified,
+            )
+          : (nim.isNotEmpty
+              ? KtmVerificationStatus.verified
+              : KtmVerificationStatus.unverified),
+      role: roleStr != null
+          ? UserRole.values.firstWhere(
+              (e) => e.name == roleStr,
+              orElse: () => UserRole.customer,
+            )
+          : UserRole.customer,
+      gender: genderStr != null
+          ? UserGender.values.firstWhere(
+              (e) => e.name == genderStr,
+              orElse: () => UserGender.unspecified,
+            )
+          : UserGender.unspecified,
+      isFemaleOnlyPreferred: isFemaleOnly,
+      rewardPoints: rewardPoints,
     );
+  }
+
+  Future<AppResult<UserModel>> updateUserMetadata(Map<String, dynamic> metadata) async {
+    try {
+      final response = await _effectiveClient.auth.updateUser(
+        UserAttributes(data: metadata),
+      );
+      final user = response.user;
+      if (user == null) {
+        return AppResult.failure('Gagal memperbarui metadata pengguna.');
+      }
+      return AppResult.success(_mapUser(user));
+    } on AuthException catch (e) {
+      return AppResult.failure(e.message);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
   }
 
   Future<AppResult<UserModel>> login(String email, String password) async {
