@@ -18,6 +18,8 @@ class MitraDashboardView extends StatefulWidget {
 }
 
 class _MitraDashboardViewState extends State<MitraDashboardView> {
+  bool _filterWomenOnly = false;
+
   @override
   void initState() {
     super.initState();
@@ -472,7 +474,10 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
     BuildContext context,
     MitraProvider provider,
   ) {
-    final orders = provider.incomingOrders;
+    final allOrders = provider.incomingOrders;
+    final orders = _filterWomenOnly
+        ? allOrders.where((o) => o.isFemaleOnly).toList()
+        : allOrders;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -506,14 +511,28 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
                 ),
               ],
             ),
-            if (orders.isNotEmpty)
-              Text(
-                'Sedang Diambil (Belum Tuntas)',
-                style: AppTypography.caption.copyWith(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w600,
-                ),
+            FilterChip(
+              avatar: Icon(
+                Icons.female_rounded,
+                size: 16,
+                color: _filterWomenOnly ? Colors.white : const Color(0xFFC2185B),
               ),
+              label: const Text('Khusus Mahasiswi'),
+              labelStyle: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: _filterWomenOnly ? Colors.white : const Color(0xFFC2185B),
+              ),
+              selected: _filterWomenOnly,
+              selectedColor: const Color(0xFFC2185B),
+              backgroundColor: const Color(0xFFFCE4EC),
+              checkmarkColor: Colors.white,
+              onSelected: (val) {
+                setState(() {
+                  _filterWomenOnly = val;
+                });
+              },
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -564,22 +583,54 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySage.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _categoryTitle(order.category),
-                  style: AppTypography.caption.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryDark,
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primarySage.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _categoryTitle(order.category),
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
                   ),
-                ),
+                  if (order.isFemaleOnly) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFCE4EC),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.female_rounded, size: 12, color: Color(0xFFC2185B)),
+                          SizedBox(width: 2),
+                          Text(
+                            'Khusus Mahasiswi',
+                            style: TextStyle(
+                              color: Color(0xFFC2185B),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
               ),
               Row(
                 children: [

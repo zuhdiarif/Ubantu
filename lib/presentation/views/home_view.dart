@@ -721,12 +721,35 @@ class _HomeViewState extends State<HomeView> {
             ],
           ),
         ),
-        Text(
-          'Orang yang Butuh Bantuan',
-          style: AppTypography.h5.copyWith(
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E281C),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Orang yang Butuh Bantuan',
+              style: AppTypography.h5.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1E281C),
+              ),
+            ),
+            FilterChip(
+              avatar: Icon(
+                Icons.female_rounded,
+                size: 16,
+                color: provider.isFemaleOnlyFilter ? Colors.white : const Color(0xFFC2185B),
+              ),
+              label: const Text('Women-Only'),
+              labelStyle: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: provider.isFemaleOnlyFilter ? Colors.white : const Color(0xFFC2185B),
+              ),
+              selected: provider.isFemaleOnlyFilter,
+              selectedColor: const Color(0xFFC2185B),
+              backgroundColor: const Color(0xFFFCE4EC),
+              checkmarkColor: Colors.white,
+              onSelected: (_) => provider.toggleFemaleOnlyFilter(),
+            ),
+          ],
         ),
         const SizedBox(height: 14),
         ..._buildOrderList(context, provider),
@@ -736,7 +759,10 @@ class _HomeViewState extends State<HomeView> {
 
   List<Widget> _buildOrderList(BuildContext context, TaskProvider taskProvider) {
     final orderProvider = context.watch<ServiceOrderProvider>();
-    final orders = orderProvider.activeOrders;
+    final allOrders = orderProvider.activeOrders;
+    final orders = taskProvider.isFemaleOnlyFilter
+        ? allOrders.where((o) => o.isFemaleOnly).toList()
+        : allOrders;
 
     if (orders.isNotEmpty) {
       return orders.map((order) {
@@ -794,6 +820,31 @@ class _HomeViewState extends State<HomeView> {
                                 ),
                               ),
                             ),
+                            if (order.isFemaleOnly) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFCE4EC),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.female_rounded, size: 10, color: Color(0xFFC2185B)),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      'Khusus Mahasiswi',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFC2185B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             const SizedBox(width: 6),
                             Text(
                               'Menunggu Bantuan',
@@ -888,21 +939,113 @@ class _HomeViewState extends State<HomeView> {
       }).toList();
     }
 
+    if (taskProvider.tasks.isNotEmpty) {
+      return taskProvider.tasks.map((task) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE8EBE4)),
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 20,
+                backgroundColor: Color(0xFFE2F1D8),
+                child: Icon(Icons.person_rounded, color: Color(0xFF283626)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: AppTypography.body1.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E281C),
+                      ),
+                    ),
+                    Text(
+                      'Oleh: ${task.requesterName}',
+                      style: AppTypography.caption.copyWith(
+                        color: const Color(0xFF5C6658),
+                      ),
+                    ),
+                    if (task.isFemaleOnly) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFCE4EC),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.female_rounded, size: 10, color: Color(0xFFC2185B)),
+                                SizedBox(width: 2),
+                                Text(
+                                  'Khusus Mahasiswi',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFC2185B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => context.push(AppRouter.helpDetail),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF283626),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Bantu'),
+              ),
+            ],
+          ),
+        );
+      }).toList();
+    }
+
     return [
       Container(
         padding: const EdgeInsets.all(24),
         alignment: Alignment.center,
         child: Column(
           children: [
-            Icon(Icons.volunteer_activism_outlined, size: 48, color: Colors.grey.shade400),
+            Icon(
+              taskProvider.isFemaleOnlyFilter ? Icons.female_rounded : Icons.volunteer_activism_outlined,
+              size: 48,
+              color: Colors.grey.shade400,
+            ),
             const SizedBox(height: 12),
             Text(
-              'Belum Ada yang Butuh Bantuan',
+              taskProvider.isFemaleOnlyFilter
+                  ? 'Tidak Ada Bantuan Khusus Mahasiswi'
+                  : 'Belum Ada yang Butuh Bantuan',
               style: AppTypography.body1.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              'Tarik ke bawah untuk memperbarui daftar permintaan bantuan.',
+              taskProvider.isFemaleOnlyFilter
+                  ? 'Coba matikan filter untuk melihat seluruh permintaan bantuan.'
+                  : 'Tarik ke bawah untuk memperbarui daftar permintaan bantuan.',
               style: AppTypography.caption.copyWith(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
