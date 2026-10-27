@@ -70,9 +70,6 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
   void didChangeMetrics() {
     super.didChangeMetrics();
     final bottomInset = View.of(context).viewInsets.bottom;
-    if (bottomInset == 0 && _focusNode.hasFocus) {
-      _focusNode.unfocus();
-    }
     if (bottomInset > 0) {
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted) {
@@ -360,32 +357,28 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         top: false,
-        child: GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          behavior: HitTestBehavior.translucent,
-          child: Column(
-            children: [
-              _buildTopBar(context, room),
-              if (room.isActive)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: _buildActiveOrderCard(context, room),
-                ),
-              if (!room.isActive) ...[
-                _buildCompletedNoticeBanner(),
-                const SizedBox(height: 8),
-                _buildDateDivider('Hari ini'),
-              ],
-              Expanded(
-                child: _buildMessagesList(chatProvider, room),
+        child: Column(
+          children: [
+            _buildTopBar(context, room),
+            if (room.isActive)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: _buildActiveOrderCard(context, room),
               ),
-              if (!room.isActive && !isKeyboardOpen) ...[
-                _buildOrderSummaryCard(context, room),
-                _buildClosedNotice(),
-              ],
-              _buildBottomInput(context, room),
+            if (!room.isActive) ...[
+              _buildCompletedNoticeBanner(),
+              const SizedBox(height: 8),
+              _buildDateDivider('Hari ini'),
             ],
-          ),
+            Expanded(
+              child: _buildMessagesList(chatProvider, room),
+            ),
+            if (!room.isActive && !isKeyboardOpen) ...[
+              _buildOrderSummaryCard(context, room),
+              _buildClosedNotice(),
+            ],
+            _buildBottomInput(context, room),
+          ],
         ),
       ),
     );
@@ -751,26 +744,35 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
 
     final messages = chatProvider.activeMessages;
     if (messages.isEmpty) {
-      return Center(
-        child: Text(
-          'Mulai kirim pesan ke ${room.otherUserName}',
-          style: const TextStyle(
-            color: Color(0xFF8C9688),
-            fontSize: 13,
-            fontFamily: 'Plus Jakarta Sans',
+      return GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Center(
+          child: Text(
+            'Mulai kirim pesan ke ${room.otherUserName}',
+            style: const TextStyle(
+              color: Color(0xFF8C9688),
+              fontSize: 13,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
           ),
         ),
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      itemCount: messages.length,
-      itemBuilder: (context, index) {
-        final msg = messages[index];
-        return _buildMessageBubble(msg);
-      },
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: ListView.builder(
+        controller: _scrollController,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        itemCount: messages.length,
+        itemBuilder: (context, index) {
+          final msg = messages[index];
+          return _buildMessageBubble(msg);
+        },
+      ),
     );
   }
 
