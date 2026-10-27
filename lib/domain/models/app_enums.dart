@@ -4,7 +4,7 @@ enum SosStatus { received, handling, completed }
 
 enum ServiceCategory { bersihKos, pindahKos, antarJemput }
 
-enum BarterType { makanan, barang, lainnya }
+enum BarterType { makanan, barang, jasa, lainnya }
 
 enum KtmVerificationStatus { unverified, pending, verified, rejected }
 

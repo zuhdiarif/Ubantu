@@ -124,4 +124,7 @@ class ServiceOrderModel {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  String get pickupLocation => locationOrigin;
+  String get destinationLocation => locationDestination;
 }

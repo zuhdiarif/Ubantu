@@ -7,6 +7,7 @@ import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
 
 class MitraDashboardView extends StatefulWidget {
@@ -85,9 +86,16 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
 
   Widget _buildMitraProfileCard(BuildContext context, MitraProvider provider) {
     final profile = provider.profile;
-    final name = profile?.name ?? 'Ahmad Fauzi (Mitra UB)';
-    final faculty =
-        profile?.faculty ?? 'Fakultas Ilmu Komputer, Universitas Brawijaya';
+    AuthProvider? auth;
+    try {
+      auth = context.watch<AuthProvider>();
+    } catch (_) {}
+    final authUser = auth?.currentUser;
+    final name = (authUser?.fullName != null && authUser!.fullName.isNotEmpty)
+        ? '${authUser.fullName} (Mitra UB)'
+        : (profile?.name ?? 'Ahmad Fauzi (Mitra UB)');
+    final faculty = profile?.faculty ??
+        'Fakultas Ilmu Komputer, Universitas Brawijaya';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -740,13 +748,13 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
       child: Material(
-        color: Colors.transparent,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: Colors.grey.shade200),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: ListTile(
           leading: Container(
             padding: const EdgeInsets.all(8),

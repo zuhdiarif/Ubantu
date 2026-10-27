@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
@@ -62,7 +63,6 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
     try {
       chatProvider = context.watch<ChatProvider>();
     } catch (_) {}
-    final hasUnread = chatProvider?.hasUnreadMessages ?? false;
     final activeOrder = provider.myOrders
         .where(
           (o) =>
@@ -72,6 +72,7 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
                   o.status == MoveServiceStatus.completed),
         )
         .firstOrNull;
+    final hasUnread = chatProvider?.rooms.any((r) => (r.orderId == activeOrder?.id || r.id == activeOrder?.id) && r.unreadCount > 0) ?? false;
 
     if (activeOrder != null &&
         activeOrder.status == MoveServiceStatus.completed) {
@@ -104,7 +105,13 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
       {'title': 'Tiba di tujuan & selesai', 'time': ''},
     ];
 
-    final helperName = activeOrder?.helperId != null ? 'Nasya' : 'Nasya';
+    final helperName = activeOrder?.helperId != null
+        ? (SupabaseService.instance.isInitialized
+            ? 'Mitra Penolong UB'
+            : 'Nasya')
+        : (SupabaseService.instance.isInitialized
+            ? 'Menunggu Helper'
+            : 'Nasya');
 
     return Scaffold(
       backgroundColor: Colors.white,

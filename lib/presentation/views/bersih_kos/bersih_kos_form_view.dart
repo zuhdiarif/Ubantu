@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/modular_address_card.dart';
+import 'package:ubantu/components/photo_upload_card.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
@@ -15,12 +17,8 @@ class BersihKosFormView extends StatefulWidget {
 class _BersihKosFormViewState extends State<BersihKosFormView> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _originController = TextEditingController(
-    text: 'Jl. Kaliurang Km 5, Malang',
-  );
-  final TextEditingController _destinationController = TextEditingController(
-    text: 'Jl. Gajayana No.12, Malang',
-  );
+  final TextEditingController _originController = TextEditingController();
+  final TextEditingController _destinationController = TextEditingController();
   final TextEditingController _detailPekerjaanController = TextEditingController();
   final TextEditingController _barterDescController = TextEditingController();
 
@@ -30,7 +28,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
   );
 
   BarterType _selectedBarterType = BarterType.makanan;
-  bool _isPhotoUploaded = false;
+  String? _photoUrl;
 
   @override
   void dispose() {
@@ -94,7 +92,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
       barterDescription: _barterDescController.text.trim().isEmpty
           ? 'Sesuai kesepakatan'
           : _barterDescController.text.trim(),
-      photoUrl: _isPhotoUploaded ? 'https://placehold.co/400x300.png' : null,
+      photoUrl: _photoUrl,
     );
 
     if (!mounted) return;
@@ -210,151 +208,15 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
   }
 
   Widget _buildLokasiSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Lokasi',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: ShapeDecoration(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 0.50, color: Color(0xFF263225)),
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 14,
-                backgroundColor: Color(0xFFE2F1D8),
-                child: Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF263225)),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Text(
-                          'Dari ',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 13,
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          '(Kos Semula)',
-                          style: TextStyle(
-                            color: Color(0xFF6C7368),
-                            fontSize: 11,
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    TextFormField(
-                      controller: _originController,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 12,
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                        border: InputBorder.none,
-                      ),
-                      validator: (value) =>
-                          value == null || value.trim().isEmpty ? 'Lokasi kos wajib diisi' : null,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: ShapeDecoration(
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 0.50, color: Color(0xFF263225)),
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 14,
-                backgroundColor: Color(0xFFFFF2E5),
-                child: Icon(Icons.flag_rounded, size: 16, color: Color(0xFFF4A261)),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Text(
-                          'Ke ',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 13,
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          '(Kos Tujuan / Alamat Barter)',
-                          style: TextStyle(
-                            color: Color(0xFF6C7368),
-                            fontSize: 11,
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    TextFormField(
-                      controller: _destinationController,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 12,
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w500,
-                      ),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+    return ModularAddressCard(
+      mode: AddressCardMode.single,
+      originController: _originController,
+      title: 'Lokasi',
+      originLabel: 'Lokasi Kos',
+      originSubtitle: '(Kos yang Akan Dibersihkan)',
+      originHint: 'Masukkan alamat',
+      originValidator: (value) =>
+          value == null || value.trim().isEmpty ? 'Lokasi kos wajib diisi' : null,
     );
   }
 
@@ -424,62 +286,13 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
   }
 
   Widget _buildFotoKondisiSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Foto Kondisi Kos (opsional)',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 10),
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _isPhotoUploaded = !_isPhotoUploaded;
-            });
-          },
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            decoration: ShapeDecoration(
-              color: _isPhotoUploaded ? const Color(0xFFF1F6EC) : Colors.white,
-              shape: RoundedRectangleBorder(
-                side: BorderSide(
-                  width: 0.50,
-                  color: _isPhotoUploaded ? const Color(0xFF86B049) : const Color(0xFF263225),
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  _isPhotoUploaded ? Icons.check_circle_rounded : Icons.cloud_upload_outlined,
-                  size: 34,
-                  color: _isPhotoUploaded ? const Color(0xFF86B049) : const Color(0xFFAEABAA),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  _isPhotoUploaded ? 'Foto kondisi kos terpilih (1 file)' : 'Upload file',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _isPhotoUploaded ? const Color(0xFF263225) : const Color(0xFFAEABAA),
-                    fontSize: 12,
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: _isPhotoUploaded ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return PhotoUploadCard(
+      title: 'Foto Kondisi Kos (opsional)',
+      subtitle: 'Format JPG, PNG (Maksimal 5MB)',
+      currentPhotoUrl: _photoUrl,
+      category: 'bersih_kos',
+      accentColor: const Color(0xFF86B049),
+      onPhotoChanged: (url) => setState(() => _photoUrl = url),
     );
   }
 
@@ -578,7 +391,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
     final barterOptions = [
       {'type': BarterType.makanan, 'title': 'Makanan', 'icon': Icons.restaurant_rounded, 'color': const Color(0xFF293EE2)},
       {'type': BarterType.barang, 'title': 'Barang', 'icon': Icons.inventory_2_rounded, 'color': const Color(0xFFF86F1A)},
-      {'type': BarterType.lainnya, 'title': 'Jasa', 'icon': Icons.handshake_rounded, 'color': const Color(0xFF23A23F)},
+      {'type': BarterType.jasa, 'title': 'Jasa', 'icon': Icons.handshake_rounded, 'color': const Color(0xFF23A23F)},
       {'type': BarterType.lainnya, 'title': 'Lainnya', 'icon': Icons.more_horiz_rounded, 'color': const Color(0xFF858585)},
     ];
 

@@ -19,6 +19,7 @@ class ChatProvider extends ChangeNotifier {
         _getChatMessagesUseCase = GetChatMessagesUseCase(repository ?? ChatRepositoryImpl()),
         _sendChatMessageUseCase = SendChatMessageUseCase(repository ?? ChatRepositoryImpl());
 
+  final Map<String, DateTime> _locallyReadRooms = {};
   List<ChatRoomModel> _rooms = [];
   List<ChatRoomModel> _filteredRooms = [];
   String _searchQuery = '';
@@ -49,7 +50,13 @@ class ChatProvider extends ChangeNotifier {
 
     final result = await _getChatRoomsUseCase.execute();
     if (result.isSuccess && result.data != null) {
-      _rooms = result.data!;
+      _rooms = result.data!.map((room) {
+        final lastRead = _locallyReadRooms[room.id];
+        if (lastRead != null && !room.lastMessageTime.isAfter(lastRead)) {
+          return room.copyWith(unreadCount: 0);
+        }
+        return room;
+      }).toList();
       _applySearch();
     } else if (!isPolling) {
       _errorMessage = result.errorMessage;
@@ -84,6 +91,12 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void setActiveRoom(ChatRoomModel room) {
+    _locallyReadRooms[room.id] = DateTime.now();
+    final roomIndex = _rooms.indexWhere((r) => r.id == room.id);
+    if (roomIndex != -1) {
+      _rooms[roomIndex] = _rooms[roomIndex].copyWith(unreadCount: 0);
+      _applySearch();
+    }
     _activeRoom = room;
     notifyListeners();
     loadMessages(room.id);
@@ -100,6 +113,14 @@ class ChatProvider extends ChangeNotifier {
     final result = await _getChatMessagesUseCase.execute(roomId);
     if (result.isSuccess && result.data != null) {
       _activeMessages = result.data!;
+      if (_activeRoom?.id == roomId) {
+        _locallyReadRooms[roomId] = DateTime.now();
+        final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
+        if (roomIndex != -1 && _rooms[roomIndex].unreadCount > 0) {
+          _rooms[roomIndex] = _rooms[roomIndex].copyWith(unreadCount: 0);
+          _applySearch();
+        }
+      }
     } else if (!isPolling) {
       _errorMessage = result.errorMessage;
     }
@@ -150,13 +171,14 @@ class ChatProvider extends ChangeNotifier {
   }
 
   Future<void> markAsRead(String roomId) async {
-    await _repository.markMessagesAsRead(roomId);
+    _locallyReadRooms[roomId] = DateTime.now();
     final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
     if (roomIndex != -1) {
       _rooms[roomIndex] = _rooms[roomIndex].copyWith(unreadCount: 0);
       _applySearch();
       notifyListeners();
     }
+    await _repository.markMessagesAsRead(roomId);
   }
 
   Future<ChatRoomModel?> selectOrCreateRoomForOrder({

@@ -235,12 +235,16 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
   }
 
   Widget _buildOrderSummaryCard(dynamic activeOrder) {
-    final pickup = activeOrder?.pickupLocation?.isNotEmpty == true
-        ? activeOrder.pickupLocation
-        : 'Gerbang Utama UB, Jl. Veteran';
-    final dest = activeOrder?.destinationLocation?.isNotEmpty == true
-        ? activeOrder.destinationLocation
-        : 'Stasiun Malang Kota Baru';
+    final pickup = (activeOrder?.locationOrigin as String?)?.isNotEmpty == true
+        ? activeOrder.locationOrigin as String
+        : ((activeOrder?.pickupLocation as String?)?.isNotEmpty == true
+            ? activeOrder.pickupLocation as String
+            : 'Gerbang Utama UB, Jl. Veteran');
+    final dest = (activeOrder?.locationDestination as String?)?.isNotEmpty == true
+        ? activeOrder.locationDestination as String
+        : ((activeOrder?.destinationLocation as String?)?.isNotEmpty == true
+            ? activeOrder.destinationLocation as String
+            : 'Stasiun Malang Kota Baru');
 
     return Container(
       width: double.infinity,

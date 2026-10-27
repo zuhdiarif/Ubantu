@@ -4,6 +4,7 @@ import 'package:ubantu/data/repositories/sos_repository_impl.dart';
 import 'package:ubantu/data/repositories/task_repository_impl.dart';
 import 'package:ubantu/data/services/mock_task_service.dart';
 import 'package:ubantu/data/services/supabase_order_service.dart';
+import 'package:ubantu/data/services/supabase_task_service.dart';
 import 'package:ubantu/domain/repositories/auth_repository.dart';
 import 'package:ubantu/domain/repositories/service_order_repository.dart';
 import 'package:ubantu/domain/repositories/sos_repository.dart';
@@ -29,11 +30,15 @@ class ServiceLocator {
   ServiceLocator._internal();
 
   late final MockTaskService mockTaskService = MockTaskService();
+  late final SupabaseTaskService supabaseTaskService = SupabaseTaskService();
   late final SupabaseOrderService supabaseOrderService = SupabaseOrderService();
 
   late final IAuthRepository authRepository = AuthRepositoryImpl();
   late final ITaskRepository taskRepository =
-      TaskRepositoryImpl(mockService: mockTaskService);
+      TaskRepositoryImpl(
+        mockService: mockTaskService,
+        remoteService: supabaseTaskService,
+      );
   late final ISosRepository sosRepository = SosRepositoryImpl();
   late final IServiceOrderRepository serviceOrderRepository =
       ServiceOrderRepositoryImpl(service: supabaseOrderService);

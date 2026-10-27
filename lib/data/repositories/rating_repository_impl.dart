@@ -1,5 +1,6 @@
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_rating_service.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/rating_model.dart';
 import 'package:ubantu/domain/repositories/rating_repository.dart';
 
@@ -7,7 +8,10 @@ class RatingRepositoryImpl implements IRatingRepository {
   final SupabaseRatingService? _supabaseRatingService;
 
   RatingRepositoryImpl({SupabaseRatingService? remoteService})
-      : _supabaseRatingService = remoteService;
+      : _supabaseRatingService = remoteService ??
+            (SupabaseService.instance.isInitialized
+                ? SupabaseRatingService()
+                : null);
 
   @override
   Future<AppResult<List<RatingModel>>> getRatings(String targetUserId) async {
@@ -17,6 +21,10 @@ class RatingRepositoryImpl implements IRatingRepository {
       if (result.isSuccess) {
         return result;
       }
+    }
+
+    if (SupabaseService.instance.isInitialized) {
+      return AppResult.success([]);
     }
 
     return AppResult.success([

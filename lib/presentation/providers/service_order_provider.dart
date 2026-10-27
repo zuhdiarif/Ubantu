@@ -73,6 +73,7 @@ class ServiceOrderProvider extends ChangeNotifier {
     required DateTime scheduledAt,
     required BarterType barterType,
     required String barterDescription,
+    String? photoUrl,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -94,6 +95,7 @@ class ServiceOrderProvider extends ChangeNotifier {
       itemDescription: itemDescription,
       barterType: barterType,
       barterDescription: barterDescription,
+      barterPhotoUrl: photoUrl,
       vehicleType: vehicleType,
       weightKg: weightKg,
       createdAt: DateTime.now(),
@@ -105,6 +107,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     if (result.isSuccess) {
       _myOrders = [result.data!, ..._myOrders];
+      _activeOrders = [result.data!, ..._activeOrders];
       notifyListeners();
       return true;
     } else {
@@ -152,6 +155,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     if (result.isSuccess) {
       _myOrders = [result.data!, ..._myOrders];
+      _activeOrders = [result.data!, ..._activeOrders];
       notifyListeners();
       return true;
     } else {
@@ -203,6 +207,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     if (result.isSuccess) {
       _myOrders = [result.data!, ..._myOrders];
+      _activeOrders = [result.data!, ..._activeOrders];
       notifyListeners();
       return true;
     } else {

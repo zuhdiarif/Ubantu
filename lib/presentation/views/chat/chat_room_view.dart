@@ -22,15 +22,18 @@ class ChatRoomView extends StatefulWidget {
   State<ChatRoomView> createState() => _ChatRoomViewState();
 }
 
-class _ChatRoomViewState extends State<ChatRoomView> {
+class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   bool _isOrderCardExpanded = true;
   Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _focusNode.addListener(_handleFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final chatProvider = context.read<ChatProvider>();
       if (widget.initialRoom != null) {
@@ -47,12 +50,40 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       final active = chatProvider.activeRoom ?? widget.initialRoom;
       if (active != null) {
         chatProvider.loadMessages(active.id, isPolling: true);
+        chatProvider.markAsRead(active.id);
       }
     });
   }
 
+  void _handleFocusChange() {
+    if (_focusNode.hasFocus) {
+      if (_isOrderCardExpanded) {
+        setState(() {
+          _isOrderCardExpanded = false;
+        });
+      }
+      _scrollToBottom();
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final bottomInset = View.of(context).viewInsets.bottom;
+    if (bottomInset > 0) {
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted) {
+          _scrollToBottom();
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _focusNode.removeListener(_handleFocusChange);
+    _focusNode.dispose();
     _pollTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
@@ -167,7 +198,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: const Color(0xFFE3E7DE),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -179,6 +210,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E281C),
                   fontFamily: 'Plus Jakarta Sans',
                 ),
               ),
@@ -188,7 +220,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF848484),
+                  color: Color(0xFF5C6658),
                   fontFamily: 'Plus Jakarta Sans',
                 ),
               ),
@@ -201,7 +233,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                     iconSize: 36,
                     icon: Icon(
                       star <= rating ? Icons.star : Icons.star_border,
-                      color: const Color(0xFFF4A261),
+                      color: const Color(0xFFE5A93C),
                     ),
                     onPressed: () {
                       setSheetState(() {
@@ -215,12 +247,25 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               TextField(
                 controller: reviewController,
                 maxLines: 3,
+                style: const TextStyle(
+                  color: Color(0xFF1E281C),
+                  fontSize: 14,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
                 decoration: InputDecoration(
                   hintText: 'Tulis ulasan opsional...',
-                  hintStyle: const TextStyle(fontSize: 14, color: Color(0xFFBFC3BE)),
+                  hintStyle: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF8C9688),
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFBFC3BE)),
+                    borderSide: const BorderSide(color: Color(0xFFE3E7DE)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE3E7DE)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -231,11 +276,12 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF263225),
+                  backgroundColor: const Color(0xFF283626),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
+                  elevation: 0,
                 ),
                 onPressed: () async {
                   await context.read<RatingProvider>().submitRating(
@@ -276,10 +322,27 @@ class _ChatRoomViewState extends State<ChatRoomView> {
 
     if (room == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFFFFFAFA),
+        backgroundColor: AppColors.background,
         appBar: AppBar(
-          backgroundColor: const Color(0xFFA8C686),
-          title: const Text('Chat'),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF1E281C),
+              size: 20,
+            ),
+            onPressed: () => context.pop(),
+          ),
+          title: const Text(
+            'Chat',
+            style: TextStyle(
+              color: Color(0xFF1E281C),
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
         ),
         body: const Center(
           child: Text('Percakapan tidak ditemukan'),
@@ -288,47 +351,31 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFAFA),
+      backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         top: false,
         child: Column(
           children: [
             _buildTopBar(context, room),
-            Expanded(
-              child: Stack(
-                children: [
-                  Column(
-                    children: [
-                      SizedBox(
-                        height: room.isActive
-                            ? (_isOrderCardExpanded ? 240 : 48)
-                            : 0,
-                      ),
-                      if (!room.isActive) ...[
-                        _buildCompletedNoticeBanner(),
-                        const SizedBox(height: 8),
-                        _buildDateDivider('Hari ini'),
-                      ],
-                      Expanded(
-                        child: _buildMessagesList(chatProvider, room),
-                      ),
-                      if (!room.isActive) ...[
-                        _buildOrderSummaryCard(context, room),
-                        _buildClosedNotice(),
-                      ],
-                      _buildBottomInput(context, room),
-                    ],
-                  ),
-                  if (room.isActive)
-                    Positioned(
-                      top: 12,
-                      left: 16,
-                      right: 16,
-                      child: _buildActiveOrderCard(context, room),
-                    ),
-                ],
+            if (room.isActive)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: _buildActiveOrderCard(context, room),
               ),
+            if (!room.isActive) ...[
+              _buildCompletedNoticeBanner(),
+              const SizedBox(height: 8),
+              _buildDateDivider('Hari ini'),
+            ],
+            Expanded(
+              child: _buildMessagesList(chatProvider, room),
             ),
+            if (!room.isActive) ...[
+              _buildOrderSummaryCard(context, room),
+              _buildClosedNotice(),
+            ],
+            _buildBottomInput(context, room),
           ],
         ),
       ),
@@ -339,13 +386,16 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     final topPadding = MediaQuery.of(context).padding.top;
     return Container(
       padding: EdgeInsets.only(
-        top: topPadding + 10,
+        top: topPadding + 8,
         bottom: 12,
-        left: 12,
+        left: 8,
         right: 16,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFFA8C686),
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFE8ECE3), width: 1),
+        ),
       ),
       child: Row(
         children: [
@@ -353,7 +403,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
               size: 20,
-              color: Color(0xFF202020),
+              color: Color(0xFF1E281C),
             ),
             onPressed: () {
               if (context.canPop()) {
@@ -365,11 +415,11 @@ class _ChatRoomViewState extends State<ChatRoomView> {
           ),
           CircleAvatar(
             radius: 20,
-            backgroundColor: const Color(0xFFD9D9D9),
+            backgroundColor: const Color(0xFFE2F1D8),
             child: Text(
               room.otherUserName.isNotEmpty ? room.otherUserName[0].toUpperCase() : 'U',
               style: const TextStyle(
-                color: Color(0xFF202020),
+                color: Color(0xFF263225),
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 fontFamily: 'Plus Jakarta Sans',
@@ -385,8 +435,8 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 Text(
                   room.otherUserName,
                   style: const TextStyle(
-                    color: Color(0xFF202020),
-                    fontSize: 17,
+                    color: Color(0xFF1E281C),
+                    fontSize: 16,
                     fontFamily: 'Plus Jakarta Sans',
                     fontWeight: FontWeight.w700,
                   ),
@@ -396,7 +446,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 Text(
                   room.otherUserFaculty ?? 'Mahasiswa Universitas Brawijaya',
                   style: const TextStyle(
-                    color: Color(0xFF4A5568),
+                    color: Color(0xFF5C6658),
                     fontSize: 11,
                     fontFamily: 'Plus Jakarta Sans',
                   ),
@@ -423,13 +473,14 @@ class _ChatRoomViewState extends State<ChatRoomView> {
   Widget _buildActiveOrderCard(BuildContext context, ChatRoomModel room) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFAFA),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE3E7DE), width: 1),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x2F000000),
-            blurRadius: 6,
-            offset: Offset(0, 2),
+            color: const Color(0xFF2F3E2E).withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -442,7 +493,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 _isOrderCardExpanded = !_isOrderCardExpanded;
               });
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
@@ -450,17 +501,17 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAF4),
+                      color: const Color(0xFFE8F2DF),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF86B049),
+                        color: AppColors.primaryGreen,
                         width: 1,
                       ),
                     ),
                     child: Text(
                       room.serviceStatus,
                       style: const TextStyle(
-                        color: Color(0xFF86B049),
+                        color: Color(0xFF386624),
                         fontSize: 11,
                         fontFamily: 'Plus Jakarta Sans',
                         fontWeight: FontWeight.w600,
@@ -474,7 +525,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                       const Text(
                         'Order',
                         style: TextStyle(
-                          color: Color(0xFF848484),
+                          color: Color(0xFF5C6658),
                           fontSize: 11,
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w500,
@@ -483,7 +534,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                       Text(
                         room.orderNumber,
                         style: const TextStyle(
-                          color: Color(0xFF86B049),
+                          color: AppColors.primaryGreen,
                           fontSize: 12,
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w700,
@@ -496,14 +547,14 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                     _isOrderCardExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: const Color(0xFF848484),
+                    color: const Color(0xFF5C6658),
                   ),
                 ],
               ),
             ),
           ),
           if (_isOrderCardExpanded) ...[
-            const Divider(height: 1, thickness: 1, color: Color(0xFFEBEBEB)),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFE8ECE3)),
             Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -515,7 +566,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                       Text(
                         room.serviceTitle,
                         style: const TextStyle(
-                          color: Color(0xFF202020),
+                          color: Color(0xFF1E281C),
                           fontSize: 15,
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w600,
@@ -524,7 +575,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                       Text(
                         room.totalPrice ?? 'Barter',
                         style: const TextStyle(
-                          color: Color(0xFF398056),
+                          color: AppColors.primaryGreen,
                           fontSize: 15,
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w700,
@@ -536,7 +587,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   Text(
                     room.itemSummary,
                     style: const TextStyle(
-                      color: Color(0xFF4A5568),
+                      color: Color(0xFF5C6658),
                       fontSize: 13,
                       fontFamily: 'Plus Jakarta Sans',
                     ),
@@ -544,7 +595,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      const Icon(Icons.radio_button_checked, size: 16, color: Color(0xFF86B049)),
+                      const Icon(Icons.radio_button_checked, size: 16, color: AppColors.primaryGreen),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -553,7 +604,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                             const Text(
                               'PENJEMPUTAN',
                               style: TextStyle(
-                                color: Color(0xFF848484),
+                                color: Color(0xFF8C9688),
                                 fontSize: 10,
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w600,
@@ -562,7 +613,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                             Text(
                               room.pickupLocation,
                               style: const TextStyle(
-                                color: Color(0xFF202020),
+                                color: Color(0xFF1E281C),
                                 fontSize: 13,
                                 fontFamily: 'Plus Jakarta Sans',
                               ),
@@ -577,7 +628,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 16, color: Color(0xFF398056)),
+                      const Icon(Icons.location_on, size: 16, color: AppColors.accentOrange),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -586,7 +637,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                             const Text(
                               'TUJUAN',
                               style: TextStyle(
-                                color: Color(0xFF398056),
+                                color: Color(0xFF8C9688),
                                 fontSize: 10,
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w600,
@@ -595,7 +646,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                             Text(
                               room.destinationLocation,
                               style: const TextStyle(
-                                color: Color(0xFF398056),
+                                color: Color(0xFF1E281C),
                                 fontSize: 13,
                                 fontFamily: 'Plus Jakarta Sans',
                               ),
@@ -621,13 +672,14 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF86B049),
+        color: const Color(0xFFE8F2DF),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primarySage.withValues(alpha: 0.6)),
       ),
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.check_circle_outline, color: Colors.white, size: 22),
+          Icon(Icons.check_circle_rounded, color: AppColors.primaryGreen, size: 22),
           SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -636,17 +688,17 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 Text(
                   'Pengiriman berhasil diselesaikan.',
                   style: TextStyle(
-                    color: Color(0xFFEAECEA),
+                    color: Color(0xFF1E281C),
                     fontSize: 13,
                     fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Chat akan tetap tersedia selama 24 jam setelah pesanan selesai.',
                   style: TextStyle(
-                    color: Color(0xFFEAECEA),
+                    color: Color(0xFF5C6658),
                     fontSize: 11,
                     fontFamily: 'Plus Jakarta Sans',
                   ),
@@ -665,20 +717,16 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFAFA),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: const Color(0xFFCFCFCF),
-            width: 1,
-          ),
+          color: const Color(0xFFE8ECE3),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           dateText,
           style: const TextStyle(
-            color: Color(0xFF202020),
-            fontSize: 12,
+            color: Color(0xFF5C6658),
+            fontSize: 11,
             fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -698,7 +746,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         child: Text(
           'Mulai kirim pesan ke ${room.otherUserName}',
           style: const TextStyle(
-            color: Color(0xFF848484),
+            color: Color(0xFF8C9688),
             fontSize: 13,
             fontFamily: 'Plus Jakarta Sans',
           ),
@@ -726,13 +774,13 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           constraints: const BoxConstraints(maxWidth: 290),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: const BoxDecoration(
-            color: Color(0xFFA8C686),
+            color: Color(0xFF86B049),
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
-              bottomLeft: Radius.circular(15),
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+              bottomLeft: Radius.circular(16),
             ),
           ),
           child: Column(
@@ -742,7 +790,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               Text(
                 msg.message,
                 style: const TextStyle(
-                  color: Color(0xFF202020),
+                  color: Colors.white,
                   fontSize: 14,
                   fontFamily: 'Plus Jakarta Sans',
                   fontWeight: FontWeight.w500,
@@ -755,8 +803,8 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 children: [
                   Text(
                     timeStr,
-                    style: const TextStyle(
-                      color: Color(0xFF202020),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
                       fontSize: 11,
                       fontFamily: 'Plus Jakarta Sans',
                     ),
@@ -765,7 +813,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   Icon(
                     msg.isRead ? Icons.done_all : Icons.done,
                     size: 14,
-                    color: const Color(0xFF202020),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                 ],
               ),
@@ -779,14 +827,22 @@ class _ChatRoomViewState extends State<ChatRoomView> {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           constraints: const BoxConstraints(maxWidth: 290),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: const BoxDecoration(
-            color: Color(0xFFEBEBEB),
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
-              bottomRight: Radius.circular(15),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+              bottomRight: Radius.circular(16),
             ),
+            border: Border.all(color: const Color(0xFFE3E7DE)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1E281C).withValues(alpha: 0.03),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -795,7 +851,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               Text(
                 msg.message,
                 style: const TextStyle(
-                  color: Color(0xFF202020),
+                  color: Color(0xFF1E281C),
                   fontSize: 14,
                   fontFamily: 'Plus Jakarta Sans',
                   fontWeight: FontWeight.w500,
@@ -808,7 +864,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 child: Text(
                   timeStr,
                   style: const TextStyle(
-                    color: Color(0xFF858585),
+                    color: Color(0xFF8C9688),
                     fontSize: 11,
                     fontFamily: 'Plus Jakarta Sans',
                   ),
@@ -824,15 +880,16 @@ class _ChatRoomViewState extends State<ChatRoomView> {
   Widget _buildOrderSummaryCard(BuildContext context, ChatRoomModel room) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFAFA),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE3E7DE)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x2F000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
+            color: const Color(0xFF1E281C).withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -843,10 +900,10 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAF4),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFE8F2DF),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFF86B049)),
                 ),
                 child: Text(
@@ -864,7 +921,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                   const Text(
                     'Selesai Pada ',
                     style: TextStyle(
-                      color: Color(0xFF848484),
+                      color: Color(0xFF5C6658),
                       fontSize: 11,
                       fontFamily: 'Plus Jakarta Sans',
                     ),
@@ -882,11 +939,11 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             room.destinationLocation,
             style: const TextStyle(
-              color: Color(0xFF202020),
+              color: Color(0xFF1E281C),
               fontSize: 15,
               fontWeight: FontWeight.w600,
               fontFamily: 'Plus Jakarta Sans',
@@ -896,19 +953,19 @@ class _ChatRoomViewState extends State<ChatRoomView> {
           Text(
             room.itemSummary,
             style: const TextStyle(
-              color: Color(0xFF848484),
+              color: Color(0xFF5C6658),
               fontSize: 13,
               fontFamily: 'Plus Jakarta Sans',
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Total Bayar',
                 style: TextStyle(
-                  color: Color(0xFF202020),
+                  color: Color(0xFF1E281C),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Plus Jakarta Sans',
@@ -917,24 +974,25 @@ class _ChatRoomViewState extends State<ChatRoomView> {
               Text(
                 room.totalPrice ?? 'Rp 65.000',
                 style: const TextStyle(
-                  color: Color(0xFF398056),
-                  fontSize: 15,
+                  color: Color(0xFF86B049),
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'Plus Jakarta Sans',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF263225),
+                backgroundColor: const Color(0xFF283626),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
+                elevation: 0,
               ),
               onPressed: () => _showRatingSheet(context, room),
               child: const Text(
@@ -953,7 +1011,7 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             width: double.infinity,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF263225), width: 1),
+                side: const BorderSide(color: Color(0xFFE3E7DE), width: 1),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -963,14 +1021,14 @@ class _ChatRoomViewState extends State<ChatRoomView> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Detail Pesanan #${room.orderNumber}'),
-                    backgroundColor: const Color(0xFF263225),
+                    backgroundColor: const Color(0xFF283626),
                   ),
                 );
               },
               child: const Text(
                 'Lihat Detail Pesanan',
                 style: TextStyle(
-                  color: Color(0xFF263225),
+                  color: Color(0xFF283626),
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Plus Jakarta Sans',
@@ -989,12 +1047,12 @@ class _ChatRoomViewState extends State<ChatRoomView> {
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.schedule, size: 16, color: Color(0xFFBFC3BE)),
+          Icon(Icons.schedule, size: 16, color: Color(0xFF8C9688)),
           SizedBox(width: 6),
           Text(
             'Chat ditutup secara otomatis dalam 23.59',
             style: TextStyle(
-              color: Color(0xFFBFC3BE),
+              color: Color(0xFF8C9688),
               fontSize: 12,
               fontFamily: 'Plus Jakarta Sans',
             ),
@@ -1008,9 +1066,9 @@ class _ChatRoomViewState extends State<ChatRoomView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
-        color: Color(0xFFFFFAFA),
+        color: Colors.white,
         border: Border(
-          top: BorderSide(color: Color(0xFFEBEBEB), width: 1),
+          top: BorderSide(color: Color(0xFFE8ECE3), width: 1),
         ),
       ),
       child: Row(
@@ -1019,12 +1077,13 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFF9DC04D), width: 1),
+              color: const Color(0xFFF8FAF4),
+              border: Border.all(color: const Color(0xFFE3E7DE), width: 1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: IconButton(
               padding: EdgeInsets.zero,
-              icon: const Icon(Icons.add, color: Color(0xFF9DC04D), size: 22),
+              icon: const Icon(Icons.add, color: Color(0xFF5C6658), size: 22),
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -1040,23 +1099,26 @@ class _ChatRoomViewState extends State<ChatRoomView> {
             child: Container(
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFEBEBEB),
+                color: const Color(0xFFF8FAF4),
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE3E7DE)),
               ),
               child: TextField(
                 controller: _textController,
+                focusNode: _focusNode,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _handleSendMessage(room),
                 style: const TextStyle(
                   fontSize: 13,
+                  color: Color(0xFF1E281C),
                   fontFamily: 'Plus Jakarta Sans',
                 ),
                 decoration: const InputDecoration(
                   hintText: 'Tulis Pesan...',
                   hintStyle: TextStyle(
-                    color: Color(0xFF848484),
+                    color: Color(0xFF8C9688),
                     fontSize: 12,
-                    fontFamily: 'Inter',
+                    fontFamily: 'Plus Jakarta Sans',
                     fontWeight: FontWeight.w500,
                   ),
                   border: InputBorder.none,

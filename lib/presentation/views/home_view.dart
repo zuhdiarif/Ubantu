@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
 import 'package:ubantu/presentation/providers/task_provider.dart';
@@ -20,13 +22,35 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int _modeTab = 0;
   int _activityTab = 0;
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ServiceOrderProvider>().loadActiveOrders();
+      _refreshData();
     });
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) {
+        _refreshData();
+      }
+    });
+  }
+
+  Future<void> _refreshData() async {
+    final user = context.read<AuthProvider>().currentUser;
+    final userId = user?.id ?? '';
+    await Future.wait([
+      context.read<ServiceOrderProvider>().loadActiveOrders(),
+      if (userId.isNotEmpty)
+        context.read<ServiceOrderProvider>().loadMyOrders(userId),
+    ]);
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -38,25 +62,30 @@ class _HomeViewState extends State<HomeView> {
       child: SafeArea(
         top: true,
         bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 20),
-              _buildModeToggle(taskProvider),
-              const SizedBox(height: 20),
-              if (_modeTab == 0) ...[
-                _buildPromoBanner(),
-                const SizedBox(height: 24),
-                _buildLayananPopulerSection(),
-                const SizedBox(height: 24),
-                _buildAktivitasSayaSection(),
-              ] else ...[
-                _buildOrangButuhBantuanSection(taskProvider),
+        child: RefreshIndicator(
+          onRefresh: _refreshData,
+          color: AppColors.primaryGreen,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildModeToggle(taskProvider),
+                const SizedBox(height: 20),
+                if (_modeTab == 0) ...[
+                  _buildPromoBanner(),
+                  const SizedBox(height: 24),
+                  _buildLayananPopulerSection(),
+                  const SizedBox(height: 24),
+                  _buildAktivitasSayaSection(),
+                ] else ...[
+                  _buildOrangButuhBantuanSection(taskProvider),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -64,6 +93,11 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildHeader() {
+    final user = context.watch<AuthProvider>().currentUser;
+    final userName = user?.fullName.isNotEmpty == true
+        ? user!.fullName.split(' ').first
+        : 'Farel';
+
     return Row(
       children: [
         const CircleAvatar(
@@ -77,7 +111,7 @@ class _HomeViewState extends State<HomeView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hai Farel!',
+                'Hai $userName!',
                 style: AppTypography.h4.copyWith(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF1E281C),
@@ -155,6 +189,7 @@ class _HomeViewState extends State<HomeView> {
                   _modeTab = 1;
                 });
                 taskProvider.switchMode(1);
+                context.read<ServiceOrderProvider>().loadActiveOrders();
               },
               child: Container(
                 decoration: BoxDecoration(
@@ -334,6 +369,17 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildAktivitasSayaSection() {
+    final orderProvider = context.watch<ServiceOrderProvider>();
+    final myOrders = orderProvider.myOrders;
+    final ongoingOrders = myOrders
+        .where((o) => o.status != MoveServiceStatus.completed)
+        .toList();
+    final historyOrders = myOrders
+        .where((o) => o.status == MoveServiceStatus.completed)
+        .toList();
+
+    final displayedOrders = _activityTab == 0 ? ongoingOrders : historyOrders;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -404,120 +450,201 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildAktivitasCard(
-          title: 'Bersih kos',
-          location: 'Jl.Veteran, Malang',
-          dateTime: '20 Juli 2026 - 09:00',
-          imageAsset: 'assets/images/ic_bersih_kos.png',
-          statusText: 'Berlangsung',
-        ),
+        if (displayedOrders.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE8EBE4)),
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  _activityTab == 0
+                      ? Icons.pending_actions_rounded
+                      : Icons.history_rounded,
+                  size: 36,
+                  color: Colors.grey.shade400,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _activityTab == 0
+                      ? 'Belum ada aktivitas berlangsung'
+                      : 'Belum ada riwayat pesanan',
+                  style: AppTypography.body2.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF5C6658),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ...displayedOrders.map((order) => _buildAktivitasOrderCard(order)),
       ],
     );
   }
 
-  Widget _buildAktivitasCard({
-    required String title,
-    required String location,
-    required String dateTime,
-    required String imageAsset,
-    required String statusText,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8EBE4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF0F4EC),
-              shape: BoxShape.circle,
+  Widget _buildAktivitasOrderCard(ServiceOrderModel order) {
+    final title = switch (order.category) {
+      ServiceCategory.pindahKos => 'Pindah kos',
+      ServiceCategory.bersihKos => 'Bersih kos',
+      ServiceCategory.antarJemput => 'Antar jemput',
+    };
+
+    final imageAsset = switch (order.category) {
+      ServiceCategory.pindahKos => 'assets/images/ic_pindah_kos.png',
+      ServiceCategory.bersihKos => 'assets/images/ic_bersih_kos.png',
+      ServiceCategory.antarJemput => 'assets/images/ic_antar_jemput.png',
+    };
+
+    final statusText = switch (order.status) {
+      MoveServiceStatus.waiting => 'Menunggu',
+      MoveServiceStatus.accepted => 'Diterima',
+      MoveServiceStatus.inProgress => 'Berlangsung',
+      MoveServiceStatus.completed => 'Selesai',
+      MoveServiceStatus.cancelled => 'Batal',
+    };
+
+    final isOngoing = order.status != MoveServiceStatus.completed;
+
+    final dateStr =
+        '${order.scheduledAt.day} ${_monthName(order.scheduledAt.month)} ${order.scheduledAt.year} - ${order.scheduledAt.hour.toString().padLeft(2, '0')}:${order.scheduledAt.minute.toString().padLeft(2, '0')}';
+
+    return GestureDetector(
+      onTap: () {
+        context.push(AppRouter.bantuanDetail, extra: order);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE8EBE4)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Center(
-              child: Image.asset(
-                imageAsset,
-                width: 36,
-                height: 36,
-                fit: BoxFit.contain,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0F4EC),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Image.asset(
+                  imageAsset,
+                  width: 36,
+                  height: 36,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.body1.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E281C),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.body1.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E281C),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_rounded, size: 14, color: Color(0xFF283626)),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        location,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_rounded,
+                        size: 14,
+                        color: Color(0xFF283626),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          order.locationOrigin,
+                          style: AppTypography.caption.copyWith(
+                            color: const Color(0xFF5C6658),
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 13,
+                        color: Color(0xFF283626),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        dateStr,
                         style: AppTypography.caption.copyWith(
                           color: const Color(0xFF5C6658),
                           fontSize: 12,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today_rounded, size: 13, color: Color(0xFF283626)),
-                    const SizedBox(width: 4),
-                    Text(
-                      dateTime,
-                      style: AppTypography.caption.copyWith(
-                        color: const Color(0xFF5C6658),
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE2F1D8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              statusText,
-              style: AppTypography.caption.copyWith(
-                color: const Color(0xFF283626),
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isOngoing
+                    ? const Color(0xFFE2F1D8)
+                    : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                statusText,
+                style: AppTypography.caption.copyWith(
+                  color: isOngoing
+                      ? const Color(0xFF283626)
+                      : Colors.grey.shade700,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember'
+    ];
+    return months[month - 1];
   }
 
   Widget _buildOrangButuhBantuanSection(TaskProvider provider) {
@@ -746,61 +873,6 @@ class _HomeViewState extends State<HomeView> {
                   ],
                 ),
               ],
-            ],
-          ),
-        );
-      }).toList();
-    }
-
-    if (taskProvider.tasks.isNotEmpty) {
-      return taskProvider.tasks.map((task) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE8EBE4)),
-          ),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 20,
-                backgroundColor: Color(0xFFE2F1D8),
-                child: Icon(Icons.person_rounded, color: Color(0xFF283626)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      task.title,
-                      style: AppTypography.body1.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1E281C),
-                      ),
-                    ),
-                    Text(
-                      'Oleh: ${task.requesterName}',
-                      style: AppTypography.caption.copyWith(
-                        color: const Color(0xFF5C6658),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () => context.push(AppRouter.helpDetail),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF283626),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Bantu'),
-              ),
             ],
           ),
         );

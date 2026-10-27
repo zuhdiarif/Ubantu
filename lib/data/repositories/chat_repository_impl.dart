@@ -8,6 +8,7 @@ class ChatRepositoryImpl implements IChatRepository {
   final List<ChatRoomModel> _mockRooms = [];
 
   final Map<String, List<ChatMessageModel>> _mockMessages = {};
+  final Map<String, DateTime> _readRoomTimestamps = {};
 
   @override
   Future<AppResult<List<ChatRoomModel>>> getChatRooms() async {
@@ -49,9 +50,16 @@ class ChatRepositoryImpl implements IChatRepository {
                 hasMessages = true;
                 lastMsg = msgsRes.first['message'] as String? ?? '';
                 lastTime = DateTime.tryParse(msgsRes.first['created_at']?.toString() ?? '') ?? lastTime;
-                unread = msgsRes
-                    .where((m) => m['sender_id'] != currentUserId && m['is_read'] == false)
-                    .length;
+                final lastRead = _readRoomTimestamps[roomId];
+                unread = msgsRes.where((m) {
+                  if (m['sender_id'] == currentUserId) return false;
+                  if (m['is_read'] == true) return false;
+                  if (lastRead != null) {
+                    final msgTime = DateTime.tryParse(m['created_at']?.toString() ?? '');
+                    if (msgTime != null && !msgTime.isAfter(lastRead)) return false;
+                  }
+                  return true;
+                }).length;
               }
             } catch (_) {}
 
@@ -117,9 +125,16 @@ class ChatRepositoryImpl implements IChatRepository {
               if (msgsRes.isNotEmpty) {
                 final lastMsg = msgsRes.first['message'] as String? ?? '';
                 final lastTime = DateTime.tryParse(msgsRes.first['created_at']?.toString() ?? '') ?? DateTime.now();
-                final unread = msgsRes
-                    .where((m) => m['sender_id'] != currentUserId && m['is_read'] == false)
-                    .length;
+                final lastRead = _readRoomTimestamps[roomId];
+                final unread = msgsRes.where((m) {
+                  if (m['sender_id'] == currentUserId) return false;
+                  if (m['is_read'] == true) return false;
+                  if (lastRead != null) {
+                    final msgTime = DateTime.tryParse(m['created_at']?.toString() ?? '');
+                    if (msgTime != null && !msgTime.isAfter(lastRead)) return false;
+                  }
+                  return true;
+                }).length;
                 final baseRoom = ChatRoomModel.fromJson(json);
                 resultRooms.add(baseRoom.copyWith(
                   lastMessage: lastMsg,
@@ -134,7 +149,13 @@ class ChatRepositoryImpl implements IChatRepository {
         for (final localRoom in _mockRooms) {
           final hasMessages = (_mockMessages[localRoom.id] ?? []).isNotEmpty;
           if (hasMessages && !resultRooms.any((r) => r.id == localRoom.id)) {
-            resultRooms.add(localRoom);
+            final lastRead = _readRoomTimestamps[localRoom.id];
+            final unread = (_mockMessages[localRoom.id] ?? []).where((m) {
+              if (m.isMe || m.isRead) return false;
+              if (lastRead != null && !m.createdAt.isAfter(lastRead)) return false;
+              return true;
+            }).length;
+            resultRooms.add(localRoom.copyWith(unreadCount: unread));
           }
         }
 
@@ -154,6 +175,14 @@ class ChatRepositoryImpl implements IChatRepository {
       final localRoomsWithMessages = _mockRooms.where((r) {
         final msgs = _mockMessages[r.id] ?? [];
         return msgs.isNotEmpty;
+      }).map((r) {
+        final lastRead = _readRoomTimestamps[r.id];
+        final unread = (_mockMessages[r.id] ?? []).where((m) {
+          if (m.isMe || m.isRead) return false;
+          if (lastRead != null && !m.createdAt.isAfter(lastRead)) return false;
+          return true;
+        }).length;
+        return r.copyWith(unreadCount: unread);
       }).toList();
       return AppResult.success(localRoomsWithMessages);
     } catch (_) {
@@ -407,19 +436,22 @@ class ChatRepositoryImpl implements IChatRepository {
   @override
   Future<AppResult<bool>> markMessagesAsRead(String roomId) async {
     try {
-      final currentUserId = SupabaseService.instance.isInitialized
-          ? SupabaseService.instance.client.auth.currentUser?.id
-          : null;
+      _readRoomTimestamps[roomId] = DateTime.now();
 
-      if (SupabaseService.instance.isInitialized && currentUserId != null && _isValidUuid(roomId)) {
+      if (SupabaseService.instance.isInitialized) {
         final client = SupabaseService.instance.client;
         try {
           await client
               .from('chat_messages')
               .update({'is_read': true})
-              .eq('room_id', roomId)
-              .neq('sender_id', currentUserId);
+              .eq('room_id', roomId);
         } catch (_) {}
+      }
+
+      if (_mockMessages.containsKey(roomId)) {
+        _mockMessages[roomId] = _mockMessages[roomId]!
+            .map((m) => m.copyWith(isRead: true))
+            .toList();
       }
 
       final roomIdx = _mockRooms.indexWhere((r) => r.id == roomId);
