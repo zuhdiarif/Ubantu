@@ -57,7 +57,9 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
 
   void _handleFocusChange() {
     if (_focusNode.hasFocus) {
-      if (_isOrderCardExpanded) {
+      final chatProvider = context.read<ChatProvider>();
+      final room = chatProvider.activeRoom ?? widget.initialRoom;
+      if (room != null && room.isActive && _isOrderCardExpanded) {
         setState(() {
           _isOrderCardExpanded = false;
         });
@@ -373,10 +375,20 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
             Expanded(
               child: _buildMessagesList(chatProvider, room),
             ),
-            if (!room.isActive && !isKeyboardOpen) ...[
-              _buildOrderSummaryCard(context, room),
-              _buildClosedNotice(),
-            ],
+            if (!room.isActive)
+              Visibility(
+                key: const ValueKey('chat_room_closed_summary_panel'),
+                visible: !isKeyboardOpen,
+                maintainState: false,
+                child: Column(
+                  key: const ValueKey('chat_room_closed_summary_column'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildOrderSummaryCard(context, room),
+                    _buildClosedNotice(),
+                  ],
+                ),
+              ),
             _buildBottomInput(context, room),
           ],
         ),
@@ -744,35 +756,27 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
 
     final messages = chatProvider.activeMessages;
     if (messages.isEmpty) {
-      return GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        behavior: HitTestBehavior.translucent,
-        child: Center(
-          child: Text(
-            'Mulai kirim pesan ke ${room.otherUserName}',
-            style: const TextStyle(
-              color: Color(0xFF8C9688),
-              fontSize: 13,
-              fontFamily: 'Plus Jakarta Sans',
-            ),
+      return Center(
+        child: Text(
+          'Mulai kirim pesan ke ${room.otherUserName}',
+          style: const TextStyle(
+            color: Color(0xFF8C9688),
+            fontSize: 13,
+            fontFamily: 'Plus Jakarta Sans',
           ),
         ),
       );
     }
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      behavior: HitTestBehavior.translucent,
-      child: ListView.builder(
-        controller: _scrollController,
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: messages.length,
-        itemBuilder: (context, index) {
-          final msg = messages[index];
-          return _buildMessageBubble(msg);
-        },
-      ),
+    return ListView.builder(
+      controller: _scrollController,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: messages.length,
+      itemBuilder: (context, index) {
+        final msg = messages[index];
+        return _buildMessageBubble(msg);
+      },
     );
   }
 
@@ -890,6 +894,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
 
   Widget _buildOrderSummaryCard(BuildContext context, ChatRoomModel room) {
     return Container(
+      key: const ValueKey('chat_room_order_summary_card'),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1054,6 +1059,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
 
   Widget _buildClosedNotice() {
     return Container(
+      key: const ValueKey('chat_room_closed_notice'),
       margin: const EdgeInsets.only(bottom: 6),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1075,6 +1081,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
 
   Widget _buildBottomInput(BuildContext context, ChatRoomModel room) {
     return Container(
+      key: const ValueKey('chat_room_bottom_input_bar'),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -1115,6 +1122,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
                 border: Border.all(color: const Color(0xFFE3E7DE)),
               ),
               child: TextField(
+                key: const ValueKey('chat_room_text_field'),
                 controller: _textController,
                 focusNode: _focusNode,
                 textInputAction: TextInputAction.send,
