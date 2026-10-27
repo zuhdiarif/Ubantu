@@ -4,6 +4,9 @@ import 'package:ubantu/domain/models/task_model.dart';
 class FilterTasksUseCase {
   List<TaskModel> execute(List<TaskModel> tasks, TaskFilterModel filter) {
     return tasks.where((task) {
+      if (filter.isFemaleOnly != null && filter.isFemaleOnly! && !task.isFemaleOnly) {
+        return false;
+      }
       if (filter.category != null && task.category != filter.category) {
         return false;
       }

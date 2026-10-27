@@ -6,6 +6,7 @@ class TaskFilterModel {
   final String? locationQuery;
   final double? minRating;
   final TaskStatus? status;
+  final bool? isFemaleOnly;
 
   const TaskFilterModel({
     this.category,
@@ -13,6 +14,7 @@ class TaskFilterModel {
     this.locationQuery,
     this.minRating,
     this.status,
+    this.isFemaleOnly,
   });
 
   TaskFilterModel copyWith({
@@ -21,6 +23,7 @@ class TaskFilterModel {
     String? locationQuery,
     double? minRating,
     TaskStatus? status,
+    bool? isFemaleOnly,
   }) {
     return TaskFilterModel(
       category: category ?? this.category,
@@ -28,6 +31,7 @@ class TaskFilterModel {
       locationQuery: locationQuery ?? this.locationQuery,
       minRating: minRating ?? this.minRating,
       status: status ?? this.status,
+      isFemaleOnly: isFemaleOnly ?? this.isFemaleOnly,
     );
   }
 }

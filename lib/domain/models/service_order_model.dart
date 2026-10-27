@@ -15,6 +15,7 @@ class ServiceOrderModel {
   final String? barterPhotoUrl;
   final VehicleType? vehicleType;
   final double? weightKg;
+  final bool isFemaleOnly;
   final DateTime createdAt;
 
   const ServiceOrderModel({
@@ -32,6 +33,7 @@ class ServiceOrderModel {
     this.barterPhotoUrl,
     this.vehicleType,
     this.weightKg,
+    this.isFemaleOnly = false,
     required this.createdAt,
   });
 
@@ -65,6 +67,7 @@ class ServiceOrderModel {
             )
           : null,
       weightKg: (json['weight_kg'] as num?)?.toDouble(),
+      isFemaleOnly: json['is_female_only'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -85,6 +88,7 @@ class ServiceOrderModel {
       'barter_photo_url': barterPhotoUrl,
       'vehicle_type': vehicleType?.name,
       'weight_kg': weightKg,
+      'is_female_only': isFemaleOnly,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -104,6 +108,7 @@ class ServiceOrderModel {
     String? barterPhotoUrl,
     VehicleType? vehicleType,
     double? weightKg,
+    bool? isFemaleOnly,
     DateTime? createdAt,
   }) {
     return ServiceOrderModel(
@@ -121,6 +126,7 @@ class ServiceOrderModel {
       barterPhotoUrl: barterPhotoUrl ?? this.barterPhotoUrl,
       vehicleType: vehicleType ?? this.vehicleType,
       weightKg: weightKg ?? this.weightKg,
+      isFemaleOnly: isFemaleOnly ?? this.isFemaleOnly,
       createdAt: createdAt ?? this.createdAt,
     );
   }

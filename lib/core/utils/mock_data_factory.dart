@@ -50,6 +50,7 @@ class MockDataFactory {
           date: '18 Aug 2026',
           time: '09:00',
           notes: 'Jemput dari gedung kampus.',
+          isFemaleOnly: true,
         ),
         const TaskModel(
           id: 't4',
@@ -74,6 +75,7 @@ class MockDataFactory {
           date: '17 Aug 2026',
           time: '11:00',
           notes: 'Bantu angkut dus pindahan.',
+          isFemaleOnly: true,
         ),
         const TaskModel(
           id: 't6',
