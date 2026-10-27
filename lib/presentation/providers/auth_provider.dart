@@ -63,8 +63,9 @@ class AuthProvider extends ChangeNotifier {
 
   void updateUser(UserModel updatedUser) {
     _currentUser = updatedUser;
-    if (_repository is AuthRepositoryImpl) {
-      (_repository as AuthRepositoryImpl).setCurrentUser(updatedUser);
+    final repo = _repository;
+    if (repo is AuthRepositoryImpl) {
+      repo.setCurrentUser(updatedUser);
     }
     notifyListeners();
   }
@@ -91,8 +92,9 @@ class AuthProvider extends ChangeNotifier {
     );
 
     _currentUser = updated;
-    if (_repository is AuthRepositoryImpl) {
-      (_repository as AuthRepositoryImpl).setCurrentUser(updated);
+    final repo = _repository;
+    if (repo is AuthRepositoryImpl) {
+      repo.setCurrentUser(updated);
     }
 
     try {
@@ -132,8 +134,9 @@ class AuthProvider extends ChangeNotifier {
       final updated = baseUser.copyWith(avatarUrl: avatarUrl);
       _currentUser = updated;
 
-      if (_repository is AuthRepositoryImpl) {
-        (_repository as AuthRepositoryImpl).setCurrentUser(updated);
+      final repo = _repository;
+      if (repo is AuthRepositoryImpl) {
+        repo.setCurrentUser(updated);
       }
 
       try {
@@ -176,8 +179,9 @@ class AuthProvider extends ChangeNotifier {
       );
       _currentUser = updated;
 
-      if (_repository is AuthRepositoryImpl) {
-        (_repository as AuthRepositoryImpl).setCurrentUser(updated);
+      final repo = _repository;
+      if (repo is AuthRepositoryImpl) {
+        repo.setCurrentUser(updated);
       }
 
       try {

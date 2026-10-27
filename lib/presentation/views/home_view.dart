@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/custom_avatar.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/domain/models/user_model.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
@@ -56,6 +58,8 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     final taskProvider = context.watch<TaskProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
 
     return Material(
       color: AppColors.background,
@@ -71,7 +75,7 @@ class _HomeViewState extends State<HomeView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(),
+                _buildHeader(user),
                 const SizedBox(height: 20),
                 _buildModeToggle(taskProvider),
                 const SizedBox(height: 20),
@@ -92,26 +96,31 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildHeader() {
-    final user = context.watch<AuthProvider>().currentUser;
-    final userName = user?.fullName.isNotEmpty == true
-        ? user!.fullName.split(' ').first
+  Widget _buildHeader(UserModel? user) {
+    final displayName = user != null && user.fullName.isNotEmpty
+        ? user.fullName.split(' ').first
         : 'Farel';
 
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 26,
-          backgroundColor: Color(0xFFE2F1D8),
-          backgroundImage: AssetImage('assets/images/img_avatar_farel.png'),
-        ),
+        user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
+            ? CustomAvatar(
+                name: user.fullName,
+                imageUrl: user.avatarUrl,
+                radius: 26,
+              )
+            : const CircleAvatar(
+                radius: 26,
+                backgroundColor: Color(0xFFE2F1D8),
+                backgroundImage: AssetImage('assets/images/img_avatar_farel.png'),
+              ),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hai $userName!',
+                'Hai $displayName!',
                 style: AppTypography.h4.copyWith(
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF1E281C),
