@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/presentation/views/help_detail_view.dart';
@@ -47,11 +48,20 @@ class AppAuthNotifier extends ChangeNotifier {
   void setLoggedIn(bool value) {
     if (_isLoggedIn != value) {
       _isLoggedIn = value;
-      notifyListeners();
+      notify();
     }
   }
 
   void notify() {
+    try {
+      if (WidgetsBinding.instance.schedulerPhase ==
+          SchedulerPhase.persistentCallbacks) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
+        return;
+      }
+    } catch (_) {}
     notifyListeners();
   }
 }

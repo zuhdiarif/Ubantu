@@ -80,6 +80,9 @@ class UbantuApp extends StatelessWidget {
         },
         theme: ThemeData(
           fontFamily: AppTypography.fontFamily,
+          textTheme: ThemeData.light(useMaterial3: true).textTheme.apply(
+            fontFamily: AppTypography.fontFamily,
+          ),
           scaffoldBackgroundColor: AppColors.background,
           colorScheme: ColorScheme.fromSeed(
             seedColor: AppColors.primaryGreen,
