@@ -12,8 +12,21 @@ import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 
-class ProfilView extends StatelessWidget {
+class ProfilView extends StatefulWidget {
   const ProfilView({super.key});
+
+  @override
+  State<ProfilView> createState() => _ProfilViewState();
+}
+
+class _ProfilViewState extends State<ProfilView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthProvider>().refreshProfile();
+    });
+  }
 
   Future<void> _pickImage(BuildContext context, AuthProvider authProvider, ImageSource source) async {
     Navigator.of(context).pop();
@@ -261,8 +274,12 @@ class ProfilView extends StatelessWidget {
     return Material(
       color: AppColors.background,
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+        child: RefreshIndicator(
+          color: const Color(0xFF86B049),
+          onRefresh: () => authProvider.refreshProfile(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -380,7 +397,8 @@ class ProfilView extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildVerificationBadge(KtmVerificationStatus status) {

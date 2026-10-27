@@ -243,6 +243,31 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> refreshProfile() async {
+    final user = _currentUser;
+    if (user == null) return;
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        final result = await SupabaseProfileService().getProfile(user.id);
+        if (result.isSuccess && result.data != null) {
+          _currentUser = result.data;
+          final repo = _repository;
+          if (repo is AuthRepositoryImpl) {
+            repo.setCurrentUser(result.data!);
+          }
+          notifyListeners();
+          return;
+        }
+      } catch (_) {}
+
+      final authUser = _repository.getCurrentUser();
+      if (authUser != null) {
+        _currentUser = authUser;
+        notifyListeners();
+      }
+    }
+  }
+
   Future<void> logout() async {
     await _repository.logout();
     _currentUser = null;
