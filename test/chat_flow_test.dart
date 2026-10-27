@@ -454,6 +454,29 @@ void main() {
       expect(find.text('Beri Penilaian Layanan'), findsOneWidget);
     });
 
+    testWidgets('ChatRoomView hides order summary card when keyboard is open',
+        (tester) async {
+      final closedRoom = repo.rooms[1];
+      chatProvider.setActiveRoom(closedRoom);
+      await chatProvider.loadMessages(closedRoom.id);
+
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          MediaQuery(
+            data: const MediaQueryData(
+              viewInsets: EdgeInsets.only(bottom: 300),
+            ),
+            child: ChatRoomView(initialRoom: closedRoom),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('Beri Penilaian'), findsNothing);
+      expect(find.text('Lihat Detail Pesanan'), findsNothing);
+    });
+
     testWidgets('DebugFloatingMenu displays Fitur Chat group with both routes',
         (tester) async {
       await tester.pumpWidget(

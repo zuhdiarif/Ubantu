@@ -70,6 +70,9 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
   void didChangeMetrics() {
     super.didChangeMetrics();
     final bottomInset = View.of(context).viewInsets.bottom;
+    if (bottomInset == 0 && _focusNode.hasFocus) {
+      _focusNode.unfocus();
+    }
     if (bottomInset > 0) {
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted) {
@@ -350,33 +353,39 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
       );
     }
 
+    final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         top: false,
-        child: Column(
-          children: [
-            _buildTopBar(context, room),
-            if (room.isActive)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: _buildActiveOrderCard(context, room),
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          behavior: HitTestBehavior.translucent,
+          child: Column(
+            children: [
+              _buildTopBar(context, room),
+              if (room.isActive)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: _buildActiveOrderCard(context, room),
+                ),
+              if (!room.isActive) ...[
+                _buildCompletedNoticeBanner(),
+                const SizedBox(height: 8),
+                _buildDateDivider('Hari ini'),
+              ],
+              Expanded(
+                child: _buildMessagesList(chatProvider, room),
               ),
-            if (!room.isActive) ...[
-              _buildCompletedNoticeBanner(),
-              const SizedBox(height: 8),
-              _buildDateDivider('Hari ini'),
+              if (!room.isActive && !isKeyboardOpen) ...[
+                _buildOrderSummaryCard(context, room),
+                _buildClosedNotice(),
+              ],
+              _buildBottomInput(context, room),
             ],
-            Expanded(
-              child: _buildMessagesList(chatProvider, room),
-            ),
-            if (!room.isActive) ...[
-              _buildOrderSummaryCard(context, room),
-              _buildClosedNotice(),
-            ],
-            _buildBottomInput(context, room),
-          ],
+          ),
         ),
       ),
     );
