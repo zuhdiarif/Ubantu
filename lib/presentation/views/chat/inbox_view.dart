@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
+import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/presentation/providers/chat_provider.dart';
@@ -63,28 +64,24 @@ class _InboxViewState extends State<InboxView> {
     final chatProvider = context.watch<ChatProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFAFA),
+      backgroundColor: AppColors.background,
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 16,
-              bottom: 16,
-            ),
-            decoration: const BoxDecoration(
-              color: Color(0xFFA8C686),
-            ),
-            child: const Center(
-              child: Text(
-                'Chat',
-                style: TextStyle(
-                  color: Color(0xFF92613A),
-                  fontSize: 20,
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontWeight: FontWeight.w700,
-                  height: 1.40,
-                ),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Row(
+                children: [
+                  Text(
+                    'Chat',
+                    style: AppTypography.h4.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E281C),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -93,49 +90,71 @@ class _InboxViewState extends State<InboxView> {
               onRefresh: () => chatProvider.loadRooms(),
               color: AppColors.primaryGreen,
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 children: [
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF86B049),
+                      color: const Color(0xFFE8F2DF),
                       borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Text(
-                      'Chat hanya tersedia untuk pesanan yang telah dikonfirmasi.',
-                      style: TextStyle(
-                        color: Color(0xFFEAECEA),
-                        fontSize: 15,
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w400,
-                        height: 1.45,
+                      border: Border.all(
+                        color: AppColors.primarySage.withValues(alpha: 0.6),
+                        width: 1,
                       ),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: AppColors.primaryGreen,
+                          size: 20,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Chat hanya tersedia untuk pesanan yang telah dikonfirmasi.',
+                            style: TextStyle(
+                              color: Color(0xFF2F3E2E),
+                              fontSize: 13,
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    height: 52,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAF4),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: const Color(0xFFBFC3BE),
+                        color: const Color(0xFFE3E7DE),
                         width: 1,
                       ),
                     ),
                     child: TextField(
                       controller: _searchController,
                       onChanged: (val) => chatProvider.searchRooms(val),
+                      style: const TextStyle(
+                        color: Color(0xFF1E281C),
+                        fontSize: 14,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
                       decoration: InputDecoration(
                         prefixIcon: const Icon(
                           Icons.search,
-                          color: Color(0xFFBFC3BE),
-                          size: 22,
+                          color: Color(0xFF5C6658),
+                          size: 20,
                         ),
                         suffixIcon: _searchController.text.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear, size: 18, color: Color(0xFFBFC3BE)),
+                                icon: const Icon(Icons.clear, size: 18, color: Color(0xFF5C6658)),
                                 onPressed: () {
                                   _searchController.clear();
                                   chatProvider.searchRooms('');
@@ -144,13 +163,13 @@ class _InboxViewState extends State<InboxView> {
                             : null,
                         hintText: 'Cari Percakapan',
                         hintStyle: const TextStyle(
-                          color: Color(0xFFBFC3BE),
-                          fontSize: 15,
+                          color: Color(0xFF8C9688),
+                          fontSize: 14,
                           fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w500,
                         ),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -242,7 +261,7 @@ class _InboxViewState extends State<InboxView> {
                             child: Text(
                               room.otherUserName,
                               style: const TextStyle(
-                                color: Color(0xFF202020),
+                                color: Color(0xFF1E281C),
                                 fontSize: 16,
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w600,
@@ -257,13 +276,13 @@ class _InboxViewState extends State<InboxView> {
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: room.isActive
-                                  ? const Color(0xFFF0FDF4)
-                                  : const Color(0xFFF3F4F6),
+                                  ? const Color(0xFFE8F2DF)
+                                  : const Color(0xFFECEEEA),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
                                 color: room.isActive
-                                    ? const Color(0xFF86B049)
-                                    : const Color(0xFFBFC3BE),
+                                    ? AppColors.primaryGreen
+                                    : const Color(0xFFC7CDC3),
                                 width: 0.8,
                               ),
                             ),
@@ -271,8 +290,8 @@ class _InboxViewState extends State<InboxView> {
                               room.serviceTitle,
                               style: TextStyle(
                                 color: room.isActive
-                                    ? const Color(0xFF86B049)
-                                    : const Color(0xFF848484),
+                                    ? const Color(0xFF386624)
+                                    : const Color(0xFF6B7368),
                                 fontSize: 10,
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w600,
@@ -287,7 +306,7 @@ class _InboxViewState extends State<InboxView> {
                           const Icon(
                             Icons.done_all,
                             size: 14,
-                            color: Color(0xFF86B049),
+                            color: AppColors.primaryGreen,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
@@ -296,7 +315,7 @@ class _InboxViewState extends State<InboxView> {
                                   ? room.lastMessage
                                   : 'Mulai percakapan baru',
                               style: const TextStyle(
-                                color: Color(0xFF848484),
+                                color: Color(0xFF5C6658),
                                 fontSize: 14,
                                 fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w400,
@@ -318,7 +337,7 @@ class _InboxViewState extends State<InboxView> {
                     Text(
                       _formatTimestamp(room.lastMessageTime),
                       style: const TextStyle(
-                        color: Color(0xFF86B049),
+                        color: Color(0xFF8C9688),
                         fontSize: 12,
                         fontFamily: 'Plus Jakarta Sans',
                         fontWeight: FontWeight.w400,
@@ -331,7 +350,7 @@ class _InboxViewState extends State<InboxView> {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF86B049),
+                          color: AppColors.primaryGreen,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         alignment: Alignment.center,
@@ -353,7 +372,7 @@ class _InboxViewState extends State<InboxView> {
           const Divider(
             height: 1,
             thickness: 1,
-            color: Color(0xFFEBEBEB),
+            color: Color(0xFFE8ECE3),
           ),
         ],
       ),
