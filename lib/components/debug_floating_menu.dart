@@ -70,6 +70,7 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
         {'name': 'Form SOS Darurat', 'route': AppRouter.sosForm, 'icon': Icons.sos_rounded},
         {'name': 'Tracking SOS Aktif', 'route': AppRouter.sosActive, 'icon': Icons.location_on_rounded},
         {'name': 'Dialog SOS Selesai', 'route': AppRouter.sosFinish, 'icon': Icons.check_circle_rounded},
+        {'name': 'Riwayat Notifikasi', 'route': AppRouter.notificationHistory, 'icon': Icons.notifications_rounded},
       ],
     },
     {

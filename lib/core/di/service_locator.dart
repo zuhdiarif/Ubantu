@@ -21,7 +21,12 @@ import 'package:ubantu/domain/usecases/get_chat_messages_usecase.dart';
 import 'package:ubantu/domain/usecases/get_chat_rooms_usecase.dart';
 import 'package:ubantu/domain/usecases/send_chat_message_usecase.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
+import 'package:ubantu/data/repositories/notification_repository_impl.dart';
+import 'package:ubantu/data/services/notification_service.dart';
+import 'package:ubantu/data/services/supabase_notification_service.dart';
 import 'package:ubantu/domain/repositories/mitra_repository.dart';
+import 'package:ubantu/domain/repositories/notification_repository.dart';
+import 'package:ubantu/core/utils/mock_data_factory.dart';
 import 'package:ubantu/domain/usecases/update_order_status_usecase.dart';
 
 class ServiceLocator {
@@ -44,6 +49,15 @@ class ServiceLocator {
       ServiceOrderRepositoryImpl(service: supabaseOrderService);
   late final IChatRepository chatRepository = ChatRepositoryImpl();
   late final IMitraRepository mitraRepository = MitraRepositoryImpl();
+  late final NotificationService notificationService =
+      NotificationService(initialNotifications: MockDataFactory.mockNotifications);
+  late final SupabaseNotificationService supabaseNotificationService =
+      SupabaseNotificationService();
+  late final INotificationRepository notificationRepository =
+      NotificationRepositoryImpl(
+        service: notificationService,
+        remoteService: supabaseNotificationService,
+      );
 
   late final LoginUseCase loginUseCase = LoginUseCase(authRepository);
   late final GetTasksUseCase getTasksUseCase = GetTasksUseCase(taskRepository);

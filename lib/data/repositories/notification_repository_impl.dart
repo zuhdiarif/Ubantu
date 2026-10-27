@@ -20,8 +20,8 @@ class NotificationRepositoryImpl implements INotificationRepository {
   int getUnreadCount() => _service.unreadCount;
 
   @override
-  void addNotification(String title, String message) {
-    _service.addNotification(title, message);
+  void addNotification(String title, String message, {String type = 'general'}) {
+    _service.addNotification(title, message, type: type);
   }
 
   @override
@@ -29,4 +29,6 @@ class NotificationRepositoryImpl implements INotificationRepository {
     _service.markAllAsRead();
     _supabaseService?.markAllAsRead();
   }
+
+  NotificationService get service => _service;
 }

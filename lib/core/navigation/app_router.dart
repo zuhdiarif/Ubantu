@@ -6,6 +6,7 @@ import 'package:ubantu/presentation/views/help_detail_view.dart';
 import 'package:ubantu/presentation/views/ktm_verification_view.dart';
 import 'package:ubantu/presentation/views/login_view.dart';
 import 'package:ubantu/presentation/views/main_navigation_view.dart';
+import 'package:ubantu/presentation/views/notification_view.dart';
 import 'package:ubantu/presentation/views/onboarding_view.dart';
 import 'package:ubantu/presentation/views/otp_verification_view.dart';
 import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_form_view.dart';
@@ -104,6 +105,7 @@ class AppRouter {
   static const String mitraPerformance = '/mitra/performance';
   static const String mitraRegister = '/mitra/register';
   static const String bantuanDetail = '/bantuan-detail';
+  static const String notificationHistory = '/notification-history';
 
   static final router = GoRouter(
     initialLocation: onboarding,
@@ -270,6 +272,10 @@ class AppRouter {
               : null;
           return BantuanDetailView(order: order);
         },
+      ),
+      GoRoute(
+        path: notificationHistory,
+        builder: (context, state) => const NotificationView(),
       ),
     ],
   );

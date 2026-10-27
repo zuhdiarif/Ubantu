@@ -6,11 +6,18 @@ import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
 import 'package:ubantu/domain/repositories/mitra_repository.dart';
 
+import 'package:ubantu/core/di/service_locator.dart';
+import 'package:ubantu/domain/repositories/notification_repository.dart';
+
 class MitraProvider extends ChangeNotifier {
   final IMitraRepository _repository;
+  final INotificationRepository _notificationRepository;
 
-  MitraProvider({IMitraRepository? repository})
-      : _repository = repository ?? MitraRepositoryImpl();
+  MitraProvider({
+    IMitraRepository? repository,
+    INotificationRepository? notificationRepository,
+  })  : _repository = repository ?? MitraRepositoryImpl(),
+        _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository;
 
   MitraProfileModel? _profile;
   List<ServiceOrderModel> _incomingOrders = [];
@@ -126,6 +133,19 @@ class MitraProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result.isSuccess) {
+      if (status == MoveServiceStatus.inProgress) {
+        _notificationRepository.addNotification(
+          'Driver Sudah Tiba di Lokasi!',
+          'Helper telah tiba di titik jemput untuk pesanan bantuan.',
+          type: 'order',
+        );
+      } else if (status == MoveServiceStatus.completed) {
+        _notificationRepository.addNotification(
+          'Pesanan Bantuan Selesai',
+          'Helper telah menyelesaikan bantuan pesanan dengan sukses.',
+          type: 'order',
+        );
+      }
       await loadMitraData();
       return true;
     } else {

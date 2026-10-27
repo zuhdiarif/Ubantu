@@ -6,11 +6,14 @@ class NotificationModel {
   final bool isRead;
   final DateTime createdAt;
 
+  final String type;
+
   const NotificationModel({
     required this.id,
     required this.userId,
     required this.title,
     required this.message,
+    this.type = 'general',
     this.isRead = false,
     required this.createdAt,
   });
@@ -21,6 +24,7 @@ class NotificationModel {
       userId: json['user_id'] as String? ?? '',
       title: json['title'] as String? ?? '',
       message: json['message'] as String? ?? '',
+      type: json['type'] as String? ?? 'general',
       isRead: json['is_read'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -34,6 +38,7 @@ class NotificationModel {
       'user_id': userId,
       'title': title,
       'message': message,
+      'type': type,
       'is_read': isRead,
       'created_at': createdAt.toIso8601String(),
     };
@@ -44,6 +49,7 @@ class NotificationModel {
     String? userId,
     String? title,
     String? message,
+    String? type,
     bool? isRead,
     DateTime? createdAt,
   }) {
@@ -52,6 +58,7 @@ class NotificationModel {
       userId: userId ?? this.userId,
       title: title ?? this.title,
       message: message ?? this.message,
+      type: type ?? this.type,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
     );

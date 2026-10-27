@@ -11,6 +11,7 @@ import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/models/user_model.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
+import 'package:ubantu/presentation/providers/notification_provider.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
 import 'package:ubantu/presentation/providers/task_provider.dart';
 
@@ -136,22 +137,66 @@ class _HomeViewState extends State<HomeView> {
             ],
           ),
         ),
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFE3E7DE)),
-          ),
-          child: IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF1E281C),
-              size: 22,
-            ),
-            onPressed: () {},
-          ),
+        Builder(
+          builder: (context) {
+            NotificationProvider? notifProvider;
+            try {
+              notifProvider = Provider.of<NotificationProvider>(context, listen: true);
+            } catch (_) {}
+            final unreadCount = notifProvider?.unreadCount ?? 0;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFE3E7DE)),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: Color(0xFF1E281C),
+                      size: 22,
+                    ),
+                    onPressed: () => context.push(AppRouter.notificationHistory),
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD32F2F),
+                        shape: unreadCount > 9 ? BoxShape.rectangle : BoxShape.circle,
+                        borderRadius: unreadCount > 9 ? BorderRadius.circular(10) : null,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 99 ? '99+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            height: 1,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ],
     );

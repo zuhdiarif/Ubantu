@@ -15,20 +15,34 @@ import 'package:ubantu/domain/repositories/auth_repository.dart';
 import 'package:ubantu/domain/usecases/login_usecase.dart';
 import 'package:ubantu/domain/usecases/sign_in_with_google_usecase.dart';
 
+import 'package:ubantu/core/di/service_locator.dart';
+import 'package:ubantu/domain/repositories/notification_repository.dart';
+
 class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUseCase;
   final SignInWithGoogleUseCase _signInWithGoogleUseCase;
   final IAuthRepository _repository;
+  final INotificationRepository _notificationRepository;
   StreamSubscription<AuthState>? _authSubscription;
+  KtmVerificationStatus? _previousKtmStatus;
 
-  AuthProvider({IAuthRepository? repository})
-      : this._internal(repository ?? AuthRepositoryImpl());
+  AuthProvider({
+    IAuthRepository? repository,
+    INotificationRepository? notificationRepository,
+  }) : this._internal(
+         repository ?? AuthRepositoryImpl(),
+         notificationRepository ?? ServiceLocator.instance.notificationRepository,
+       );
 
-  AuthProvider._internal(IAuthRepository repository)
-      : _repository = repository,
+  AuthProvider._internal(
+    IAuthRepository repository,
+    INotificationRepository notificationRepository,
+  )   : _repository = repository,
+        _notificationRepository = notificationRepository,
         _loginUseCase = LoginUseCase(repository),
         _signInWithGoogleUseCase = SignInWithGoogleUseCase(repository) {
     _currentUser = _repository.getCurrentUser();
+    _previousKtmStatus = _currentUser?.verificationStatus;
     if (_currentUser != null) {
       AppAuthNotifier.instance.initLoggedIn(true);
     }
@@ -61,12 +75,35 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  void _checkKtmVerificationTransition(KtmVerificationStatus newStatus) {
+    if (_previousKtmStatus == KtmVerificationStatus.pending &&
+        newStatus == KtmVerificationStatus.verified) {
+      _notificationRepository.addNotification(
+        'Verifikasi KTM Berhasil!',
+        'Selamat! Identitas KTM Universitas Brawijaya kamu telah terverifikasi. Nikmati fitur penuh UBantu!',
+        type: 'ktm',
+      );
+    }
+    _previousKtmStatus = newStatus;
+  }
+
+  void setKtmVerificationStatus(KtmVerificationStatus status) {
+    if (_currentUser == null) return;
+    final updated = _currentUser!.copyWith(verificationStatus: status);
+    updateUser(updated);
+  }
+
   void updateUser(UserModel updatedUser) {
+    final oldStatus = _currentUser?.verificationStatus;
     _currentUser = updatedUser;
     final repo = _repository;
     if (repo is AuthRepositoryImpl) {
       repo.setCurrentUser(updatedUser);
     }
+    if (oldStatus != null) {
+      _previousKtmStatus = oldStatus;
+    }
+    _checkKtmVerificationTransition(updatedUser.verificationStatus);
     notifyListeners();
   }
 
@@ -250,11 +287,16 @@ class AuthProvider extends ChangeNotifier {
       try {
         final result = await SupabaseProfileService().getProfile(user.id);
         if (result.isSuccess && result.data != null) {
+          final oldStatus = _currentUser?.verificationStatus;
           _currentUser = result.data;
           final repo = _repository;
           if (repo is AuthRepositoryImpl) {
             repo.setCurrentUser(result.data!);
           }
+          if (oldStatus != null) {
+            _previousKtmStatus = oldStatus;
+          }
+          _checkKtmVerificationTransition(result.data!.verificationStatus);
           notifyListeners();
           return;
         }

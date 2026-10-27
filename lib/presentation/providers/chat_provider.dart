@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
 import 'package:ubantu/domain/models/chat_message_model.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/repositories/chat_repository.dart';
+import 'package:ubantu/domain/repositories/notification_repository.dart';
 import 'package:ubantu/domain/usecases/get_chat_messages_usecase.dart';
 import 'package:ubantu/domain/usecases/get_chat_rooms_usecase.dart';
 import 'package:ubantu/domain/usecases/send_chat_message_usecase.dart';
 
 class ChatProvider extends ChangeNotifier {
   final IChatRepository _repository;
+  final INotificationRepository _notificationRepository;
   final GetChatRoomsUseCase _getChatRoomsUseCase;
   final GetChatMessagesUseCase _getChatMessagesUseCase;
   final SendChatMessageUseCase _sendChatMessageUseCase;
+  final Set<String> _notifiedMessageIds = {};
 
-  ChatProvider({IChatRepository? repository})
-      : _repository = repository ?? ChatRepositoryImpl(),
+  ChatProvider({
+    IChatRepository? repository,
+    INotificationRepository? notificationRepository,
+  })  : _repository = repository ?? ChatRepositoryImpl(),
+        _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository,
         _getChatRoomsUseCase = GetChatRoomsUseCase(repository ?? ChatRepositoryImpl()),
         _getChatMessagesUseCase = GetChatMessagesUseCase(repository ?? ChatRepositoryImpl()),
         _sendChatMessageUseCase = SendChatMessageUseCase(repository ?? ChatRepositoryImpl());
@@ -57,6 +64,21 @@ class ChatProvider extends ChangeNotifier {
         }
         return room;
       }).toList();
+
+      for (final room in _rooms) {
+        if (room.unreadCount > 0 && room.lastMessage.isNotEmpty) {
+          final notifKey = '${room.id}_${room.lastMessageTime.millisecondsSinceEpoch}';
+          if (!_notifiedMessageIds.contains(notifKey)) {
+            _notifiedMessageIds.add(notifKey);
+            _notificationRepository.addNotification(
+              'Pesan Baru dari ${room.otherUserName}',
+              room.lastMessage,
+              type: 'chat',
+            );
+          }
+        }
+      }
+
       _applySearch();
     } else if (!isPolling) {
       _errorMessage = result.errorMessage;
@@ -121,6 +143,16 @@ class ChatProvider extends ChangeNotifier {
           _applySearch();
         }
       }
+      for (final msg in _activeMessages) {
+        if (!msg.isMe && !msg.isRead && !_notifiedMessageIds.contains(msg.id)) {
+          _notifiedMessageIds.add(msg.id);
+          _notificationRepository.addNotification(
+            'Pesan Baru dari ${msg.senderName}',
+            msg.message,
+            type: 'chat',
+          );
+        }
+      }
     } else if (!isPolling) {
       _errorMessage = result.errorMessage;
     }
@@ -131,6 +163,14 @@ class ChatProvider extends ChangeNotifier {
     } else {
       notifyListeners();
     }
+  }
+
+  void receiveIncomingMessage(String senderName, String text) {
+    _notificationRepository.addNotification(
+      'Pesan Baru dari $senderName',
+      text,
+      type: 'chat',
+    );
   }
 
   Future<bool> sendMessage(String roomId, String text, {String? attachmentUrl}) async {

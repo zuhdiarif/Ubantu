@@ -10,6 +10,7 @@ import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/barter_provider.dart';
 import 'package:ubantu/presentation/providers/chat_provider.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
+import 'package:ubantu/presentation/providers/notification_provider.dart';
 import 'package:ubantu/presentation/providers/loyalty_provider.dart';
 import 'package:ubantu/presentation/providers/profile_provider.dart';
 import 'package:ubantu/presentation/providers/rating_provider.dart';
@@ -57,6 +58,11 @@ class UbantuApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => MitraProvider(
             repository: ServiceLocator.instance.mitraRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider(
+            repository: ServiceLocator.instance.notificationRepository,
           ),
         ),
       ],

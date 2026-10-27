@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/domain/repositories/notification_repository.dart';
 import 'package:ubantu/domain/repositories/service_order_repository.dart';
 import 'package:ubantu/domain/usecases/accept_order_usecase.dart';
 import 'package:ubantu/domain/usecases/create_service_order_usecase.dart';
@@ -10,13 +12,18 @@ import 'package:ubantu/domain/usecases/update_order_status_usecase.dart';
 
 class ServiceOrderProvider extends ChangeNotifier {
   final IServiceOrderRepository _repository;
+  final INotificationRepository _notificationRepository;
   final CreateServiceOrderUseCase _createOrderUseCase;
   final GetActiveOrdersUseCase _getActiveOrdersUseCase;
   final AcceptOrderUseCase _acceptOrderUseCase;
   final UpdateOrderStatusUseCase _updateOrderStatusUseCase;
+  final Map<String, Set<MoveServiceStatus>> _notifiedStatusTransitions = {};
 
-  ServiceOrderProvider({required IServiceOrderRepository repository})
-      : _repository = repository,
+  ServiceOrderProvider({
+    required IServiceOrderRepository repository,
+    INotificationRepository? notificationRepository,
+  })  : _repository = repository,
+        _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository,
         _createOrderUseCase = CreateServiceOrderUseCase(repository),
         _getActiveOrdersUseCase = GetActiveOrdersUseCase(repository),
         _acceptOrderUseCase = AcceptOrderUseCase(repository),
@@ -253,12 +260,40 @@ class ServiceOrderProvider extends ChangeNotifier {
     if (result.isSuccess) {
       final updated = result.data!;
       _myOrders = _myOrders.map((o) => o.id == orderId ? updated : o).toList();
+      _notifyOrderStatusChange(orderId, status);
       notifyListeners();
       return true;
     } else {
       _errorMessage = result.errorMessage;
       notifyListeners();
       return false;
+    }
+  }
+
+  void _notifyOrderStatusChange(String orderId, MoveServiceStatus newStatus) {
+    final notifiedSet = _notifiedStatusTransitions.putIfAbsent(
+      orderId,
+      () => <MoveServiceStatus>{},
+    );
+    if (notifiedSet.contains(newStatus)) return;
+    notifiedSet.add(newStatus);
+
+    final prefix = orderId.length > 6
+        ? '#UB-${orderId.substring(0, 6).toUpperCase()}'
+        : '#UB-ORDER';
+
+    if (newStatus == MoveServiceStatus.inProgress) {
+      _notificationRepository.addNotification(
+        'Driver Sudah Tiba di Lokasi!',
+        'Driver/Helper telah tiba di titik jemput untuk pesanan $prefix. Segera temui penolongmu ya!',
+        type: 'order',
+      );
+    } else if (newStatus == MoveServiceStatus.completed) {
+      _notificationRepository.addNotification(
+        'Pesanan Bantuan Selesai',
+        'Pesanan bantuan $prefix telah selesai dilaksanakan. Terima kasih telah menggunakan UBantu!',
+        type: 'order',
+      );
     }
   }
 
@@ -311,6 +346,7 @@ class ServiceOrderProvider extends ChangeNotifier {
             _myOrders.insert(0, updated);
           }
           _activeOrders = _activeOrders.where((o) => o.id != orderId).toList();
+          _notifyOrderStatusChange(orderId, updated.status);
           notifyListeners();
           return updated;
         }

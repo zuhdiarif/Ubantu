@@ -340,7 +340,7 @@ class _MitraCategoryRegistrationViewState
                     children: [
                       Icon(Icons.two_wheeler, size: 18),
                       SizedBox(width: 6),
-                      Text('Motor'),
+                      Text('Sepeda Motor'),
                     ],
                   ),
                   selected: _selectedVehicleType == VehicleType.motor,
