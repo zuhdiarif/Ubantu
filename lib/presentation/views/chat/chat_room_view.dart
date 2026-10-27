@@ -1072,7 +1072,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
                   hintStyle: TextStyle(
                     color: Color(0xFF848484),
                     fontSize: 12,
-                    fontFamily: 'Inter',
+                    fontFamily: 'Plus Jakarta Sans',
                     fontWeight: FontWeight.w500,
                   ),
                   border: InputBorder.none,

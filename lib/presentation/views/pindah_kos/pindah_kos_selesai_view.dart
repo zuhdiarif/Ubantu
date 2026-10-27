@@ -168,7 +168,7 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
                                 style: const TextStyle(
                                   color: Color(0xFFBFC3BE),
                                   fontSize: 12,
-                                  fontFamily: 'Inter',
+                                  fontFamily: 'Plus Jakarta Sans',
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
@@ -178,7 +178,7 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
                               hintStyle: TextStyle(
                                 color: Color(0xFFBFC3BE),
                                 fontSize: 12,
-                                fontFamily: 'Inter',
+                                fontFamily: 'Plus Jakarta Sans',
                                 fontWeight: FontWeight.w400,
                               ),
                               border: InputBorder.none,

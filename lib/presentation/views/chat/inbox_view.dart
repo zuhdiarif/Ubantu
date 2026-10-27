@@ -146,7 +146,7 @@ class _InboxViewState extends State<InboxView> {
                         hintStyle: const TextStyle(
                           color: Color(0xFFBFC3BE),
                           fontSize: 15,
-                          fontFamily: 'Inter',
+                          fontFamily: 'Plus Jakarta Sans',
                           fontWeight: FontWeight.w500,
                         ),
                         border: InputBorder.none,
