@@ -33,7 +33,8 @@ class _MitraCategoryRegistrationViewState
             ServiceCategory.antarJemput,
           ],
     );
-    _vehicleInfoController.text = profile?.vehicleInfo ?? 'Honda Vario 160 Hitam';
+    _vehicleInfoController.text =
+        profile?.vehicleInfo ?? 'Honda Vario 160 Hitam';
     _plateController.text = profile?.vehiclePlate ?? 'N 4821 ABC';
   }
 
@@ -77,7 +78,9 @@ class _MitraCategoryRegistrationViewState
             const SizedBox(height: 6),
             Text(
               'Pilih minimal 1 jenis layanan yang ingin Anda tawarkan kepada sesama mahasiswa UB.',
-              style: AppTypography.caption.copyWith(color: Colors.grey.shade600),
+              style: AppTypography.caption.copyWith(
+                color: Colors.grey.shade600,
+              ),
             ),
             const SizedBox(height: 12),
             _buildServiceOptionCard(
@@ -137,7 +140,9 @@ class _MitraCategoryRegistrationViewState
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Pengaturan layanan mitra berhasil disimpan!'),
+                        content: Text(
+                          'Pengaturan layanan mitra berhasil disimpan!',
+                        ),
                         backgroundColor: AppColors.primaryGreen,
                       ),
                     );
@@ -183,7 +188,9 @@ class _MitraCategoryRegistrationViewState
             ),
             child: Icon(
               isVerified ? Icons.verified_user_rounded : Icons.pending_actions,
-              color: isVerified ? AppColors.primaryGreen : Colors.amber.shade800,
+              color: isVerified
+                  ? AppColors.primaryGreen
+                  : Colors.amber.shade800,
               size: 26,
             ),
           ),
@@ -333,7 +340,7 @@ class _MitraCategoryRegistrationViewState
                     children: [
                       Icon(Icons.two_wheeler, size: 18),
                       SizedBox(width: 6),
-                      Text('Sepeda Motor'),
+                      Text('Motor'),
                     ],
                   ),
                   selected: _selectedVehicleType == VehicleType.motor,
