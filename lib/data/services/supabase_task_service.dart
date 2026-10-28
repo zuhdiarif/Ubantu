@@ -30,13 +30,31 @@ class SupabaseTaskService {
   Future<AppResult<TaskModel>> createTask(TaskModel task) async {
     try {
       final data = task.toJson()..remove('id');
-      final response = await _effectiveClient
-          .from('tasks')
-          .insert(data)
-          .select()
-          .single();
+      data.removeWhere((key, value) => value == null);
 
-      return AppResult.success(TaskModel.fromJson(response));
+      try {
+        final response = await _effectiveClient
+            .from('tasks')
+            .insert(data)
+            .select()
+            .single();
+
+        return AppResult.success(TaskModel.fromJson(response));
+      } catch (insertError) {
+        final errorStr = insertError.toString().toLowerCase();
+        if (errorStr.contains('is_female_only') || errorStr.contains('pgrst204')) {
+          final fallbackData = Map<String, dynamic>.from(data)
+            ..remove('is_female_only');
+          final response = await _effectiveClient
+              .from('tasks')
+              .insert(fallbackData)
+              .select()
+              .single();
+
+          return AppResult.success(TaskModel.fromJson(response));
+        }
+        rethrow;
+      }
     } catch (e) {
       return AppResult.failure(e.toString());
     }

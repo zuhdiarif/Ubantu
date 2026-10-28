@@ -19,12 +19,16 @@ import 'package:ubantu/presentation/providers/schedule_provider.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
 import 'package:ubantu/presentation/providers/sos_provider.dart';
 import 'package:ubantu/presentation/providers/task_provider.dart';
+import 'package:ubantu/data/services/local_notification_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await SupabaseService.instance.initialize();
+  } catch (_) {}
+  try {
+    await LocalNotificationService.instance.initialize();
   } catch (_) {}
   runApp(const UbantuApp());
 }

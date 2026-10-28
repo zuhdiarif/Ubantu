@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
@@ -54,11 +55,15 @@ class SupabaseAuthService {
               (e) => e.name == verificationStatusStr,
               orElse: () => nim.isNotEmpty
                   ? KtmVerificationStatus.verified
-                  : KtmVerificationStatus.unverified,
+                  : (AppConfig.isUbEmail(user.email ?? '')
+                      ? KtmVerificationStatus.pending
+                      : KtmVerificationStatus.unverified),
             )
           : (nim.isNotEmpty
               ? KtmVerificationStatus.verified
-              : KtmVerificationStatus.unverified),
+              : (AppConfig.isUbEmail(user.email ?? '')
+                  ? KtmVerificationStatus.pending
+                  : KtmVerificationStatus.unverified)),
       role: roleStr != null
           ? UserRole.values.firstWhere(
               (e) => e.name == roleStr,

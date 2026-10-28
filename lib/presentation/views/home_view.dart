@@ -41,12 +41,14 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _refreshData() async {
-    final user = context.read<AuthProvider>().currentUser;
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.currentUser;
     final userId = user?.id ?? '';
     await Future.wait([
       context.read<ServiceOrderProvider>().loadActiveOrders(),
       if (userId.isNotEmpty)
         context.read<ServiceOrderProvider>().loadMyOrders(userId),
+      authProvider.refreshProfile(),
     ]);
   }
 

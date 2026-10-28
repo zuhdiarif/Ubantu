@@ -94,15 +94,35 @@ class SupabaseOrderService {
   ) async {
     try {
       final data = order.toJson()..remove('id');
-      final response = await SupabaseService.instance.client
-          .from(_table)
-          .insert(data)
-          .select()
-          .single();
+      data.removeWhere((key, value) => value == null);
 
-      return AppResult.success(
-        ServiceOrderModel.fromJson(response),
-      );
+      try {
+        final response = await SupabaseService.instance.client
+            .from(_table)
+            .insert(data)
+            .select()
+            .single();
+
+        return AppResult.success(
+          ServiceOrderModel.fromJson(response),
+        );
+      } catch (insertError) {
+        final errorStr = insertError.toString().toLowerCase();
+        if (errorStr.contains('is_female_only') || errorStr.contains('pgrst204')) {
+          final fallbackData = Map<String, dynamic>.from(data)
+            ..remove('is_female_only');
+          final response = await SupabaseService.instance.client
+              .from(_table)
+              .insert(fallbackData)
+              .select()
+              .single();
+
+          return AppResult.success(
+            ServiceOrderModel.fromJson(response),
+          );
+        }
+        rethrow;
+      }
     } catch (e) {
       return AppResult.failure(e.toString());
     }

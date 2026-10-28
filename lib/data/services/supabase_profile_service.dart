@@ -16,7 +16,11 @@ class SupabaseProfileService {
           .from('profiles')
           .select()
           .eq('id', userId)
-          .single();
+          .maybeSingle();
+
+      if (response == null) {
+        return AppResult.failure('Profil tidak ditemukan');
+      }
 
       return AppResult.success(UserModel.fromJson(response));
     } catch (e) {
@@ -26,6 +30,30 @@ class SupabaseProfileService {
 
   Future<AppResult<UserModel>> updateProfile(UserModel user) async {
     try {
+      final response = await _effectiveClient
+          .from('profiles')
+          .upsert(user.toJson())
+          .select()
+          .single();
+
+      return AppResult.success(UserModel.fromJson(response));
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<AppResult<UserModel>> ensureProfileExists(UserModel user) async {
+    try {
+      final existing = await _effectiveClient
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (existing != null) {
+        return AppResult.success(UserModel.fromJson(existing));
+      }
+
       final response = await _effectiveClient
           .from('profiles')
           .upsert(user.toJson())

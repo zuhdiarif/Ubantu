@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:ubantu/data/services/local_notification_service.dart';
 import 'package:ubantu/domain/models/notification_model.dart';
-
 
 class NotificationService extends ChangeNotifier {
   final List<NotificationModel> _notifications;
@@ -30,6 +30,14 @@ class NotificationService extends ChangeNotifier {
     );
     _notifications.insert(0, newNotif);
     notifyListeners();
+
+    try {
+      LocalNotificationService.instance.showNotification(
+        title: title,
+        body: message,
+        type: type,
+      );
+    } catch (_) {}
   }
 
   void markAsRead(String id) {

@@ -66,6 +66,7 @@ class AuthProvider extends ChangeNotifier {
         if (session != null) {
           _currentUser = _repository.getCurrentUser();
           AppAuthNotifier.instance.setLoggedIn(true);
+          _syncProfileWithRemote();
         } else if (data.event == AuthChangeEvent.signedOut) {
           _currentUser = null;
           AppAuthNotifier.instance.setLoggedIn(false);
@@ -260,6 +261,29 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _syncProfileWithRemote() async {
+    if (!SupabaseService.instance.isInitialized) return;
+    final user = _repository.getCurrentUser() ?? _currentUser;
+    if (user == null) return;
+
+    try {
+      final result = await SupabaseProfileService().ensureProfileExists(user);
+      if (result.isSuccess && result.data != null) {
+        final oldStatus = _currentUser?.verificationStatus;
+        _currentUser = result.data;
+        final repo = _repository;
+        if (repo is AuthRepositoryImpl) {
+          repo.setCurrentUser(result.data!);
+        }
+        if (oldStatus != null) {
+          _previousKtmStatus = oldStatus;
+        }
+        _checkKtmVerificationTransition(result.data!.verificationStatus);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
   Future<bool> signInWithGoogle() async {
     _isLoading = true;
     _errorMessage = null;
@@ -271,6 +295,7 @@ class AuthProvider extends ChangeNotifier {
     if (result.isSuccess) {
       _currentUser = _repository.getCurrentUser();
       AppAuthNotifier.instance.setLoggedIn(true);
+      await _syncProfileWithRemote();
       notifyListeners();
       return true;
     } else {
@@ -281,7 +306,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> refreshProfile() async {
-    final user = _currentUser;
+    final user = _currentUser ?? _repository.getCurrentUser();
     if (user == null) return;
     if (SupabaseService.instance.isInitialized) {
       try {
@@ -298,6 +323,9 @@ class AuthProvider extends ChangeNotifier {
           }
           _checkKtmVerificationTransition(result.data!.verificationStatus);
           notifyListeners();
+          return;
+        } else {
+          await _syncProfileWithRemote();
           return;
         }
       } catch (_) {}
