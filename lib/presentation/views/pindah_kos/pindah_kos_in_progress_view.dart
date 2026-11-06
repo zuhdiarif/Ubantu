@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
-import 'package:ubantu/data/services/supabase_service.dart';
+import 'package:ubantu/core/utils/campus_locations.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
@@ -20,41 +20,50 @@ class PindahKosInProgressView extends StatefulWidget {
 }
 
 class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
-  Timer? _pollTimer;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-    _startPolling();
-  }
-
-  void _startPolling() {
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<ServiceOrderProvider>();
-      final activeOrder = provider.myOrders
-          .where(
-            (o) =>
-                o.category == ServiceCategory.pindahKos &&
-                (o.status == MoveServiceStatus.accepted ||
-                    o.status == MoveServiceStatus.inProgress ||
-                    o.status == MoveServiceStatus.completed),
-          )
-          .firstOrNull;
-
+      final activeOrder = _findActiveOrder(provider);
       if (activeOrder != null && activeOrder.id.isNotEmpty) {
-        final updated = await provider.checkOrderStatus(activeOrder.id);
-        if (!mounted) return;
-        if (updated != null && updated.status == MoveServiceStatus.completed) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.pindahKosSelesai);
-        }
+        provider.subscribeToOrder(activeOrder.id);
+        _handleStatusTransition(activeOrder.status);
       }
     });
   }
 
+  ServiceOrderModel? _findActiveOrder(ServiceOrderProvider provider) {
+    return provider.myOrders
+        .where(
+          (o) =>
+              o.category == ServiceCategory.pindahKos &&
+              (o.status == MoveServiceStatus.accepted ||
+                  o.status == MoveServiceStatus.inProgress ||
+                  o.status == MoveServiceStatus.completed),
+        )
+        .firstOrNull ?? (provider.activeOrder?.category == ServiceCategory.pindahKos ? provider.activeOrder : null);
+  }
+
+  void _handleStatusTransition(MoveServiceStatus status) {
+    if (_hasNavigated || !mounted) return;
+    if (status == MoveServiceStatus.completed) {
+      _hasNavigated = true;
+      context.read<ServiceOrderProvider>().cancelOrderSubscription();
+      context.go(AppRouter.pindahKosSelesai);
+    }
+  }
+
   @override
   void dispose() {
-    _pollTimer?.cancel();
+    if (!_hasNavigated) {
+      try {
+        context.read<ServiceOrderProvider>().cancelOrderSubscription();
+      } catch (_) {}
+    }
     super.dispose();
   }
 
@@ -65,24 +74,13 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
     try {
       chatProvider = context.watch<ChatProvider>();
     } catch (_) {}
-    final activeOrder = provider.myOrders
-        .where(
-          (o) =>
-              o.category == ServiceCategory.pindahKos &&
-              (o.status == MoveServiceStatus.accepted ||
-                  o.status == MoveServiceStatus.inProgress ||
-                  o.status == MoveServiceStatus.completed),
-        )
-        .firstOrNull;
+    final activeOrder = _findActiveOrder(provider);
     final hasUnread = chatProvider?.rooms.any((r) => (r.orderId == activeOrder?.id || r.id == activeOrder?.id) && r.unreadCount > 0) ?? false;
 
     if (activeOrder != null &&
         activeOrder.status == MoveServiceStatus.completed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.pindahKosSelesai);
-        }
+        _handleStatusTransition(activeOrder.status);
       });
     }
 
@@ -107,13 +105,7 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
       {'title': 'Bantuan selesai', 'time': ''},
     ];
 
-    final helperName = activeOrder?.helperId != null
-        ? (SupabaseService.instance.isInitialized
-            ? 'Mitra Penolong UB'
-            : 'Nasya')
-        : (SupabaseService.instance.isInitialized
-            ? 'Menunggu Helper'
-            : 'Nasya');
+    final helperName = activeOrder?.helperName ?? 'Mitra UBantu';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -151,7 +143,7 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: _buildMapSection(),
+                    child: _buildMapSection(activeOrder),
                   ),
                   Align(
                     alignment: Alignment.bottomCenter,
@@ -197,17 +189,16 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
           children: [
             Row(
               children: [
-                ClipOval(
-                  child: Image.asset(
-                    'assets/pindah_kos_flow/placeholder-user-profile-pic.jpg',
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const CircleAvatar(
-                      radius: 26,
-                      backgroundColor: Color(0xFFD9D9D9),
-                      child: Icon(Icons.person, color: Color(0xFF263225)),
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: const Color(0xFF86B049),
+                  child: Text(
+                    helperName.isNotEmpty ? helperName[0].toUpperCase() : 'M',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -279,49 +270,14 @@ class _PindahKosInProgressViewState extends State<PindahKosInProgressView> {
     );
   }
 
-  Widget _buildMapSection() {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Image.asset(
-            'assets/pindah_kos_flow/placeholder-peta.jpg',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: const Color(0xFFE8EBE4),
-              child: const Center(
-                child: Icon(Icons.map, size: 48, color: Color(0xFF5C6658)),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 60,
-          top: 30,
-          child: SvgPicture.asset(
-            'assets/pindah_kos_flow/path-untuk-placeholder-peta.svg',
-            errorBuilder: (context, error, stackTrace) =>
-                const SizedBox.shrink(),
-          ),
-        ),
-        Positioned(
-          left: 90,
-          top: 50,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: const ShapeDecoration(
-              color: Color(0xFFF8FAF4),
-              shape: OvalBorder(),
-            ),
-            child: SvgPicture.asset(
-              'assets/pindah_kos_flow/ico-motor.svg',
-              width: 22,
-              height: 22,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.two_wheeler, size: 20),
-            ),
-          ),
-        ),
-      ],
+  Widget _buildMapSection(ServiceOrderModel? activeOrder) {
+    final pickup = CampusLocations.resolve(activeOrder?.locationOrigin);
+    final dropoff = CampusLocations.resolve(activeOrder?.locationDestination);
+    return UbantuCampusMap(
+      pickup: pickup,
+      dropoff: dropoff,
+      height: double.infinity,
+      borderRadius: BorderRadius.zero,
     );
   }
 

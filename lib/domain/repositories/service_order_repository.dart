@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
@@ -13,5 +14,13 @@ abstract class IServiceOrderRepository {
   Future<AppResult<ServiceOrderModel>> acceptOrder(
     String orderId,
     String helperId,
+  );
+  Stream<ServiceOrderModel?> watchOrder(String orderId);
+  Future<AppResult<ServiceOrderModel>> completeOrderWithProof(
+    String orderId,
+    File photo,
+  );
+  Future<AppResult<ServiceOrderModel>> confirmBarter(
+    String orderId,
   );
 }

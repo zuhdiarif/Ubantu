@@ -1,10 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/presentation/providers/auth_provider.dart';
+import 'package:ubantu/presentation/providers/loyalty_provider.dart';
 import 'package:ubantu/presentation/providers/rating_provider.dart';
+import 'package:ubantu/presentation/providers/service_order_provider.dart';
 
 class PindahKosSelesaiView extends StatefulWidget {
   const PindahKosSelesaiView({super.key});
@@ -23,8 +28,39 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
     super.dispose();
   }
 
+  Future<void> _submitReview() async {
+    final orderProvider = context.read<ServiceOrderProvider>();
+    final ratingProvider = context.read<RatingProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final loyaltyProvider = context.read<LoyaltyProvider>();
+    final activeOrder = orderProvider.activeOrder;
+    final helperId = activeOrder?.helperId ?? '';
+    final reviewText = _reviewController.text.trim();
+
+    if (helperId.isNotEmpty && reviewText.isNotEmpty) {
+      await ratingProvider.submitRating(
+        helperId,
+        _rating.toDouble(),
+        reviewText,
+      );
+    }
+
+    try {
+      final user = authProvider.currentUser;
+      if (user != null && user.id.isNotEmpty) {
+        await loyaltyProvider.addPoints(user.id, 10);
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+    context.go(AppRouter.home);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final orderProvider = context.watch<ServiceOrderProvider>();
+    final activeOrder = orderProvider.activeOrder;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -78,7 +114,10 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
                   height: 1.20,
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
+              _buildProofPhotoCard(context, activeOrder?.completionPhotoUrl),
+              _buildBarterConfirmationCard(context, orderProvider, activeOrder),
+              const SizedBox(height: 8),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -197,18 +236,7 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    if (_reviewController.text.trim().isNotEmpty) {
-                      await context.read<RatingProvider>().submitRating(
-                        'helper-pindah-kos',
-                        _rating.toDouble(),
-                        _reviewController.text.trim(),
-                      );
-                    }
-                    if (context.mounted) {
-                      context.go(AppRouter.home);
-                    }
-                  },
+                  onPressed: _submitReview,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF263225),
                     foregroundColor: Colors.white,
@@ -232,6 +260,275 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildProofPhotoCard(BuildContext context, String? photoUrl) {
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isNetwork = photoUrl.startsWith('http://') || photoUrl.startsWith('https://');
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2F1D8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF86B049),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.verified_rounded, color: Colors.white, size: 16),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Bukti Penyelesaian dari Mitra',
+                style: TextStyle(
+                  color: Color(0xFF263225),
+                  fontSize: 14,
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: () => _showFullScreenPhoto(context, photoUrl),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  isNetwork
+                      ? Image.network(
+                          photoUrl,
+                          width: double.infinity,
+                          height: 180,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              height: 180,
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF86B049),
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 180,
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(Icons.broken_image_rounded, size: 40, color: Colors.grey),
+                            ),
+                          ),
+                        )
+                      : Image.file(
+                          File(photoUrl),
+                          width: double.infinity,
+                          height: 180,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 180,
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(Icons.broken_image_rounded, size: 40, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                  Container(
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.zoom_in, color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'Ketuk untuk perbesar',
+                          style: TextStyle(color: Colors.white, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFullScreenPhoto(BuildContext context, String photoUrl) {
+    final isNetwork = photoUrl.startsWith('http://') || photoUrl.startsWith('https://');
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: isNetwork
+                    ? Image.network(photoUrl)
+                    : Image.file(File(photoUrl)),
+              ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBarterConfirmationCard(
+    BuildContext context,
+    ServiceOrderProvider orderProvider,
+    ServiceOrderModel? activeOrder,
+  ) {
+    if (activeOrder == null) return const SizedBox.shrink();
+
+    final isConfirmed = activeOrder.barterConfirmedByCustomer;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isConfirmed ? const Color(0xFFF1F6EA) : const Color(0xFFFFF8F0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isConfirmed
+              ? const Color(0xFF86B049).withValues(alpha: 0.4)
+              : const Color(0xFFF4A261).withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isConfirmed ? Icons.check_circle_rounded : Icons.help_outline_rounded,
+                color: isConfirmed ? const Color(0xFF86B049) : const Color(0xFFF4A261),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Konfirmasi Penerimaan Imbalan / Barter',
+                  style: TextStyle(
+                    color: Color(0xFF263225),
+                    fontSize: 13,
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Imbalan yang disepakati: "${activeOrder.barterDescription}"',
+            style: const TextStyle(
+              color: Color(0xFF5C6658),
+              fontSize: 12,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Imbalan/Barter sudah diterima mitra?',
+            style: TextStyle(
+              color: Color(0xFF263225),
+              fontSize: 12,
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (isConfirmed)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFDEF7EC),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check, size: 14, color: Color(0xFF0E9F6E)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Imbalan sudah dikonfirmasi telah diterima',
+                    style: TextStyle(
+                      color: Color(0xFF0E9F6E),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF263225),
+                side: const BorderSide(color: Color(0xFF263225)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: const Icon(Icons.check_rounded, size: 16),
+              label: const Text(
+                'Sudah Diterima Mitra',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              onPressed: () async {
+                await orderProvider.confirmBarter(activeOrder.id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Konfirmasi penerimaan barter berhasil disimpan!'),
+                      backgroundColor: Color(0xFF86B049),
+                    ),
+                  );
+                }
+              },
+            ),
+        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -132,6 +133,7 @@ class FakeChatRepository implements IChatRepository {
       messages[roomId] = [];
     }
     messages[roomId]!.add(newMsg);
+    messageControllers[roomId]?.add(List<ChatMessageModel>.from(messages[roomId]!));
     return AppResult.success(newMsg);
   }
 
@@ -142,6 +144,16 @@ class FakeChatRepository implements IChatRepository {
       rooms[idx] = rooms[idx].copyWith(unreadCount: 0);
     }
     return AppResult.success(true);
+  }
+
+  final Map<String, StreamController<List<ChatMessageModel>>> messageControllers = {};
+
+  @override
+  Stream<List<ChatMessageModel>> watchMessages(String roomId) async* {
+    yield List<ChatMessageModel>.from(messages[roomId] ?? []);
+    yield* messageControllers
+        .putIfAbsent(roomId, () => StreamController<List<ChatMessageModel>>.broadcast())
+        .stream;
   }
 }
 

@@ -12,16 +12,42 @@ import 'package:ubantu/core/utils/app_validators.dart';
 import 'package:ubantu/core/utils/input_formatters.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
+import 'package:ubantu/presentation/providers/ktm_verification_provider.dart';
 import 'package:ubantu/presentation/providers/registration_provider.dart';
 
-class KtmVerificationView extends StatefulWidget {
-  const KtmVerificationView({super.key});
+class KtmVerificationView extends StatelessWidget {
+  final KtmVerificationProvider? provider;
+
+  const KtmVerificationView({super.key, this.provider});
 
   @override
-  State<KtmVerificationView> createState() => _KtmVerificationViewState();
+  Widget build(BuildContext context) {
+    if (provider != null) {
+      return ChangeNotifierProvider<KtmVerificationProvider>.value(
+        value: provider!,
+        child: const _KtmVerificationContent(),
+      );
+    }
+    try {
+      Provider.of<KtmVerificationProvider>(context, listen: false);
+      return const _KtmVerificationContent();
+    } catch (_) {
+      return ChangeNotifierProvider<KtmVerificationProvider>(
+        create: (_) => KtmVerificationProvider(),
+        child: const _KtmVerificationContent(),
+      );
+    }
+  }
 }
 
-class _KtmVerificationViewState extends State<KtmVerificationView> {
+class _KtmVerificationContent extends StatefulWidget {
+  const _KtmVerificationContent();
+
+  @override
+  State<_KtmVerificationContent> createState() => _KtmVerificationContentState();
+}
+
+class _KtmVerificationContentState extends State<_KtmVerificationContent> {
   final _formKey = GlobalKey<FormState>();
   final _nimController = TextEditingController();
   File? _selectedKtmFile;
@@ -49,19 +75,52 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
     super.dispose();
   }
 
+  void _onBack() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRouter.home);
+    }
+  }
+
+  void _onSkip() {
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.isAuthenticated && context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRouter.home);
+    }
+  }
+
   Future<void> _pickKtmPhoto(ImageSource source) async {
     try {
       final picker = ImagePicker();
-      final picked = await picker.pickImage(source: source, maxWidth: 1200, maxHeight: 800, imageQuality: 85);
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
       if (picked != null) {
+        final file = File(picked.path);
         setState(() {
-          _selectedKtmFile = File(picked.path);
+          _selectedKtmFile = file;
         });
+        if (mounted) {
+          final ktmProvider = context.read<KtmVerificationProvider>();
+          final result = await ktmProvider.scanKtm(file);
+          if (result != null && result.nim != null && result.nim!.isNotEmpty) {
+            _nimController.text = result.nim!;
+          }
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memilih gambar: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Gagal memilih gambar: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -102,9 +161,15 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
                       color: const Color(0xFFE2F1D8),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, color: AppColors.primaryDark),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
-                  title: const Text('Ambil Foto Kamera', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text(
+                    'Ambil Foto Kamera',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   subtitle: const Text('Foto fisik KTM kamu secara langsung'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
@@ -119,9 +184,15 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
                       color: const Color(0xFFE2F1D8),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.photo_library_rounded, color: AppColors.primaryDark),
+                    child: const Icon(
+                      Icons.photo_library_rounded,
+                      color: AppColors.primaryDark,
+                    ),
                   ),
-                  title: const Text('Pilih dari Galeri', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text(
+                    'Pilih dari Galeri',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   subtitle: const Text('Pilih foto KTM yang sudah tersimpan'),
                   onTap: () {
                     Navigator.of(sheetContext).pop();
@@ -169,10 +240,16 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
             context: context,
             barrierDismissible: false,
             builder: (dialogCtx) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: Row(
-                children: const [
-                  Icon(Icons.check_circle_rounded, color: Color(0xFF86B049), size: 28),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: const Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Color(0xFF86B049),
+                    size: 28,
+                  ),
                   SizedBox(width: 8),
                   Text('Verifikasi Dikirim'),
                 ],
@@ -185,7 +262,9 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryDark,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: () {
                     Navigator.of(dialogCtx).pop();
@@ -199,7 +278,9 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result.errorMessage ?? 'Gagal memproses verifikasi KTM'),
+              content: Text(
+                result.errorMessage ?? 'Gagal memproses verifikasi KTM',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -213,14 +294,20 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
       );
       regProvider.updateKtmStatus(KtmVerificationStatus.pending);
 
-      await regProvider.sendOtp();
-      if (mounted) {
-        context.push(AppRouter.otpVerification);
+      if (regProvider.emailOtpSkipped) {
+        if (mounted) {
+          context.go(AppRouter.home);
+        }
+      } else {
+        await regProvider.sendOtp();
+        if (mounted) {
+          context.push(AppRouter.otpVerification);
+        }
       }
     }
   }
 
-  Widget _buildImagePreview() {
+  Widget _buildImagePreview(KtmVerificationProvider ktmProvider) {
     if (_selectedKtmFile != null) {
       return Stack(
         children: [
@@ -233,18 +320,54 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
               fit: BoxFit.cover,
             ),
           ),
+          if (ktmProvider.isScanning)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        ktmProvider.scanningStatus ?? 'Membaca KTM...',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             top: 10,
             right: 10,
             child: GestureDetector(
-              onTap: () => setState(() => _selectedKtmFile = null),
+              onTap: () {
+                setState(() => _selectedKtmFile = null);
+                ktmProvider.setSelectedFile(null);
+                ktmProvider.clearBanner();
+              },
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
                   color: Colors.black54,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
             ),
           ),
@@ -255,8 +378,13 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryDark,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Ganti', style: TextStyle(fontSize: 12)),
@@ -268,14 +396,24 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
     }
 
     if (_existingKtmUrl != null && _existingKtmUrl!.isNotEmpty) {
-      final isNetwork = _existingKtmUrl!.startsWith('http://') || _existingKtmUrl!.startsWith('https://');
+      final isNetwork = _existingKtmUrl!.startsWith('http');
       return Stack(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: isNetwork
-                ? Image.network(_existingKtmUrl!, height: 200, width: double.infinity, fit: BoxFit.cover)
-                : Image.file(File(_existingKtmUrl!), height: 200, width: double.infinity, fit: BoxFit.cover),
+                ? Image.network(
+                    _existingKtmUrl!,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  )
+                : Image.file(
+                    File(_existingKtmUrl!),
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
           ),
           Positioned(
             bottom: 10,
@@ -284,8 +422,13 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryDark,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
               ),
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Upload Ulang', style: TextStyle(fontSize: 12)),
@@ -333,7 +476,9 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
               const SizedBox(height: 4),
               Text(
                 'Mendukung format JPG, PNG kamera atau galeri',
-                style: AppTypography.caption.copyWith(color: Colors.grey.shade600),
+                style: AppTypography.caption.copyWith(
+                  color: Colors.grey.shade600,
+                ),
               ),
             ],
           ),
@@ -344,6 +489,8 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
 
   @override
   Widget build(BuildContext context) {
+    final ktmProvider = context.watch<KtmVerificationProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -354,7 +501,7 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,
           ),
-          onPressed: () => context.pop(),
+          onPressed: _onBack,
         ),
         title: Text(
           'Verifikasi KTM',
@@ -364,6 +511,19 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          TextButton(
+            key: const Key('ktm_skip_appbar_button'),
+            onPressed: _onSkip,
+            child: Text(
+              'Lewati',
+              style: AppTypography.body2.copyWith(
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -390,7 +550,92 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _buildImagePreview(),
+                _buildImagePreview(ktmProvider),
+                if (ktmProvider.isScanning)
+                  Container(
+                    key: const Key('ktm_ocr_scanning_indicator'),
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2F1D8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF86B049).withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primaryDark,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          ktmProvider.scanningStatus ?? 'Membaca KTM...',
+                          style: AppTypography.body2.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (ktmProvider.bannerMessage != null)
+                  Container(
+                    key: Key(
+                      ktmProvider.isWarningBanner
+                          ? 'ktm_ocr_warning_banner'
+                          : 'ktm_ocr_info_banner',
+                    ),
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ktmProvider.isWarningBanner
+                          ? const Color(0xFFFFF3E0)
+                          : const Color(0xFFEBF3FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: ktmProvider.isWarningBanner
+                            ? const Color(0xFFF4A261)
+                            : const Color(0xFF90CAF9),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          ktmProvider.isWarningBanner
+                              ? Icons.warning_amber_rounded
+                              : Icons.info_outline_rounded,
+                          color: ktmProvider.isWarningBanner
+                              ? const Color(0xFFE76F51)
+                              : const Color(0xFF1976D2),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            ktmProvider.bannerMessage!,
+                            style: AppTypography.body2.copyWith(
+                              color: ktmProvider.isWarningBanner
+                                  ? const Color(0xFF9C4221)
+                                  : const Color(0xFF0D47A1),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   '*Pastikan foto jelas, nama dan NIM terlihat tidak buram',
@@ -404,12 +649,18 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFE2F1D8).withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF86B049).withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: const Color(0xFF86B049).withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.security_rounded, color: AppColors.primaryDark, size: 22),
+                      const Icon(
+                        Icons.security_rounded,
+                        color: AppColors.primaryDark,
+                        size: 22,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -437,8 +688,25 @@ class _KtmVerificationViewState extends State<KtmVerificationView> {
                 ),
                 const SizedBox(height: 36),
                 CustomButton(
-                  text: _isSubmitting ? 'Mengunggah Berkas...' : 'Kirim Verifikasi KTM',
+                  text: _isSubmitting
+                      ? 'Mengunggah Berkas...'
+                      : 'Kirim Verifikasi KTM',
                   onPressed: _isSubmitting ? () {} : _onVerify,
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton(
+                    key: const Key('ktm_skip_bottom_button'),
+                    onPressed: _onSkip,
+                    child: Text(
+                      'Lewati, verifikasi nanti',
+                      style: AppTypography.body2.copyWith(
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
@@ -108,9 +110,14 @@ class SupabaseOrderService {
         );
       } catch (insertError) {
         final errorStr = insertError.toString().toLowerCase();
-        if (errorStr.contains('is_female_only') || errorStr.contains('pgrst204')) {
+        if (errorStr.contains('is_female_only') ||
+            errorStr.contains('receiver_name') ||
+            errorStr.contains('receiver_phone') ||
+            errorStr.contains('pgrst204')) {
           final fallbackData = Map<String, dynamic>.from(data)
-            ..remove('is_female_only');
+            ..remove('is_female_only')
+            ..remove('receiver_name')
+            ..remove('receiver_phone');
           final response = await SupabaseService.instance.client
               .from(_table)
               .insert(fallbackData)
@@ -128,21 +135,70 @@ class SupabaseOrderService {
     }
   }
 
+  final Map<String, StreamController<ServiceOrderModel?>> _mockOrderControllers = {};
+
+  StreamController<ServiceOrderModel?> _getOrCreateMockController(String orderId) {
+    return _mockOrderControllers.putIfAbsent(
+      orderId,
+      () => StreamController<ServiceOrderModel?>.broadcast(),
+    );
+  }
+
+  Stream<ServiceOrderModel?> _mockOrderStream(String orderId) async* {
+    final fallback = _fallbackWaitingOrders.cast<ServiceOrderModel?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    yield fallback;
+    yield* _getOrCreateMockController(orderId).stream;
+  }
+
+  Stream<ServiceOrderModel?> watchOrder(String orderId) {
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        return SupabaseService.instance.client
+            .from(_table)
+            .stream(primaryKey: ['id'])
+            .eq('id', orderId)
+            .map((rows) {
+              if (rows.isEmpty) return null;
+              return ServiceOrderModel.fromJson(rows.first);
+            })
+            .handleError((error) {
+              debugPrint('Error in watchOrder: $error');
+            });
+      } catch (e) {
+        debugPrint('Error setting up watchOrder: $e');
+      }
+    }
+    return _mockOrderStream(orderId);
+  }
+
   Future<AppResult<ServiceOrderModel>> updateOrderStatus(
     String orderId,
     MoveServiceStatus status,
   ) async {
     try {
-      final response = await SupabaseService.instance.client
-          .from(_table)
-          .update({'status': status.name})
-          .eq('id', orderId)
-          .select()
-          .single();
+      if (SupabaseService.instance.isInitialized) {
+        final response = await SupabaseService.instance.client
+            .from(_table)
+            .update({'status': status.name})
+            .eq('id', orderId)
+            .select()
+            .single();
 
-      return AppResult.success(
-        ServiceOrderModel.fromJson(response),
-      );
+        final updated = ServiceOrderModel.fromJson(response);
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      final idx = _fallbackWaitingOrders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        final updated = _fallbackWaitingOrders[idx].copyWith(status: status);
+        _fallbackWaitingOrders[idx] = updated;
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      return AppResult.failure('Order not found');
     } catch (e) {
       return AppResult.failure(e.toString());
     }
@@ -153,19 +209,117 @@ class SupabaseOrderService {
     String helperId,
   ) async {
     try {
-      final response = await SupabaseService.instance.client
-          .from(_table)
-          .update({
-            'helper_id': helperId,
-            'status': MoveServiceStatus.accepted.name,
-          })
-          .eq('id', orderId)
-          .select()
-          .single();
+      if (SupabaseService.instance.isInitialized) {
+        final response = await SupabaseService.instance.client
+            .from(_table)
+            .update({
+              'helper_id': helperId,
+              'status': MoveServiceStatus.accepted.name,
+            })
+            .eq('id', orderId)
+            .select()
+            .single();
 
-      return AppResult.success(
-        ServiceOrderModel.fromJson(response),
+        final updated = ServiceOrderModel.fromJson(response);
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      final idx = _fallbackWaitingOrders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        final updated = _fallbackWaitingOrders[idx].copyWith(
+          helperId: helperId,
+          status: MoveServiceStatus.accepted,
+        );
+        _fallbackWaitingOrders[idx] = updated;
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      return AppResult.failure('Order not found');
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<AppResult<ServiceOrderModel>> completeOrderWithProof(
+    String orderId,
+    String photoUrl,
+    DateTime completedAt,
+  ) async {
+    try {
+      if (SupabaseService.instance.isInitialized) {
+        final response = await SupabaseService.instance.client
+            .from(_table)
+            .update({
+              'status': MoveServiceStatus.completed.name,
+              'completion_photo_url': photoUrl,
+              'completed_at': completedAt.toIso8601String(),
+            })
+            .eq('id', orderId)
+            .select()
+            .single();
+
+        final updated = ServiceOrderModel.fromJson(response);
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      final idx = _fallbackWaitingOrders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        final updated = _fallbackWaitingOrders[idx].copyWith(
+          status: MoveServiceStatus.completed,
+          completionPhotoUrl: photoUrl,
+          completedAt: completedAt,
+        );
+        _fallbackWaitingOrders[idx] = updated;
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      final fallbackOrder = ServiceOrderModel(
+        id: orderId,
+        requesterId: 'requester',
+        category: ServiceCategory.pindahKos,
+        status: MoveServiceStatus.completed,
+        locationOrigin: 'Origin',
+        locationDestination: 'Destination',
+        scheduledAt: DateTime.now(),
+        itemDescription: 'Item',
+        barterType: BarterType.makanan,
+        barterDescription: 'Barter',
+        completionPhotoUrl: photoUrl,
+        completedAt: completedAt,
+        createdAt: DateTime.now(),
       );
+      _fallbackWaitingOrders.add(fallbackOrder);
+      _mockOrderControllers[orderId]?.add(fallbackOrder);
+      return AppResult.success(fallbackOrder);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) async {
+    try {
+      if (SupabaseService.instance.isInitialized) {
+        final response = await SupabaseService.instance.client
+            .from(_table)
+            .update({'barter_confirmed_by_customer': true})
+            .eq('id', orderId)
+            .select()
+            .single();
+
+        final updated = ServiceOrderModel.fromJson(response);
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      final idx = _fallbackWaitingOrders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        final updated = _fallbackWaitingOrders[idx].copyWith(
+          barterConfirmedByCustomer: true,
+        );
+        _fallbackWaitingOrders[idx] = updated;
+        _mockOrderControllers[orderId]?.add(updated);
+        return AppResult.success(updated);
+      }
+      return AppResult.failure('Order not found');
     } catch (e) {
       return AppResult.failure(e.toString());
     }

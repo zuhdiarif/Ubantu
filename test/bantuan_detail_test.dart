@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
@@ -62,6 +64,53 @@ class MockOrderRepo implements IServiceOrderRepository {
       ),
     );
   }
+
+  @override
+  Stream<ServiceOrderModel?> watchOrder(String orderId) => const Stream.empty();
+
+  @override
+  Future<AppResult<ServiceOrderModel>> completeOrderWithProof(
+    String orderId,
+    File photo,
+  ) async {
+    return AppResult.success(
+      ServiceOrderModel(
+        id: orderId,
+        requesterId: 'test',
+        category: ServiceCategory.bersihKos,
+        status: MoveServiceStatus.completed,
+        locationOrigin: 'Origin',
+        locationDestination: 'Destination',
+        scheduledAt: DateTime.now(),
+        itemDescription: 'Desc',
+        barterType: BarterType.makanan,
+        barterDescription: 'Nasi',
+        completionPhotoUrl: photo.path,
+        completedAt: DateTime.now(),
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) async {
+    return AppResult.success(
+      ServiceOrderModel(
+        id: orderId,
+        requesterId: 'test',
+        category: ServiceCategory.bersihKos,
+        status: MoveServiceStatus.completed,
+        locationOrigin: 'Origin',
+        locationDestination: 'Destination',
+        scheduledAt: DateTime.now(),
+        itemDescription: 'Desc',
+        barterType: BarterType.makanan,
+        barterDescription: 'Nasi',
+        barterConfirmedByCustomer: true,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
 }
 
 void main() {
@@ -104,7 +153,7 @@ void main() {
     expect(find.text('Jl. Veteran, Malang'), findsOneWidget);
     expect(find.text('20 Juli 2026'), findsOneWidget);
     expect(find.text('09:00'), findsOneWidget);
-    expect(find.text('PETA'), findsOneWidget);
+    expect(find.byType(UbantuCampusMap), findsOneWidget);
     expect(find.text('Chat'), findsOneWidget);
     expect(find.text('Bantuan SOS'), findsOneWidget);
   });

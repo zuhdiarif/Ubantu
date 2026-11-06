@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -81,6 +83,20 @@ class _FakeServiceOrderRepository implements IServiceOrderRepository {
     return AppResult.success(created);
   }
 
+  final Map<String, StreamController<ServiceOrderModel?>> orderControllers = {};
+
+  @override
+  Stream<ServiceOrderModel?> watchOrder(String orderId) async* {
+    final match = orders.cast<ServiceOrderModel?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    yield match;
+    yield* orderControllers
+        .putIfAbsent(orderId, () => StreamController<ServiceOrderModel?>.broadcast())
+        .stream;
+  }
+
   @override
   Future<AppResult<ServiceOrderModel>> updateOrderStatus(
     String orderId,
@@ -90,6 +106,7 @@ class _FakeServiceOrderRepository implements IServiceOrderRepository {
     if (idx != -1) {
       final updated = orders[idx].copyWith(status: status);
       orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
       return AppResult.success(updated);
     }
     return AppResult.failure('Order not found');
@@ -104,6 +121,40 @@ class _FakeServiceOrderRepository implements IServiceOrderRepository {
         helperId: helperId,
       );
       orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
+      return AppResult.success(updated);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> completeOrderWithProof(
+    String orderId,
+    File photo,
+  ) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      final updated = orders[idx].copyWith(
+        status: MoveServiceStatus.completed,
+        completionPhotoUrl: photo.path,
+        completedAt: DateTime.now(),
+      );
+      orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
+      return AppResult.success(updated);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      final updated = orders[idx].copyWith(
+        barterConfirmedByCustomer: true,
+      );
+      orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
       return AppResult.success(updated);
     }
     return AppResult.failure('Order not found');
@@ -301,6 +352,7 @@ class _FakeChatRepository implements IChatRepository {
       attachmentUrl: attachmentUrl,
     );
     _messages.putIfAbsent(roomId, () => []).add(msg);
+    messageControllers[roomId]?.add(List<ChatMessageModel>.from(_messages[roomId]!));
     final idx = _rooms.indexWhere((r) => r.id == roomId);
     if (idx != -1) {
       _rooms[idx] = _rooms[idx].copyWith(
@@ -324,6 +376,16 @@ class _FakeChatRepository implements IChatRepository {
       }
     }
     return AppResult.success(true);
+  }
+
+  final Map<String, StreamController<List<ChatMessageModel>>> messageControllers = {};
+
+  @override
+  Stream<List<ChatMessageModel>> watchMessages(String roomId) async* {
+    yield List<ChatMessageModel>.from(_messages[roomId] ?? []);
+    yield* messageControllers
+        .putIfAbsent(roomId, () => StreamController<List<ChatMessageModel>>.broadcast())
+        .stream;
   }
 }
 
@@ -377,6 +439,14 @@ class _FakeLoyaltyRepository implements ILoyaltyRepository {
         ...points.claimedVoucherCodes,
         'GRATIS1X_${DateTime.now().millisecondsSinceEpoch}',
       ],
+    );
+    return AppResult.success(points);
+  }
+
+  @override
+  Future<AppResult<RewardPointsModel>> addPoints(String userId, int pointsToAdd) async {
+    points = points.copyWith(
+      totalPoints: points.totalPoints + pointsToAdd,
     );
     return AppResult.success(points);
   }

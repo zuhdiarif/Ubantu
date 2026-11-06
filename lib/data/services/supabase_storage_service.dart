@@ -83,4 +83,40 @@ class SupabaseStorageService {
       return AppResult.success(file.path);
     }
   }
+
+  Future<AppResult<String>> uploadChatAttachment(File file, String roomId) async {
+    try {
+      if (SupabaseService.instance.isInitialized) {
+        final fileExt = file.path.split('.').last;
+        final fileName = 'chat_${roomId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+        final path = 'chat/$fileName';
+
+        await _effectiveClient.storage.from('chat_attachments').upload(path, file);
+        final publicUrl = _effectiveClient.storage.from('chat_attachments').getPublicUrl(path);
+
+        return AppResult.success(publicUrl);
+      }
+      return AppResult.success(file.path);
+    } catch (_) {
+      return AppResult.success(file.path);
+    }
+  }
+
+  Future<AppResult<String>> uploadCompletionProof(File file, String orderId) async {
+    try {
+      if (isAvailable) {
+        final fileExt = file.path.split('.').last;
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+        final path = '$orderId/$fileName';
+
+        await _effectiveClient.storage.from('order-proofs').upload(path, file);
+        final publicUrl = _effectiveClient.storage.from('order-proofs').getPublicUrl(path);
+
+        return AppResult.success(publicUrl);
+      }
+      return AppResult.success(file.path);
+    } catch (_) {
+      return AppResult.success(file.path);
+    }
+  }
 }

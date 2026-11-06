@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
@@ -553,10 +555,7 @@ class MitraActiveOrderView extends StatelessWidget {
                   );
                 }
               } else if (status == MoveServiceStatus.inProgress) {
-                final success = await provider.advanceActiveOrderStatus();
-                if (success && context.mounted) {
-                  _showCompletionDialog(context);
-                }
+                _showProofBottomSheet(context, provider);
               }
             },
           ),
@@ -647,6 +646,252 @@ class MitraActiveOrderView extends StatelessWidget {
               );
             },
             child: const Text('Kirim SOS Sekarang'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProofBottomSheet(BuildContext context, MitraProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _CompletionProofBottomSheet(
+        provider: provider,
+        onCompleted: () => _showCompletionDialog(context),
+      ),
+    );
+  }
+}
+
+class _CompletionProofBottomSheet extends StatefulWidget {
+  final MitraProvider provider;
+  final VoidCallback onCompleted;
+
+  const _CompletionProofBottomSheet({
+    required this.provider,
+    required this.onCompleted,
+  });
+
+  @override
+  State<_CompletionProofBottomSheet> createState() => _CompletionProofBottomSheetState();
+}
+
+class _CompletionProofBottomSheetState extends State<_CompletionProofBottomSheet> {
+  File? _selectedPhoto;
+  bool _isSubmitting = false;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 1600,
+      );
+      if (picked != null) {
+        setState(() {
+          _selectedPhoto = File(picked.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengambil gambar: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _submit() async {
+    if (_selectedPhoto == null || _isSubmitting) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final success = await widget.provider.completeActiveOrderWithProof(_selectedPhoto!);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+    });
+
+    if (success) {
+      Navigator.of(context).pop();
+      widget.onCompleted();
+    } else {
+      final errorMsg = widget.provider.errorMessage ?? 'Gagal menyelesaikan pesanan dengan bukti foto.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Bukti Foto Selesai',
+                style: AppTypography.h5.copyWith(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Unggah foto bukti pekerjaan telah selesai dilaksanakan untuk diverifikasi pemesan.',
+            style: AppTypography.body2.copyWith(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 16),
+          if (_selectedPhoto != null)
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    _selectedPhoto!,
+                    width: double.infinity,
+                    height: 180,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedPhoto = null),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            Container(
+              width: double.infinity,
+              height: 140,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey.shade300,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.camera_alt_outlined,
+                    size: 40,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Belum ada foto bukti yang dipilih',
+                    style: AppTypography.caption.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                  label: const Text('Ambil Foto'),
+                  onPressed: _isSubmitting ? null : () => _pickImage(ImageSource.camera),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  icon: const Icon(Icons.photo_library_rounded, size: 18),
+                  label: const Text('Pilih dari Galeri'),
+                  onPressed: _isSubmitting ? null : () => _pickImage(ImageSource.gallery),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey.shade300,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: (_selectedPhoto == null || _isSubmitting) ? null : _submit,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Kirim & Selesaikan',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
           ),
         ],
       ),
