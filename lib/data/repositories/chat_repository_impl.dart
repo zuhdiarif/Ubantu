@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/chat_message_model.dart';
@@ -30,42 +32,55 @@ class ChatRepositoryImpl implements IChatRepository {
               .or('requester_id.eq.$currentUserId,helper_id.eq.$currentUserId')
               .order('created_at', ascending: false);
 
+          final roomIds = <String>[
+            for (final r in ordersRes) ...[
+              if (r['id'] != null) ...[
+                r['id'].toString(),
+                'order_${r['id']}',
+              ],
+            ],
+          ];
+
+          final allMessages = roomIds.isEmpty
+              ? <Map<String, dynamic>>[]
+              : await client
+                  .from('chat_messages')
+                  .select()
+                  .inFilter('room_id', roomIds)
+                  .order('created_at', ascending: false);
+
+          final messagesByRoom = <String, List<Map<String, dynamic>>>{};
+          final latestByRoom = <String, Map<String, dynamic>>{};
+          for (final msg in allMessages) {
+            final rId = msg['room_id']?.toString() ?? '';
+            latestByRoom.putIfAbsent(rId, () => msg);
+            messagesByRoom.putIfAbsent(rId, () => []).add(msg);
+          }
+
           for (final order in ordersRes) {
             final orderId = order['id'] as String;
             final roomId = orderId;
 
-            String lastMsg = '';
-            DateTime lastTime = DateTime.tryParse(order['created_at']?.toString() ?? '') ?? DateTime.now();
-            int unread = 0;
-            bool hasMessages = false;
+            final msgs = messagesByRoom[roomId] ?? messagesByRoom['order_$orderId'] ?? [];
+            final latestMsg = latestByRoom[roomId] ?? latestByRoom['order_$orderId'];
 
-            try {
-              final msgsRes = await client
-                  .from('chat_messages')
-                  .select()
-                  .eq('room_id', roomId)
-                  .order('created_at', ascending: false);
-
-              if (msgsRes.isNotEmpty) {
-                hasMessages = true;
-                lastMsg = msgsRes.first['message'] as String? ?? '';
-                lastTime = DateTime.tryParse(msgsRes.first['created_at']?.toString() ?? '') ?? lastTime;
-                final lastRead = _readRoomTimestamps[roomId];
-                unread = msgsRes.where((m) {
-                  if (m['sender_id'] == currentUserId) return false;
-                  if (m['is_read'] == true) return false;
-                  if (lastRead != null) {
-                    final msgTime = DateTime.tryParse(m['created_at']?.toString() ?? '');
-                    if (msgTime != null && !msgTime.isAfter(lastRead)) return false;
-                  }
-                  return true;
-                }).length;
-              }
-            } catch (_) {}
-
-            if (!hasMessages) {
+            if (latestMsg == null && msgs.isEmpty) {
               continue;
             }
+
+            final lastMsg = latestMsg?['message'] as String? ?? '';
+            final lastTime = DateTime.tryParse(latestMsg?['created_at']?.toString() ?? '') ??
+                (DateTime.tryParse(order['created_at']?.toString() ?? '') ?? DateTime.now());
+            final lastRead = _readRoomTimestamps[roomId];
+            final unread = msgs.where((m) {
+              if (m['sender_id'] == currentUserId) return false;
+              if (m['is_read'] == true) return false;
+              if (lastRead != null) {
+                final msgTime = DateTime.tryParse(m['created_at']?.toString() ?? '');
+                if (msgTime != null && !msgTime.isAfter(lastRead)) return false;
+              }
+              return true;
+            }).length;
 
             final isRequester = order['requester_id'] == currentUserId;
             final otherName = isRequester
@@ -302,6 +317,49 @@ class ChatRepositoryImpl implements IChatRepository {
     }
   }
 
+  final Map<String, StreamController<List<ChatMessageModel>>> _mockMessageControllers = {};
+
+  StreamController<List<ChatMessageModel>> _getOrCreateMockController(String roomId) {
+    return _mockMessageControllers.putIfAbsent(
+      roomId,
+      () => StreamController<List<ChatMessageModel>>.broadcast(),
+    );
+  }
+
+  Stream<List<ChatMessageModel>> _mockMessagesStream(String roomId) async* {
+    yield List<ChatMessageModel>.from(_mockMessages[roomId] ?? []);
+    yield* _getOrCreateMockController(roomId).stream;
+  }
+
+  @override
+  Stream<List<ChatMessageModel>> watchMessages(String roomId) {
+    if (SupabaseService.instance.isInitialized && _isValidUuid(roomId)) {
+      try {
+        final client = SupabaseService.instance.client;
+        final currentUserId = client.auth.currentUser?.id;
+
+        return client
+            .from('chat_messages')
+            .stream(primaryKey: ['id'])
+            .eq('room_id', roomId)
+            .order('created_at', ascending: true)
+            .map((rows) {
+              final messages = rows
+                  .map((json) => ChatMessageModel.fromJson(json, currentUserId: currentUserId))
+                  .toList();
+              _mockMessages[roomId] = messages;
+              return messages;
+            })
+            .handleError((error) {
+              debugPrint('Error in watchMessages: $error');
+            });
+      } catch (e) {
+        debugPrint('Error setting up watchMessages: $e');
+      }
+    }
+    return _mockMessagesStream(roomId);
+  }
+
   @override
   Future<AppResult<List<ChatMessageModel>>> getMessages(String roomId) async {
     try {
@@ -369,6 +427,7 @@ class ChatRepositoryImpl implements IChatRepository {
         if (!_mockMessages[roomId]!.any((m) => m.id == sentMsg.id)) {
           _mockMessages[roomId]!.add(sentMsg);
         }
+        _mockMessageControllers[roomId]?.add(List<ChatMessageModel>.from(_mockMessages[roomId]!));
 
         final roomIdx = _mockRooms.indexWhere((r) => r.id == roomId);
         if (roomIdx != -1) {
@@ -399,6 +458,7 @@ class ChatRepositoryImpl implements IChatRepository {
       if (!_mockMessages[roomId]!.any((m) => m.id == fallbackMsg.id)) {
         _mockMessages[roomId]!.add(fallbackMsg);
       }
+      _mockMessageControllers[roomId]?.add(List<ChatMessageModel>.from(_mockMessages[roomId]!));
 
       final roomIdx = _mockRooms.indexWhere((r) => r.id == roomId);
       if (roomIdx != -1) {
@@ -428,6 +488,7 @@ class ChatRepositoryImpl implements IChatRepository {
       if (!_mockMessages[roomId]!.any((m) => m.id == fallbackMsg.id)) {
         _mockMessages[roomId]!.add(fallbackMsg);
       }
+      _mockMessageControllers[roomId]?.add(List<ChatMessageModel>.from(_mockMessages[roomId]!));
 
       return AppResult.success(fallbackMsg);
     }

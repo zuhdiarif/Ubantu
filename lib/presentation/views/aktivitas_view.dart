@@ -176,15 +176,9 @@ class _AktivitasViewState extends State<AktivitasView> {
       ServiceCategory.antarJemput => 'assets/images/ic_antar_jemput.png',
     };
 
-    final statusText = switch (order.status) {
-      MoveServiceStatus.waiting => 'Menunggu',
-      MoveServiceStatus.accepted => 'Diterima',
-      MoveServiceStatus.inProgress => 'Berlangsung',
-      MoveServiceStatus.completed => 'Selesai',
-      MoveServiceStatus.cancelled => 'Batal',
-    };
-
-    final isOngoing = order.status != MoveServiceStatus.completed;
+    final statusText = order.status.label;
+    final badgeBg = order.status.badgeBgColor;
+    final badgeText = order.status.badgeTextColor;
 
     final dateStr =
         '${order.scheduledAt.day} ${_monthName(order.scheduledAt.month)} ${order.scheduledAt.year} - ${order.scheduledAt.hour.toString().padLeft(2, '0')}:${order.scheduledAt.minute.toString().padLeft(2, '0')}';
@@ -311,17 +305,13 @@ class _AktivitasViewState extends State<AktivitasView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isOngoing
-                    ? const Color(0xFFE2F1D8)
-                    : Colors.grey.shade200,
+                color: badgeBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 statusText,
                 style: AppTypography.caption.copyWith(
-                  color: isOngoing
-                      ? const Color(0xFF283626)
-                      : Colors.grey.shade700,
+                  color: badgeText,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),

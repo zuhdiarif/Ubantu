@@ -57,4 +57,29 @@ class SupabaseLoyaltyService {
       return AppResult.failure(e.toString());
     }
   }
+
+  Future<AppResult<RewardPointsModel>> addPoints(String userId, int pointsToAdd) async {
+    try {
+      final current = await getLoyaltyPoints(userId);
+      if (!current.isSuccess || current.data == null) {
+        return AppResult.failure('Gagal memuat poin loyalty');
+      }
+
+      final points = current.data!;
+      final newTotal = points.totalPoints + pointsToAdd;
+
+      final response = await _effectiveClient
+          .from('loyalty_points')
+          .update({
+            'total_points': newTotal,
+          })
+          .eq('user_id', userId)
+          .select()
+          .single();
+
+      return AppResult.success(RewardPointsModel.fromJson(response));
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
 }

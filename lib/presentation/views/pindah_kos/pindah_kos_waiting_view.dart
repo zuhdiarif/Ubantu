@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
 
 class PindahKosWaitingView extends StatefulWidget {
@@ -14,50 +14,24 @@ class PindahKosWaitingView extends StatefulWidget {
 }
 
 class _PindahKosWaitingViewState extends State<PindahKosWaitingView> {
-  Timer? _pollTimer;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-    _startPolling();
-  }
-
-  void _startPolling() {
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<ServiceOrderProvider>();
-      final activeOrder = provider.myOrders
-          .where(
-            (o) =>
-                o.category == ServiceCategory.pindahKos &&
-                (o.status == MoveServiceStatus.waiting ||
-                    o.status == MoveServiceStatus.accepted ||
-                    o.status == MoveServiceStatus.inProgress),
-          )
-          .firstOrNull;
-
+      final activeOrder = _findActiveOrder(provider);
       if (activeOrder != null && activeOrder.id.isNotEmpty) {
-        final updated = await provider.checkOrderStatus(activeOrder.id);
-        if (!mounted) return;
-        if (updated != null &&
-            (updated.status == MoveServiceStatus.accepted ||
-                updated.status == MoveServiceStatus.inProgress)) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.pindahKosInProgress);
-        }
+        provider.subscribeToOrder(activeOrder.id);
+        _handleStatusTransition(activeOrder.status);
       }
     });
   }
 
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<ServiceOrderProvider>();
-    final activeOrder = provider.myOrders
+  ServiceOrderModel? _findActiveOrder(ServiceOrderProvider provider) {
+    return provider.myOrders
         .where(
           (o) =>
               o.category == ServiceCategory.pindahKos &&
@@ -65,16 +39,38 @@ class _PindahKosWaitingViewState extends State<PindahKosWaitingView> {
                   o.status == MoveServiceStatus.accepted ||
                   o.status == MoveServiceStatus.inProgress),
         )
-        .firstOrNull;
+        .firstOrNull ?? (provider.activeOrder?.category == ServiceCategory.pindahKos ? provider.activeOrder : null);
+  }
+
+  void _handleStatusTransition(MoveServiceStatus status) {
+    if (_hasNavigated || !mounted) return;
+    if (status == MoveServiceStatus.accepted ||
+        status == MoveServiceStatus.inProgress) {
+      _hasNavigated = true;
+      context.go(AppRouter.pindahKosInProgress);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (!_hasNavigated) {
+      try {
+        context.read<ServiceOrderProvider>().cancelOrderSubscription();
+      } catch (_) {}
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<ServiceOrderProvider>();
+    final activeOrder = _findActiveOrder(provider);
 
     if (activeOrder != null &&
         (activeOrder.status == MoveServiceStatus.accepted ||
             activeOrder.status == MoveServiceStatus.inProgress)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.pindahKosInProgress);
-        }
+        _handleStatusTransition(activeOrder.status);
       });
     }
 
@@ -254,7 +250,7 @@ class _PindahKosWaitingViewState extends State<PindahKosWaitingView> {
                       ),
                     );
                     if (confirmed == true && context.mounted) {
-                      _pollTimer?.cancel();
+                      provider.cancelOrderSubscription();
                       if (activeOrder != null) {
                         await provider.updateStatus(
                           activeOrder.id,

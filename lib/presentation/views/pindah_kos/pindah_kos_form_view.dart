@@ -33,6 +33,7 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
   double _motorSelectedWeight = 20.0;
   BarterType _selectedBarterType = BarterType.makanan;
   String? _photoUrl;
+  bool _isFemaleOnly = false;
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -177,6 +178,7 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
           ? 'Sesuai kesepakatan'
           : _barterDescController.text.trim(),
       photoUrl: _photoUrl,
+      isFemaleOnly: _isFemaleOnly,
     );
 
     if (!mounted) return;
@@ -271,10 +273,45 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: Material(
+                      color: const Color(0xFFFFF0F5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFF48FB1)),
+                      ),
+                      child: SwitchListTile(
+                      value: _isFemaleOnly,
+                      activeThumbColor: const Color(0xFFD81B60),
+                      title: const Text(
+                        'Khusus Mitra Perempuan (Women-Only)',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF880E4F),
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Pesanan hanya akan ditampilkan ke mitra mahasiswi terverifikasi.',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          color: Color(0xFFAD1457),
+                        ),
+                      ),
+                      onChanged: (val) => setState(() => _isFemaleOnly = val),
+                    ),
+                  ),
+                ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
                   onPressed: provider.isLoading ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF263225),
@@ -303,7 +340,9 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

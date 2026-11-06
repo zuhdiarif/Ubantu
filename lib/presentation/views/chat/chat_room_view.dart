@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +11,7 @@ import 'package:ubantu/domain/models/chat_message_model.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/presentation/providers/chat_provider.dart';
 import 'package:ubantu/presentation/providers/rating_provider.dart';
+import 'package:ubantu/presentation/providers/service_order_provider.dart';
 import 'package:ubantu/presentation/providers/sos_provider.dart';
 
 class ChatRoomView extends StatefulWidget {
@@ -27,7 +31,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
   bool _isOrderCardExpanded = true;
-  Timer? _pollTimer;
+  late ChatProvider _chatProvider;
 
   @override
   void initState() {
@@ -35,24 +39,26 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
     WidgetsBinding.instance.addObserver(this);
     _focusNode.addListener(_handleFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final chatProvider = context.read<ChatProvider>();
       if (widget.initialRoom != null) {
         chatProvider.setActiveRoom(widget.initialRoom!);
       } else if (chatProvider.activeRoom == null && chatProvider.rooms.isNotEmpty) {
         chatProvider.setActiveRoom(chatProvider.rooms.first);
       }
-      _scrollToBottom();
-    });
-
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (!mounted) return;
-      final chatProvider = context.read<ChatProvider>();
       final active = chatProvider.activeRoom ?? widget.initialRoom;
       if (active != null) {
-        chatProvider.loadMessages(active.id, isPolling: true);
+        chatProvider.subscribeToRoom(active.id);
         chatProvider.markAsRead(active.id);
       }
+      _scrollToBottom();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _chatProvider = context.read<ChatProvider>();
   }
 
   void _handleFocusChange() {
@@ -86,7 +92,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
     WidgetsBinding.instance.removeObserver(this);
     _focusNode.removeListener(_handleFocusChange);
     _focusNode.dispose();
-    _pollTimer?.cancel();
+    _chatProvider.unsubscribeRoom();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -112,6 +118,38 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
     final success = await context.read<ChatProvider>().sendMessage(room.id, text);
     if (success) {
       _scrollToBottom();
+    }
+  }
+
+  Future<void> _handlePickAndSendAttachment(ChatRoomModel room) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 75,
+      );
+      if (picked == null) return;
+
+      final file = File(picked.path);
+      final uploadResult = await ServiceLocator.instance.supabaseStorageService.uploadChatAttachment(file, room.id);
+      final attachmentUrl = uploadResult.isSuccess ? uploadResult.data : picked.path;
+
+      if (attachmentUrl != null && mounted) {
+        final success = await context.read<ChatProvider>().sendMessage(
+          room.id,
+          '',
+          attachmentUrl: attachmentUrl,
+        );
+        if (success) {
+          _scrollToBottom();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengirim lampiran: $e')),
+        );
+      }
     }
   }
 
@@ -484,6 +522,246 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
     );
   }
 
+  bool _canEditOrder(ChatRoomModel room) {
+    if (!room.isActive) return false;
+    final status = room.serviceStatus.toLowerCase();
+    if (status.contains('selesai') ||
+        status.contains('batal') ||
+        status.contains('complet') ||
+        status.contains('cancel')) {
+      return false;
+    }
+    return true;
+  }
+
+  void _showEditOrderSheet(BuildContext context, ChatRoomModel room) {
+    final rewardController = TextEditingController(text: room.totalPrice ?? room.itemSummary);
+    final pickupController = TextEditingController(text: room.pickupLocation);
+    final dropoffController = TextEditingController(text: room.destinationLocation);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3E7DE),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Negosiasi & Ubah Pesanan',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E281C),
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Pesanan: ${room.orderNumber} • ${room.serviceTitle}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF5C6658),
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAF4),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE3E7DE)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Detail Saat Ini:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF283626),
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Titik Jemput: ${room.pickupLocation}',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF5C6658)),
+                      ),
+                      Text(
+                        'Titik Antar: ${room.destinationLocation}',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF5C6658)),
+                      ),
+                      Text(
+                        'Reward / Barter: ${room.totalPrice ?? room.itemSummary}',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF5C6658)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Negosiasi Reward / Barter',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E281C),
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: rewardController,
+                  decoration: InputDecoration(
+                    hintText: 'Contoh: Es Teh + Snack / Rp 15.000',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE3E7DE)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryGreen),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Ubah Titik Jemput (Opsional)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E281C),
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: pickupController,
+                  decoration: InputDecoration(
+                    hintText: 'Titik jemput baru',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE3E7DE)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryGreen),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Ubah Titik Antar (Opsional)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E281C),
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: dropoffController,
+                  decoration: InputDecoration(
+                    hintText: 'Titik antar baru',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE3E7DE)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primaryGreen),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final newReward = rewardController.text.trim();
+                    final newPickup = pickupController.text.trim();
+                    final newDropoff = dropoffController.text.trim();
+
+                    try {
+                      final orderProvider = context.read<ServiceOrderProvider>();
+                      await orderProvider.updateOrderNegotiation(
+                        orderId: room.orderId,
+                        barterDescription: newReward.isNotEmpty ? newReward : (room.totalPrice ?? room.itemSummary),
+                        locationOrigin: newPickup.isNotEmpty ? newPickup : room.pickupLocation,
+                        locationDestination: newDropoff.isNotEmpty ? newDropoff : room.destinationLocation,
+                      );
+                    } catch (_) {}
+
+                    if (context.mounted) {
+                      context.read<ChatProvider>().updateActiveRoomDetails(
+                        totalPrice: newReward.isNotEmpty ? newReward : room.totalPrice,
+                        itemSummary: newReward.isNotEmpty ? newReward : room.itemSummary,
+                        pickupLocation: newPickup.isNotEmpty ? newPickup : room.pickupLocation,
+                        destinationLocation: newDropoff.isNotEmpty ? newDropoff : room.destinationLocation,
+                      );
+                      Navigator.pop(sheetContext);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Detail pesanan berhasil diperbarui!'),
+                          backgroundColor: AppColors.primaryDark,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Simpan Perubahan',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildActiveOrderCard(BuildContext context, ChatRoomModel room) {
     return Container(
       decoration: BoxDecoration(
@@ -556,6 +834,29 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
                       ),
                     ],
                   ),
+                  if (_canEditOrder(room)) ...[
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () => _showEditOrderSheet(context, room),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F2DF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.primaryGreen, width: 1),
+                        ),
+                        child: const Text(
+                          'Ubah',
+                          style: TextStyle(
+                            color: AppColors.primaryGreen,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(width: 8),
                   Icon(
                     _isOrderCardExpanded
@@ -672,6 +973,32 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
                       ),
                     ],
                   ),
+                  if (_canEditOrder(room)) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryGreen,
+                          side: const BorderSide(color: AppColors.primaryGreen),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.edit_outlined, size: 14),
+                        label: const Text(
+                          'Ubah Detail Pesanan',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
+                        ),
+                        onPressed: () => _showEditOrderSheet(context, room),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -802,8 +1129,30 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                msg.message,
+              if (msg.attachmentUrl != null && msg.attachmentUrl!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: msg.attachmentUrl!.startsWith('http')
+                      ? Image.network(
+                          msg.attachmentUrl!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                        )
+                      : Image.file(
+                          File(msg.attachmentUrl!),
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                        ),
+                ),
+                if (msg.message.isNotEmpty) const SizedBox(height: 4),
+              ],
+              if (msg.message.isNotEmpty)
+                Text(
+                  msg.message,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -863,8 +1212,30 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                msg.message,
+              if (msg.attachmentUrl != null && msg.attachmentUrl!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: msg.attachmentUrl!.startsWith('http')
+                      ? Image.network(
+                          msg.attachmentUrl!,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                        )
+                      : Image.file(
+                          File(msg.attachmentUrl!),
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                        ),
+                ),
+                if (msg.message.isNotEmpty) const SizedBox(height: 4),
+              ],
+              if (msg.message.isNotEmpty)
+                Text(
+                  msg.message,
                 style: const TextStyle(
                   color: Color(0xFF1E281C),
                   fontSize: 14,
@@ -1102,14 +1473,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: const Icon(Icons.add, color: Color(0xFF5C6658), size: 22),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Lampirkan foto atau dokumen'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
+              onPressed: () => _handlePickAndSendAttachment(room),
             ),
           ),
           const SizedBox(width: 8),

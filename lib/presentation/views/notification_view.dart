@@ -78,39 +78,42 @@ class NotificationView extends StatelessWidget {
   }
 
   Widget _buildFilterTabs(BuildContext context, NotificationProvider provider) {
-    final filters = ['Semua', 'Pesanan', 'KTM', 'Pesan'];
+    final filters = ['Semua', 'Pesanan', 'Transaksi', 'Bantuan', 'KTM', 'Pesan'];
 
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: filters.map((filter) {
-          final isSelected = provider.selectedFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(filter),
-              selected: isSelected,
-              selectedColor: const Color(0xFF283626),
-              backgroundColor: const Color(0xFFF0F4EC),
-              labelStyle: TextStyle(
-                color: isSelected ? Colors.white : const Color(0xFF283626),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: 13,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(
-                  color: isSelected
-                      ? const Color(0xFF283626)
-                      : const Color(0xFFE2E7DE),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: filters.map((filter) {
+            final isSelected = provider.selectedFilter == filter;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(filter),
+                selected: isSelected,
+                selectedColor: const Color(0xFF283626),
+                backgroundColor: const Color(0xFFF0F4EC),
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : const Color(0xFF283626),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 13,
                 ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: isSelected
+                        ? const Color(0xFF283626)
+                        : const Color(0xFFE2E7DE),
+                  ),
+                ),
+                showCheckmark: false,
+                onSelected: (_) => provider.setFilter(filter),
               ),
-              showCheckmark: false,
-              onSelected: (_) => provider.setFilter(filter),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -149,6 +152,8 @@ class NotificationView extends StatelessWidget {
       'order' => Icons.local_shipping_rounded,
       'ktm' => Icons.verified_user_rounded,
       'chat' => Icons.chat_bubble_rounded,
+      'sos' || 'bantuan' || 'help' => Icons.sos_rounded,
+      'transaction' || 'transaksi' => Icons.account_balance_wallet_rounded,
       _ => Icons.notifications_rounded,
     };
 
@@ -156,6 +161,8 @@ class NotificationView extends StatelessWidget {
       'order' => const Color(0xFFE2F1D8),
       'ktm' => const Color(0xFFD6E4FF),
       'chat' => const Color(0xFFFFE8D6),
+      'sos' || 'bantuan' || 'help' => const Color(0xFFFFEAEA),
+      'transaction' || 'transaksi' => const Color(0xFFE6F7FF),
       _ => const Color(0xFFF0F4EC),
     };
 
@@ -163,6 +170,8 @@ class NotificationView extends StatelessWidget {
       'order' => const Color(0xFF283626),
       'ktm' => const Color(0xFF1D39C4),
       'chat' => const Color(0xFFD46B08),
+      'sos' || 'bantuan' || 'help' => Colors.red,
+      'transaction' || 'transaksi' => const Color(0xFF096DD9),
       _ => const Color(0xFF5C6658),
     };
 
@@ -170,6 +179,8 @@ class NotificationView extends StatelessWidget {
       'order' => 'PESANAN',
       'ktm' => 'VERIFIKASI KTM',
       'chat' => 'PESAN CHAT',
+      'sos' || 'bantuan' || 'help' => 'BANTUAN SOS',
+      'transaction' || 'transaksi' => 'TRANSAKSI',
       _ => 'INFO',
     };
 
@@ -288,6 +299,8 @@ class NotificationView extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context, String filter) {
     final message = switch (filter) {
       'Pesanan' => 'Belum ada notifikasi terkait status pesanan.',
+      'Transaksi' => 'Belum ada notifikasi terkait transaksi pembayaran.',
+      'Bantuan' => 'Belum ada notifikasi terkait bantuan darurat.',
       'KTM' => 'Belum ada notifikasi terkait verifikasi KTM.',
       'Pesan' => 'Belum ada notifikasi pesan chat baru.',
       _ => 'Semua riwayat perubahan status dan aktivitas akan muncul di sini.',
@@ -335,10 +348,27 @@ class NotificationView extends StatelessWidget {
   }
 
   void _handleNotificationTap(BuildContext context, NotificationModel item) {
-    if (item.type == 'chat') {
-      context.push(AppRouter.chatInbox);
-    } else if (item.type == 'ktm') {
-      context.push(AppRouter.ktmVerification);
+    switch (item.type) {
+      case 'chat':
+        context.push(AppRouter.chatInbox);
+        break;
+      case 'ktm':
+        context.push(AppRouter.ktmVerification);
+        break;
+      case 'sos':
+      case 'bantuan':
+      case 'help':
+        context.push(AppRouter.sosActive);
+        break;
+      case 'order':
+        context.push(AppRouter.bantuanDetail);
+        break;
+      case 'transaction':
+      case 'transaksi':
+        context.push(AppRouter.mitraEarnings);
+        break;
+      default:
+        break;
     }
   }
 

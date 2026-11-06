@@ -24,3 +24,10 @@ class ServerException extends AppException {
 class ValidationException extends AppException {
   const ValidationException(super.message);
 }
+
+class EmailDeliveryUnavailableException extends AppException {
+  const EmailDeliveryUnavailableException([
+    super.message = 'Layanan pengiriman email sedang sibuk.',
+    String? code,
+  ]) : super(code: code ?? 'email_delivery_unavailable');
+}

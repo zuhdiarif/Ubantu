@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:ubantu/components/custom_button.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/presentation/providers/sos_provider.dart';
 
 class SosActiveTrackingView extends StatelessWidget {
   const SosActiveTrackingView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final sosProvider = context.watch<SosProvider>();
+    final createdAt = sosProvider.activeReport?.createdAt ?? DateTime.now();
+    final receivedTime =
+        '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+    final handledDt = createdAt.add(const Duration(minutes: 2));
+    final handledTime =
+        '${handledDt.hour.toString().padLeft(2, '0')}:${handledDt.minute.toString().padLeft(2, '0')}';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -95,7 +105,7 @@ class SosActiveTrackingView extends StatelessWidget {
               _buildTimelineStep(
                 title: 'Diterima',
                 subtitle: 'Laporan kamu telah diterima oleh tim bantuan.',
-                time: '10:05',
+                time: receivedTime,
                 isCompleted: true,
                 isActive: false,
                 isLast: false,
@@ -104,7 +114,7 @@ class SosActiveTrackingView extends StatelessWidget {
                 title: 'Ditangani',
                 subtitle:
                     'Tim bantuan sedang memproses laporan dan akan segera menghubungi kamu.',
-                time: '10:07',
+                time: handledTime,
                 isCompleted: false,
                 isActive: true,
                 isLast: false,

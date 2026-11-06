@@ -138,7 +138,7 @@ class _LoginViewState extends State<LoginView> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () {},
+                    onTap: () => context.push(AppRouter.forgotPassword),
                     child: Text(
                       'Lupa password ?',
                       style: AppTypography.body2.copyWith(

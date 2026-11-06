@@ -29,6 +29,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
 
   BarterType _selectedBarterType = BarterType.makanan;
   String? _photoUrl;
+  bool _isFemaleOnly = false;
 
   @override
   void dispose() {
@@ -93,6 +94,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
           ? 'Sesuai kesepakatan'
           : _barterDescController.text.trim(),
       photoUrl: _photoUrl,
+      isFemaleOnly: _isFemaleOnly,
     );
 
     if (!mounted) return;
@@ -161,7 +163,7 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
                 _buildWaktuSection(),
                 const SizedBox(height: 20),
                 _buildBarterSection(),
-                const SizedBox(height: 100),
+                const SizedBox(height: 180),
               ],
             ),
           ),
@@ -172,9 +174,44 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            width: double.infinity,
-            height: 52,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                child: Material(
+                  color: const Color(0xFFFFF0F5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0xFFF48FB1)),
+                  ),
+                  child: SwitchListTile(
+                  value: _isFemaleOnly,
+                  activeThumbColor: const Color(0xFFD81B60),
+                  title: const Text(
+                    'Khusus Mitra Perempuan (Women-Only)',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF880E4F),
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Pesanan hanya akan ditampilkan ke mitra mahasiswi terverifikasi.',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      color: Color(0xFFAD1457),
+                    ),
+                  ),
+                  onChanged: (val) => setState(() => _isFemaleOnly = val),
+                ),
+              ),
+            ),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
             child: ElevatedButton(
               onPressed: provider.isLoading ? null : _submitOrder,
               style: ElevatedButton.styleFrom(
@@ -201,6 +238,8 @@ class _BersihKosFormViewState extends State<BersihKosFormView> {
                       ),
                     ),
             ),
+          ),
+            ],
           ),
         ),
       ),

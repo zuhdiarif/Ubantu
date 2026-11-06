@@ -66,6 +66,35 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
+  Future<AppResult<UserModel>> signUpFallback(
+    String email,
+    String password,
+    Map<String, dynamic> metadata,
+  ) async {
+    if (_authService.isAvailable) {
+      final result = await _authService.signUpFallback(email, password, metadata);
+      if (result.isSuccess) {
+        _currentUser = result.data;
+        _signUpReturnedSession = true;
+      }
+      return result;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    _signUpReturnedSession = true;
+    _currentUser = UserModel(
+      id: 'usr_fb_${DateTime.now().millisecondsSinceEpoch}',
+      fullName: metadata['full_name'] as String? ?? '',
+      email: email,
+      phoneNumber: metadata['phone_number'] as String? ?? '',
+      nim: '',
+      verificationStatus: KtmVerificationStatus.unverified,
+      emailOtpSkipped: true,
+    );
+    return AppResult.success(_currentUser!);
+  }
+
+  @override
   Future<AppResult<bool>> signInWithGoogle() async {
     if (_authService.isAvailable) {
       final res = await _authService.signInWithGoogle();
@@ -98,6 +127,26 @@ class AuthRepositoryImpl implements IAuthRepository {
   }
 
   @override
+  Future<AppResult<bool>> resendSignupOtp(String email) async {
+    if (_authService.isAvailable) {
+      return _authService.resendSignupOtp(email);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 200));
+    return AppResult.success(true);
+  }
+
+  @override
+  Future<AppResult<bool>> sendPasswordResetOtp(String email) async {
+    if (_authService.isAvailable) {
+      return _authService.sendPasswordResetOtp(email);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 200));
+    return AppResult.success(true);
+  }
+
+  @override
   Future<AppResult<bool>> verifyOtp(String email, String token) async {
     if (_authService.isAvailable) {
       return _authService.verifyOtp(email, token);
@@ -107,7 +156,48 @@ class AuthRepositoryImpl implements IAuthRepository {
     if (token.length == 6) {
       return AppResult.success(true);
     }
-    return AppResult.failure('Kode OTP tidak valid');
+    return AppResult.failure('Kode OTP salah atau sudah kedaluwarsa');
+  }
+
+  @override
+  Future<AppResult<bool>> verifyRecoveryOtp(String email, String token) async {
+    if (_authService.isAvailable) {
+      return _authService.verifyRecoveryOtp(email, token);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (token.length == 6) {
+      return AppResult.success(true);
+    }
+    return AppResult.failure('Kode OTP salah atau sudah kedaluwarsa');
+  }
+
+  @override
+  Future<AppResult<bool>> updatePassword(String newPassword) async {
+    if (_authService.isAvailable) {
+      return _authService.updatePassword(newPassword);
+    }
+
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (newPassword.length >= 8) {
+      return AppResult.success(true);
+    }
+    return AppResult.failure('Password minimal 8 karakter');
+  }
+
+  @override
+  Future<AppResult<UserModel>> updateProfile(UserModel user) async {
+    if (_authService.isAvailable) {
+      final res = await _authService.updateProfile(user);
+      if (res.isSuccess) {
+        _currentUser = res.data;
+      }
+      return res;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 200));
+    _currentUser = user;
+    return AppResult.success(user);
   }
 
   @override

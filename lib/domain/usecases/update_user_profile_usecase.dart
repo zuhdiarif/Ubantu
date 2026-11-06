@@ -7,7 +7,7 @@ class UpdateUserProfileUseCase {
 
   UpdateUserProfileUseCase(this.repository);
 
-  Future<AppResult<UserModel>> execute(UserModel updatedUser) async {
-    return AppResult.success(updatedUser);
+  Future<AppResult<UserModel>> execute(UserModel updatedUser) {
+    return repository.updateProfile(updatedUser);
   }
 }

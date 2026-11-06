@@ -17,6 +17,8 @@ class AntarJemputFormView extends StatefulWidget {
 class _AntarJemputFormViewState extends State<AntarJemputFormView> {
   final TextEditingController _originController = TextEditingController();
   final TextEditingController _destinationController = TextEditingController();
+  final TextEditingController _receiverNameController = TextEditingController();
+  final TextEditingController _receiverPhoneController = TextEditingController();
   final TextEditingController _detailController = TextEditingController();
   final TextEditingController _barterDescController = TextEditingController();
 
@@ -29,11 +31,14 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
 
   BarterType _selectedBarter = BarterType.makanan;
   String? _photoUrl;
+  bool _isFemaleOnly = false;
 
   @override
   void dispose() {
     _originController.dispose();
     _destinationController.dispose();
+    _receiverNameController.dispose();
+    _receiverPhoneController.dispose();
     _detailController.dispose();
     _barterDescController.dispose();
     super.dispose();
@@ -81,10 +86,165 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
     }
   }
 
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontFamily: 'Plus Jakarta Sans',
+                color: Color(0xFF70776D),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                fontFamily: 'Plus Jakarta Sans',
+                color: Color(0xFF263225),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showConfirmationSheet() {
+    final vehicleLabel = _selectedVehicle == VehicleType.motor ? 'Motor' : 'Mobil';
+    final weightLabel = _mode == 'barang' ? '${_selectedWeight.toInt()} kg' : 'Tebengan / Orang';
+    final barterLabel = _barterDescController.text.trim().isNotEmpty
+        ? _barterDescController.text.trim()
+        : 'Barter ${_selectedBarter.name}';
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Konfirmasi Pesanan',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Plus Jakarta Sans',
+                    color: Color(0xFF263225),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildSummaryRow('Jemput', _originController.text.trim()),
+                _buildSummaryRow('Tujuan', _destinationController.text.trim()),
+                _buildSummaryRow('Kendaraan', vehicleLabel),
+                _buildSummaryRow('Kategori', weightLabel),
+                _buildSummaryRow('Imbalan', barterLabel),
+                _buildSummaryRow('Biaya Admin', 'Rp 2.000'),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF263225),
+                          side: const BorderSide(color: Color(0xFF263225)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          'Batal',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _submitOrder();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF263225),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text(
+                          'Konfirmasi Pesanan',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _onPressSubmit() {
+    if (_originController.text.trim().isEmpty || _destinationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lokasi jemput dan tujuan wajib diisi.')),
+      );
+      return;
+    }
+
+    if (_receiverNameController.text.trim().isEmpty || _receiverPhoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama dan nomor HP penerima wajib diisi.')),
+      );
+      return;
+    }
+
+    _showConfirmationSheet();
+  }
+
   Future<void> _submitOrder() async {
     if (_originController.text.trim().isEmpty || _destinationController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lokasi jemput dan tujuan wajib diisi.')),
+      );
+      return;
+    }
+
+    if (_receiverNameController.text.trim().isEmpty || _receiverPhoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nama dan nomor HP penerima wajib diisi.')),
       );
       return;
     }
@@ -102,6 +262,8 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
     final success = await provider.createAntarJemputOrder(
       locationOrigin: _originController.text.trim(),
       locationDestination: _destinationController.text.trim(),
+      receiverName: _receiverNameController.text.trim(),
+      receiverPhone: _receiverPhoneController.text.trim(),
       itemDescription: _detailController.text.trim().isEmpty
           ? (_mode == 'barang' ? 'Pengiriman barang seputar UB' : 'Tebengan antar mahasiswa UB')
           : _detailController.text.trim(),
@@ -113,6 +275,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
       vehicleType: _selectedVehicle,
       weightKg: _mode == 'barang' ? _selectedWeight : null,
       photoUrl: _photoUrl,
+      isFemaleOnly: _isFemaleOnly,
     );
 
     if (!mounted) return;
@@ -155,7 +318,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 180),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -172,6 +335,8 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
                 _buildModeSelector(),
                 const SizedBox(height: 16),
                 _buildLocationSection(),
+                const SizedBox(height: 16),
+                _buildReceiverInfoSection(),
                 const SizedBox(height: 16),
                 _buildVehicleAndWeightSection(),
                 const SizedBox(height: 16),
@@ -298,6 +463,80 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
       destinationValidator: (val) => val == null || val.trim().isEmpty
           ? 'Lokasi tujuan wajib diisi'
           : null,
+    );
+  }
+
+  Widget _buildReceiverInfoSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE8EBE4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informasi Penerima',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _receiverNameController,
+            decoration: InputDecoration(
+              labelText: 'Nama Penerima',
+              hintText: 'Masukkan nama penerima',
+              prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF263225), size: 20),
+              filled: true,
+              fillColor: const Color(0xFFF8FAF4),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE8EBE4)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE8EBE4)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF263225), width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _receiverPhoneController,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              labelText: 'Nomor HP Penerima',
+              hintText: 'Contoh: 081234567890',
+              prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF263225), size: 20),
+              filled: true,
+              fillColor: const Color(0xFFF8FAF4),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE8EBE4)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE8EBE4)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF263225), width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -776,11 +1015,48 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
           ),
         ],
       ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          onPressed: _submitOrder,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Material(
+                color: const Color(0xFFFFF0F5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Color(0xFFF48FB1)),
+                ),
+                child: SwitchListTile(
+                  value: _isFemaleOnly,
+                  activeThumbColor: const Color(0xFFD81B60),
+                  title: const Text(
+                    'Khusus Mitra Perempuan (Women-Only)',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF880E4F),
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Pesanan hanya akan ditampilkan ke mitra mahasiswi terverifikasi.',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 11,
+                      color: Color(0xFFAD1457),
+                    ),
+                  ),
+                  onChanged: (val) => setState(() => _isFemaleOnly = val),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+          onPressed: _onPressSubmit,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF263225),
             foregroundColor: Colors.white,
@@ -797,6 +1073,9 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
               fontWeight: FontWeight.w700,
             ),
           ),
+        ),
+      ),
+          ],
         ),
       ),
     );

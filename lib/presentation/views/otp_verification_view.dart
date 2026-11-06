@@ -73,10 +73,18 @@ class _OtpVerificationViewState extends State<OtpVerificationView>
             regProvider.email.isNotEmpty
                 ? regProvider.email
                 : 'mahasiswa@student.ub.ac.id',
-            'pass123',
+            regProvider.password.isNotEmpty
+                ? regProvider.password
+                : 'pass123',
           );
 
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verifikasi berhasil! Selamat datang di Ubantu.'),
+            backgroundColor: AppColors.primaryDark,
+          ),
+        );
         CustomToast.show(
           context,
           message: 'Verifikasi berhasil! Selamat datang di Ubantu.',
@@ -85,9 +93,16 @@ class _OtpVerificationViewState extends State<OtpVerificationView>
         context.go(AppRouter.home);
       }
     } else {
+      final errorMsg = regProvider.otpError ?? 'Kode OTP salah atau sudah kedaluwarsa';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.red,
+        ),
+      );
       CustomToast.show(
         context,
-        message: regProvider.otpError ?? 'Kode OTP salah',
+        message: errorMsg,
         type: ToastType.danger,
       );
     }
@@ -254,25 +269,53 @@ class _OtpVerificationViewState extends State<OtpVerificationView>
                       color: Colors.grey.shade600,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () async {
-                      await regProvider.sendOtp();
-                      if (context.mounted) {
-                        CustomToast.show(
-                          context,
-                          message: 'Kode OTP baru telah dikirimkan.',
-                          type: ToastType.success,
-                        );
-                      }
-                    },
-                    child: Text(
-                      'Kirim Ulang',
-                      style: AppTypography.body2.copyWith(
-                        color: const Color(0xFF0066FF),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  regProvider.canResendOtp
+                      ? GestureDetector(
+                          onTap: () async {
+                            final result = await regProvider.resendOtp();
+                            if (!context.mounted) return;
+                            if (result.isSuccess) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Kode OTP baru telah dikirimkan.'),
+                                  backgroundColor: AppColors.primaryDark,
+                                ),
+                              );
+                              CustomToast.show(
+                                context,
+                                message: 'Kode OTP baru telah dikirimkan.',
+                                type: ToastType.success,
+                              );
+                            } else {
+                              final msg = result.errorMessage ?? 'Gagal mengirim ulang kode OTP.';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(msg),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              CustomToast.show(
+                                context,
+                                message: msg,
+                                type: ToastType.danger,
+                              );
+                            }
+                          },
+                          child: Text(
+                            'Kirim Ulang',
+                            style: AppTypography.body2.copyWith(
+                              color: const Color(0xFF0066FF),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Kirim ulang dalam ${regProvider.resendCooldown}s',
+                          style: AppTypography.body2.copyWith(
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ],
               ),
               const SizedBox(height: 32),
