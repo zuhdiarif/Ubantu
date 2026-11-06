@@ -30,10 +30,10 @@ class SupabaseProfileService {
 
   Future<AppResult<UserModel>> updateProfile(UserModel user) async {
     try {
-      final json = user.toJson();
+      final payload = buildEditableProfilePayload(user);
       final response = await _effectiveClient
           .from('profiles')
-          .upsert(json)
+          .upsert(payload)
           .select()
           .single();
 
@@ -55,10 +55,10 @@ class SupabaseProfileService {
         return AppResult.success(UserModel.fromJson(existing));
       }
 
-      final json = user.toJson();
+      final payload = buildEditableProfilePayload(user);
       final response = await _effectiveClient
           .from('profiles')
-          .upsert(json)
+          .upsert(payload)
           .select()
           .single();
 
@@ -66,5 +66,22 @@ class SupabaseProfileService {
     } catch (e) {
       return AppResult.failure(e.toString());
     }
+  }
+
+  Map<String, dynamic> buildEditableProfilePayload(UserModel user) {
+    return {
+      'id': user.id,
+      'email': user.email,
+      'full_name': user.fullName,
+      'phone_number': user.phoneNumber,
+      'nim': user.nim,
+      'avatar_url': user.avatarUrl,
+      'ktm_photo_url': user.ktmPhotoUrl,
+      'gender': user.gender.name,
+      'is_female_only_preferred': user.isFemaleOnlyPreferred,
+      'faculty': user.faculty,
+      'bio': user.bio,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
   }
 }

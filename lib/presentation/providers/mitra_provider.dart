@@ -23,7 +23,9 @@ class MitraProvider extends ChangeNotifier {
   })  : _repository = repository ?? MitraRepositoryImpl(),
         _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository,
         _completeOrderWithProofUseCase = completeOrderWithProofUseCase ??
-            CompleteOrderWithProofUseCase(ServiceLocator.instance.serviceOrderRepository);
+            CompleteOrderWithProofUseCase(ServiceLocator.instance.serviceOrderRepository) {
+    ServiceLocator.instance.registerProviderResetCallback(resetSession);
+  }
 
   MitraProfileModel? _profile;
   List<ServiceOrderModel> _incomingOrders = [];

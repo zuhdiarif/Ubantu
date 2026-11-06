@@ -80,6 +80,40 @@ class FakeSupabaseMitraService extends SupabaseMitraService {
     fetchDeclinedOrderIdsCalled = true;
     return declinedOrderIdsToReturn;
   }
+
+  bool acceptOrderCalled = false;
+  String? lastAcceptOrderId;
+  String? lastAcceptHelperId;
+  AppResult<ServiceOrderModel>? acceptOrderResultToReturn;
+
+  bool updateOrderStatusCalled = false;
+  String? lastUpdateOrderId;
+  MoveServiceStatus? lastUpdateStatus;
+  AppResult<ServiceOrderModel>? updateOrderStatusResultToReturn;
+
+  @override
+  Future<AppResult<ServiceOrderModel>> acceptOrder({
+    required String orderId,
+    required String helperId,
+  }) async {
+    acceptOrderCalled = true;
+    lastAcceptOrderId = orderId;
+    lastAcceptHelperId = helperId;
+    return acceptOrderResultToReturn ??
+        AppResult.failure('Pesanan sudah diambil mitra lain atau tidak lagi tersedia.');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> updateOrderStatus({
+    required String orderId,
+    required MoveServiceStatus status,
+  }) async {
+    updateOrderStatusCalled = true;
+    lastUpdateOrderId = orderId;
+    lastUpdateStatus = status;
+    return updateOrderStatusResultToReturn ??
+        AppResult.failure('Pesanan tidak ditemukan di server.');
+  }
 }
 
 void main() {

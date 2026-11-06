@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/main.dart';
+import 'package:ubantu/presentation/views/login_view.dart';
 import 'package:ubantu/presentation/views/main_navigation_view.dart';
 import 'package:ubantu/presentation/views/onboarding_view.dart';
 
@@ -39,7 +40,18 @@ void main() {
     FlutterError.onError = originalOnError;
   });
 
-  testWidgets('Navigating to loginCallback route redirects to MainNavigationView', (tester) async {
+  testWidgets('Navigating to loginCallback without session redirects to LoginView', (tester) async {
+    await tester.pumpWidget(const UbantuApp());
+    await tester.pumpAndSettle();
+
+    AppRouter.router.go(AppRouter.loginCallback);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginView), findsOneWidget);
+    expect(find.byType(MainNavigationView), findsNothing);
+  });
+
+  testWidgets('Navigating to loginCallback with active session redirects to MainNavigationView', (tester) async {
     final originalOnError = FlutterError.onError;
     FlutterError.onError = (FlutterErrorDetails details) {
       if (details.toString().contains('ListTile background color')) return;
@@ -49,6 +61,7 @@ void main() {
     await tester.pumpWidget(const UbantuApp());
     await tester.pumpAndSettle();
 
+    AppAuthNotifier.instance.initLoggedIn(true);
     AppRouter.router.go(AppRouter.loginCallback);
     await tester.pumpAndSettle();
 

@@ -317,7 +317,9 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
         _incomingOrders.clear();
         _incomingOrders.addAll(remoteOrders);
         return AppResult.success(List.unmodifiable(_incomingOrders));
-      } catch (_) {}
+      } catch (e) {
+        return AppResult.failure('Gagal memuat pesanan masuk: $e');
+      }
     }
 
     final localFiltered = _incomingOrders
@@ -387,8 +389,11 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
               .toList();
           _completedOrders.clear();
           _completedOrders.addAll(completed);
+          return AppResult.success(List.unmodifiable(_completedOrders));
         }
-      } catch (_) {}
+      } catch (e) {
+        return AppResult.failure('Gagal memuat riwayat pesanan: $e');
+      }
     }
     return AppResult.success(List.unmodifiable(_completedOrders));
   }
@@ -426,43 +431,39 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
           _earningsHistory.addAll(items);
           return AppResult.success(List.unmodifiable(_earningsHistory));
         }
-      } catch (_) {}
+      } catch (e) {
+        return AppResult.failure('Gagal memuat riwayat penghasilan: $e');
+      }
     }
     return AppResult.success(List.unmodifiable(_earningsHistory));
   }
 
   @override
   Future<AppResult<bool>> acceptOrder(String orderId) async {
+    if (_useSupabase) {
+      final currentUserId = _mitraService.currentUserId ?? _profile.id;
+      final res = await _mitraService.acceptOrder(
+        orderId: orderId,
+        helperId: currentUserId,
+      );
+      if (!res.isSuccess || res.data == null) {
+        return AppResult.failure(res.errorMessage ?? 'Gagal mengambil pesanan.');
+      }
+      _activeOrder = res.data;
+      _incomingOrders.removeWhere((o) => o.id == orderId);
+      return AppResult.success(true);
+    }
+
     ServiceOrderModel? selected;
     final index = _incomingOrders.indexWhere((o) => o.id == orderId);
     if (index != -1) {
       selected = _incomingOrders[index];
     }
 
-    if (SupabaseService.instance.isInitialized) {
-      try {
-        final currentUserId =
-            SupabaseService.instance.client.auth.currentUser?.id ?? _profile.id;
-        final res = await SupabaseService.instance.client
-            .from('service_orders')
-            .update({
-              'helper_id': currentUserId,
-              'status': MoveServiceStatus.accepted.name,
-            })
-            .eq('id', orderId)
-            .select()
-            .single();
-        selected = ServiceOrderModel.fromJson(res);
-      } catch (_) {}
-    }
-
     if (selected != null) {
       final updated = selected.copyWith(
         status: MoveServiceStatus.accepted,
-        helperId: SupabaseService.instance.isInitialized
-            ? SupabaseService.instance.client.auth.currentUser?.id ??
-                _profile.id
-            : _profile.id,
+        helperId: _profile.id,
       );
       _activeOrder = updated;
       _incomingOrders.removeWhere((o) => o.id == updated.id);
@@ -519,51 +520,53 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
               orElse: () => null,
             ) ??
             _activeOrder;
-    if (target != null) {
-      if (status == MoveServiceStatus.completed) {
-        final finished = target.copyWith(status: status);
-        _completedOrders.insert(0, finished);
-
-        final newEarning = MitraEarningItemModel(
-          id: 'earn-${DateTime.now().millisecondsSinceEpoch}',
-          orderId: finished.id,
-          orderNumber:
-              'UB-ORD-${finished.id.length > 4 ? finished.id.substring(0, 4).toUpperCase() : "9901"}',
-          serviceTitle: 'Layanan ${_categoryTitle(finished.category)}',
-          date: DateTime.now(),
-          barterDescription: finished.barterDescription,
-          pointsEarned: 10,
-          customerName: 'Mahasiswa UB',
-        );
-        _earningsHistory.insert(0, newEarning);
-
-        _profile = _profile.copyWith(
-          totalOrdersCompleted: _profile.totalOrdersCompleted + 1,
-          totalBarterPoints: _profile.totalBarterPoints + 10,
-        );
-
-        _activeOrder = null;
-        _incomingOrders.removeWhere((o) => o.id == orderId);
-      } else {
-        _activeOrder = target.copyWith(status: status);
-        final idx = _incomingOrders.indexWhere((o) => o.id == orderId);
-        if (idx != -1) {
-          _incomingOrders[idx] = _activeOrder!;
-        }
-      }
-
-      if (SupabaseService.instance.isInitialized) {
-        try {
-          await SupabaseService.instance.client
-              .from('service_orders')
-              .update({'status': status.name})
-              .eq('id', orderId);
-        } catch (_) {}
-      }
-
-      return AppResult.success(true);
+    if (target == null) {
+      return AppResult.failure('Order aktif tidak cocok');
     }
-    return AppResult.failure('Order aktif tidak cocok');
+
+    if (_useSupabase) {
+      final res = await _mitraService.updateOrderStatus(
+        orderId: orderId,
+        status: status,
+      );
+      if (!res.isSuccess) {
+        return AppResult.failure(res.errorMessage ?? 'Gagal memperbarui status pesanan.');
+      }
+    }
+
+    if (status == MoveServiceStatus.completed) {
+      final finished = target.copyWith(status: status);
+      _completedOrders.insert(0, finished);
+
+      final newEarning = MitraEarningItemModel(
+        id: 'earn-${DateTime.now().millisecondsSinceEpoch}',
+        orderId: finished.id,
+        orderNumber:
+            'UB-ORD-${finished.id.length > 4 ? finished.id.substring(0, 4).toUpperCase() : "9901"}',
+        serviceTitle: 'Layanan ${_categoryTitle(finished.category)}',
+        date: DateTime.now(),
+        barterDescription: finished.barterDescription,
+        pointsEarned: 10,
+        customerName: 'Mahasiswa UB',
+      );
+      _earningsHistory.insert(0, newEarning);
+
+      _profile = _profile.copyWith(
+        totalOrdersCompleted: _profile.totalOrdersCompleted + 1,
+        totalBarterPoints: _profile.totalBarterPoints + 10,
+      );
+
+      _activeOrder = null;
+      _incomingOrders.removeWhere((o) => o.id == orderId);
+    } else {
+      _activeOrder = target.copyWith(status: status);
+      final idx = _incomingOrders.indexWhere((o) => o.id == orderId);
+      if (idx != -1) {
+        _incomingOrders[idx] = _activeOrder!;
+      }
+    }
+
+    return AppResult.success(true);
   }
 
   String _categoryTitle(ServiceCategory cat) {

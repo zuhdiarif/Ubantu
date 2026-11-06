@@ -183,6 +183,23 @@ class RegistrationProvider extends ChangeNotifier {
     }
   }
 
+  void resetSession() {
+    _fullName = '';
+    _email = '';
+    _phone = '';
+    _password = '';
+    _nim = '';
+    _ktmPhotoPath = null;
+    _ktmStatus = KtmVerificationStatus.unverified;
+    _isOtpVerifying = false;
+    _isSigningUp = false;
+    _otpError = null;
+    _cooldownTimer?.cancel();
+    _resendCooldown = 0;
+    _emailOtpSkipped = false;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _cooldownTimer?.cancel();
