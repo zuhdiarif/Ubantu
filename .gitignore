@@ -11,6 +11,7 @@ supabase_migration.sql
 # Environment & Secrets
 .env
 .env.*
+!.env.example.json
 *.env
 
 # Temporary, Clones & Heavy Dirs

@@ -16,6 +16,11 @@ void main() {
   HttpOverrides.global = _RealHttpOverrides();
 
   test('Live Supabase Auth & Queries Test with real credentials', () async {
+    if (!AppConfig.isSupabaseConfigured) {
+      stdout.writeln('Supabase not configured. Skipping live auth.');
+      return;
+    }
+
     final client = SupabaseClient(
       AppConfig.supabaseUrl,
       AppConfig.supabaseAnonKey,

@@ -114,12 +114,34 @@ Untuk memfasilitasi pengujian fitur tanpa proses pendaftaran manual, akun-akun b
    flutter pub get
    ```
 
-3. **Jalankan Automated Test Suite:**
+3. **Konfigurasi Environment:**
+   Salin `.env.example.json` ke `.env.json` lalu isi nilai kredensial Supabase Anda:
+   ```bash
+   cp .env.example.json .env.json
+   ```
+
+4. **Jalankan Automated Test Suite:**
    ```bash
    flutter test
    ```
 
-4. **Jalankan Aplikasi:**
-   ```bash
-   flutter run --dart-define=SUPABASE_URL=https://orpilmyjifanjwpxxmdi.supabase.co --dart-define=SUPABASE_ANON_KEY=your-anon-key
-   ```
+---
+
+## 📦 Menjalankan & Build
+
+Pastikan file `.env.json` telah dikonfigurasi (salin dari `.env.example.json` dan isi nilai yang sesuai).
+
+* **Menjalankan Aplikasi (Debug/Development):**
+  ```bash
+  flutter run --dart-define-from-file=.env.json
+  ```
+
+* **Build Android APK (Release):**
+  ```bash
+  flutter build apk --release --dart-define-from-file=.env.json
+  ```
+
+* **Build Android App Bundle (Release):**
+  ```bash
+  flutter build appbundle --release --dart-define-from-file=.env.json
+  ```

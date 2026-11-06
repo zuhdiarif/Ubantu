@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/debug_floating_menu.dart';
-import 'package:ubantu/components/theme/app_colors.dart';
-import 'package:ubantu/components/theme/app_typography.dart';
+import 'package:ubantu/components/theme/app_theme.dart';
+import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
@@ -24,6 +24,11 @@ import 'package:ubantu/data/services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kReleaseMode && !AppConfig.isSupabaseConfigured) {
+    throw StateError(
+      'SUPABASE_URL/SUPABASE_ANON_KEY kosong. Jalankan dengan --dart-define-from-file=.env.json',
+    );
+  }
   try {
     await SupabaseService.instance.initialize();
   } catch (_) {}
@@ -92,23 +97,7 @@ class UbantuApp extends StatelessWidget {
             ],
           );
         },
-        theme: ThemeData(
-          fontFamily: AppTypography.fontFamily,
-          textTheme: ThemeData.light(useMaterial3: true).textTheme.apply(
-            fontFamily: AppTypography.fontFamily,
-          ),
-          scaffoldBackgroundColor: AppColors.background,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: AppColors.primaryGreen,
-            primary: AppColors.primaryGreen,
-            secondary: AppColors.accentOrange,
-            surface: AppColors.background,
-            onPrimary: Colors.white,
-            onSecondary: Colors.white,
-            onSurface: AppColors.primaryDark,
-          ),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.lightTheme,
       ),
     );
   }

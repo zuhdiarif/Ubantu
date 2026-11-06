@@ -26,7 +26,16 @@ jobs:
 
       - name: Secret Scanning (Gitleaks)
         uses: gitleaks/gitleaks-action@v2
-        continue-on-error: true
+        continue-on-error: false
+
+      - name: Filesystem Security Vulnerability Scanning (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        continue-on-error: false
+        with:
+          scan-type: fs
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -101,11 +110,31 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Generate Environment Configuration (.env.json)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          CONFIRM_EMAIL_ENABLED: "true"
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "Error: SUPABASE_URL secret is missing or empty. Please set SUPABASE_URL in GitHub repository secrets." >&2
+            exit 1
+          fi
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Error: SUPABASE_ANON_KEY secret is missing or empty. Please set SUPABASE_ANON_KEY in GitHub repository secrets." >&2
+            exit 1
+          fi
+          jq -n \
+            --arg url "$SUPABASE_URL" \
+            --arg key "$SUPABASE_ANON_KEY" \
+            --arg confirm "$CONFIRM_EMAIL_ENABLED" \
+            '{"SUPABASE_URL": $url, "SUPABASE_ANON_KEY": $key, "CONFIRM_EMAIL_ENABLED": $confirm}' > .env.json
+
       - name: Build Obfuscated Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define-from-file=.env.json
 
       - name: Build Obfuscated Release App Bundle
-        run: flutter build appbundle --release
+        run: flutter build appbundle --release --dart-define-from-file=.env.json
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
