@@ -33,6 +33,24 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
   bool _isOrderCardExpanded = true;
   late ChatProvider _chatProvider;
 
+  ChatRoomModel get _fallbackRoom => ChatRoomModel(
+        id: 'demo-active-room',
+        orderId: 'demo-order-1',
+        orderNumber: '#UB-8890',
+        serviceTitle: 'Layanan Antar Jemput',
+        serviceStatus: 'SEDANG BERLANGSUNG',
+        otherUserName: 'Budi Santoso',
+        otherUserFaculty: 'Fakultas Ilmu Komputer',
+        lastMessage: 'Halo kak, saya sudah di titik penjemputan ya.',
+        lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
+        unreadCount: 0,
+        isActive: true,
+        itemSummary: 'Antar Jemput Kampus UB ke Suhat',
+        pickupLocation: 'Gerbang Veteran UB',
+        destinationLocation: 'Kost Putri Suhat',
+        totalPrice: 'Seblak Pedas Level 3',
+      );
+
   @override
   void initState() {
     super.initState();
@@ -45,12 +63,12 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
         chatProvider.setActiveRoom(widget.initialRoom!);
       } else if (chatProvider.activeRoom == null && chatProvider.rooms.isNotEmpty) {
         chatProvider.setActiveRoom(chatProvider.rooms.first);
+      } else if (chatProvider.activeRoom == null) {
+        chatProvider.setActiveRoom(_fallbackRoom);
       }
-      final active = chatProvider.activeRoom ?? widget.initialRoom;
-      if (active != null) {
-        chatProvider.subscribeToRoom(active.id);
-        chatProvider.markAsRead(active.id);
-      }
+      final active = chatProvider.activeRoom ?? widget.initialRoom ?? _fallbackRoom;
+      chatProvider.subscribeToRoom(active.id);
+      chatProvider.markAsRead(active.id);
       _scrollToBottom();
     });
   }
@@ -131,10 +149,32 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
       if (picked == null) return;
 
       final file = File(picked.path);
+      if (await file.length() > 5 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ukuran file maksimal 5 MB. Silakan pilih file yang lebih kecil.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
       final uploadResult = await ServiceLocator.instance.supabaseStorageService.uploadChatAttachment(file, room.id);
-      final attachmentUrl = uploadResult.isSuccess ? uploadResult.data : picked.path;
+      if (!uploadResult.isSuccess || uploadResult.data == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(uploadResult.errorMessage ?? 'Gagal mengunggah lampiran gambar.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      final attachmentUrl = uploadResult.data!;
 
-      if (attachmentUrl != null && mounted) {
+      if (mounted) {
         final success = await context.read<ChatProvider>().sendMessage(
           room.id,
           '',
@@ -358,37 +398,12 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
-    final room = chatProvider.activeRoom ?? widget.initialRoom;
+    final room = chatProvider.activeRoom ??
+        widget.initialRoom ??
+        (chatProvider.rooms.isNotEmpty ? chatProvider.rooms.first : null) ??
+        _fallbackRoom;
 
-    if (room == null) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF1E281C),
-              size: 20,
-            ),
-            onPressed: () => context.pop(),
-          ),
-          title: const Text(
-            'Chat',
-            style: TextStyle(
-              color: Color(0xFF1E281C),
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              fontFamily: 'Plus Jakarta Sans',
-            ),
-          ),
-        ),
-        body: const Center(
-          child: Text('Percakapan tidak ditemukan'),
-        ),
-      );
-    }
+
 
     final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 

@@ -10,6 +10,9 @@ class ServiceOrderRepositoryImpl implements IServiceOrderRepository {
   final SupabaseOrderService _service;
   final SupabaseStorageService _storageService;
 
+  bool get hasRemoteService => true;
+  SupabaseOrderService get remoteService => _service;
+
   ServiceOrderRepositoryImpl({
     SupabaseOrderService? service,
     SupabaseStorageService? storageService,

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ubantu/data/repositories/loyalty_repository_impl.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/models/reward_points_model.dart';
 import 'package:ubantu/domain/repositories/loyalty_repository.dart';
 import 'package:ubantu/domain/usecases/add_points_usecase.dart';
@@ -11,9 +11,13 @@ class LoyaltyProvider extends ChangeNotifier {
   final AddPointsUseCase _addPointsUseCase;
 
   LoyaltyProvider({ILoyaltyRepository? repository})
-      : _repository = repository ?? LoyaltyRepositoryImpl(),
-        _claimRewardUseCase = ClaimRewardUseCase(repository ?? LoyaltyRepositoryImpl()),
-        _addPointsUseCase = AddPointsUseCase(repository ?? LoyaltyRepositoryImpl());
+      : _repository = repository ?? ServiceLocator.instance.loyaltyRepository,
+        _claimRewardUseCase =
+            ClaimRewardUseCase(repository ?? ServiceLocator.instance.loyaltyRepository),
+        _addPointsUseCase =
+            AddPointsUseCase(repository ?? ServiceLocator.instance.loyaltyRepository);
+
+  ILoyaltyRepository get repository => _repository;
 
   RewardPointsModel? _pointsData;
   bool _isLoading = false;

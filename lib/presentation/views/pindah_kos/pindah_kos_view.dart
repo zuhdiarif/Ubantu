@@ -271,11 +271,7 @@ class _PindahKosViewState extends State<PindahKosView> {
             title: 'Bersih kos',
             subtitle: 'Bantu bersihkan kos kamu',
             imagePath: 'assets/pindah_kos_flow/illust-bersih-kos.png',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Layanan Bersih Kos segera hadir!')),
-              );
-            },
+            onTap: () => context.push(AppRouter.bersihKos),
           ),
         ),
         const SizedBox(width: 14),

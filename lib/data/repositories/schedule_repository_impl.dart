@@ -1,12 +1,15 @@
 import 'package:ubantu/core/errors/app_result.dart';
+import 'package:ubantu/data/services/supabase_order_service.dart';
 import 'package:ubantu/data/services/supabase_schedule_service.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/smart_schedule_model.dart';
 import 'package:ubantu/domain/models/student_schedule_model.dart';
 import 'package:ubantu/domain/repositories/schedule_repository.dart';
 
 class ScheduleRepositoryImpl implements IScheduleRepository {
-  final SupabaseScheduleService? _supabaseScheduleService;
+  final SupabaseScheduleService _remoteService;
+  final SupabaseOrderService _orderService;
 
   final List<StudentScheduleModel> _mockStudentSchedules = [
     const StudentScheduleModel(
@@ -35,14 +38,23 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
     ),
   ];
 
-  ScheduleRepositoryImpl({SupabaseScheduleService? remoteService})
-      : _supabaseScheduleService = remoteService;
+  ScheduleRepositoryImpl({
+    SupabaseScheduleService? remoteService,
+    SupabaseScheduleService? service,
+    SupabaseOrderService? orderService,
+  })  : _remoteService = remoteService ?? service ?? SupabaseScheduleService(),
+        _orderService = orderService ?? SupabaseOrderService();
+
+  bool get hasRemoteService => true;
+  SupabaseScheduleService get remoteService => _remoteService;
+  SupabaseOrderService get orderService => _orderService;
+  bool get isRemoteActive => SupabaseService.instance.isInitialized;
+  bool get _useSupabase => isRemoteActive;
 
   @override
   Future<AppResult<List<SmartScheduleModel>>> getSchedules(String userId) async {
-    final service = _supabaseScheduleService;
-    if (service != null) {
-      final result = await service.getSchedules(userId);
+    if (_useSupabase) {
+      final result = await _remoteService.getSchedules(userId);
       if (result.isSuccess) {
         return result;
       }
@@ -72,9 +84,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
   @override
   Future<AppResult<SmartScheduleModel>> bookSchedule(SmartScheduleModel schedule) async {
-    final service = _supabaseScheduleService;
-    if (service != null) {
-      final result = await service.bookSchedule(schedule);
+    if (_useSupabase) {
+      final result = await _remoteService.bookSchedule(schedule);
       if (result.isSuccess) {
         return result;
       }
@@ -85,9 +96,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
   @override
   Future<AppResult<List<StudentScheduleModel>>> getStudentSchedules(String userId) async {
-    final service = _supabaseScheduleService;
-    if (service != null) {
-      final result = await service.getStudentSchedules(userId);
+    if (_useSupabase) {
+      final result = await _remoteService.getStudentSchedules(userId);
       if (result.isSuccess) {
         return result;
       }
@@ -98,9 +108,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
   @override
   Future<AppResult<StudentScheduleModel>> addStudentSchedule(StudentScheduleModel schedule) async {
-    final service = _supabaseScheduleService;
-    if (service != null) {
-      final result = await service.addStudentSchedule(schedule);
+    if (_useSupabase) {
+      final result = await _remoteService.addStudentSchedule(schedule);
       if (result.isSuccess) {
         return result;
       }
@@ -112,9 +121,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
   @override
   Future<AppResult<bool>> deleteStudentSchedule(String scheduleId) async {
-    final service = _supabaseScheduleService;
-    if (service != null) {
-      final result = await service.deleteStudentSchedule(scheduleId);
+    if (_useSupabase) {
+      final result = await _remoteService.deleteStudentSchedule(scheduleId);
       if (result.isSuccess) {
         return result;
       }

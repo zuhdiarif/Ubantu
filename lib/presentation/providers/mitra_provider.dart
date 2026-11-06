@@ -93,12 +93,45 @@ class MitraProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateCategories(List<ServiceCategory> categories) async {
-    final result = await _repository.updateServiceCategories(categories);
+  Future<void> updateCategories(
+    List<ServiceCategory> categories, {
+    String? vehicleType,
+    String? vehiclePlate,
+  }) async {
+    final repo = _repository;
+    final result = repo is MitraRepositoryImpl
+        ? await repo.registerMitraCategories(
+            categories,
+            vehicleType: vehicleType,
+            vehiclePlate: vehiclePlate,
+          )
+        : await repo.updateServiceCategories(categories);
     if (result.isSuccess) {
-      _profile = _profile?.copyWith(selectedCategories: categories);
+      if (_profile == null) {
+        final profileRes = await _repository.getMitraProfile();
+        if (profileRes.isSuccess) {
+          _profile = profileRes.data;
+        }
+      }
+      _profile = _profile?.copyWith(
+        selectedCategories: categories,
+        vehicleInfo: vehicleType ?? _profile?.vehicleInfo,
+        vehiclePlate: vehiclePlate ?? _profile?.vehiclePlate,
+      );
       notifyListeners();
     }
+  }
+
+  Future<void> registerCategories(
+    List<ServiceCategory> categories, {
+    String? vehicleType,
+    String? vehiclePlate,
+  }) async {
+    await updateCategories(
+      categories,
+      vehicleType: vehicleType,
+      vehiclePlate: vehiclePlate,
+    );
   }
 
   Future<bool> acceptOrder(String orderId) async {
@@ -140,12 +173,14 @@ class MitraProvider extends ChangeNotifier {
 
     if (result.isSuccess) {
       if (status == MoveServiceStatus.inProgress) {
+        _activeOrder = _activeOrder!.copyWith(status: status);
         _notificationRepository.addNotification(
           'Driver Sudah Tiba di Lokasi!',
           'Helper telah tiba di titik jemput untuk pesanan bantuan.',
           type: 'order',
         );
       } else if (status == MoveServiceStatus.completed) {
+        _activeOrder = null;
         _notificationRepository.addNotification(
           'Pesanan Bantuan Selesai',
           'Helper telah menyelesaikan bantuan pesanan dengan sukses.',
@@ -164,7 +199,8 @@ class MitraProvider extends ChangeNotifier {
   Future<bool> advanceActiveOrderStatus() async {
     if (_activeOrder == null) return false;
 
-    if (_activeOrder!.status == MoveServiceStatus.accepted) {
+    if (_activeOrder!.status == MoveServiceStatus.accepted ||
+        _activeOrder!.status == MoveServiceStatus.waiting) {
       return updateActiveOrderStatus(MoveServiceStatus.inProgress);
     } else if (_activeOrder!.status == MoveServiceStatus.inProgress) {
       return updateActiveOrderStatus(MoveServiceStatus.completed);

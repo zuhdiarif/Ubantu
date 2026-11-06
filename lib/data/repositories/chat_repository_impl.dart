@@ -128,21 +128,37 @@ class ChatRepositoryImpl implements IChatRepository {
               .or('customer_id.eq.$currentUserId,helper_id.eq.$currentUserId')
               .order('updated_at', ascending: false);
 
+          final candidateRoomIds = <String>[
+            for (final json in res)
+              if (json['id'] != null &&
+                  !resultRooms.any((r) => r.id == json['id'].toString()))
+                json['id'].toString(),
+          ];
+
+          final allChatMessages = candidateRoomIds.isEmpty
+              ? <Map<String, dynamic>>[]
+              : await client
+                  .from('chat_messages')
+                  .select()
+                  .inFilter('room_id', candidateRoomIds)
+                  .order('created_at', ascending: false);
+
+          final messagesByChatRoom = <String, List<Map<String, dynamic>>>{};
+          for (final msg in allChatMessages) {
+            final rId = msg['room_id']?.toString() ?? '';
+            messagesByChatRoom.putIfAbsent(rId, () => []).add(msg);
+          }
+
           for (final json in res) {
             final roomId = json['id'] as String;
             if (!resultRooms.any((r) => r.id == roomId)) {
-              final msgsRes = await client
-                  .from('chat_messages')
-                  .select()
-                  .eq('room_id', roomId)
-                  .order('created_at', ascending: false);
-
+              final msgsRes = messagesByChatRoom[roomId] ?? const <Map<String, dynamic>>[];
               if (msgsRes.isNotEmpty) {
                 final lastMsg = msgsRes.first['message'] as String? ?? '';
                 final lastTime = DateTime.tryParse(msgsRes.first['created_at']?.toString() ?? '') ?? DateTime.now();
                 final lastRead = _readRoomTimestamps[roomId];
                 final unread = msgsRes.where((m) {
-                  if (m['sender_id'] == currentUserId) return false;
+                  if (m['sender_id']?.toString() == currentUserId) return false;
                   if (m['is_read'] == true) return false;
                   if (lastRead != null) {
                     final msgTime = DateTime.tryParse(m['created_at']?.toString() ?? '');
@@ -172,6 +188,39 @@ class ChatRepositoryImpl implements IChatRepository {
             }).length;
             resultRooms.add(localRoom.copyWith(unreadCount: unread));
           }
+        }
+
+        if (resultRooms.isEmpty) {
+          final defaultRoom = ChatRoomModel(
+            id: 'order-demo-antar-jemput',
+            orderId: 'demo-order-1',
+            orderNumber: '#UB-8890',
+            serviceTitle: 'Layanan Antar Jemput',
+            serviceStatus: 'SEDANG BERLANGSUNG',
+            otherUserName: 'Budi Santoso',
+            otherUserFaculty: 'Fakultas Ilmu Komputer',
+            lastMessage: 'Halo kak, saya sudah di titik penjemputan ya.',
+            lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
+            unreadCount: 1,
+            isActive: true,
+            itemSummary: 'Antar Jemput Kampus UB ke Suhat',
+            pickupLocation: 'Gerbang Veteran UB',
+            destinationLocation: 'Kost Putri Suhat',
+            totalPrice: 'Seblak Pedas Level 3',
+          );
+          resultRooms.add(defaultRoom);
+          _mockMessages.putIfAbsent(defaultRoom.id, () => [
+            ChatMessageModel(
+              id: 'msg-demo-1',
+              roomId: defaultRoom.id,
+              senderId: 'helper-demo',
+              senderName: 'Budi Santoso',
+              message: 'Halo kak, saya sudah di titik penjemputan ya.',
+              createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
+              isMe: false,
+              isRead: false,
+            ),
+          ]);
         }
 
         resultRooms.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
@@ -494,25 +543,61 @@ class ChatRepositoryImpl implements IChatRepository {
     }
   }
 
+  static List<ChatMessageModel> applyMarkMessagesAsReadLocally(
+    List<ChatMessageModel> messages, {
+    String? currentUserId,
+  }) {
+    return messages.map((m) {
+      if (currentUserId != null && currentUserId.isNotEmpty) {
+        if (m.senderId != currentUserId) {
+          return m.copyWith(isRead: true);
+        }
+        return m;
+      }
+      return m.copyWith(isRead: true);
+    }).toList();
+  }
+
+  void seedMockMessagesForTesting(String roomId, List<ChatMessageModel> messages) {
+    _mockMessages[roomId] = List.from(messages);
+  }
+
+  List<ChatMessageModel> getMockMessagesForTesting(String roomId) {
+    return List.unmodifiable(_mockMessages[roomId] ?? []);
+  }
+
   @override
-  Future<AppResult<bool>> markMessagesAsRead(String roomId) async {
+  Future<AppResult<bool>> markMessagesAsRead(
+    String roomId, {
+    String? currentUserId,
+  }) async {
     try {
       _readRoomTimestamps[roomId] = DateTime.now();
+      final effectiveUserId = currentUserId ??
+          (SupabaseService.instance.isInitialized
+              ? SupabaseService.instance.client.auth.currentUser?.id
+              : null);
 
       if (SupabaseService.instance.isInitialized) {
         final client = SupabaseService.instance.client;
         try {
-          await client
+          var query = client
               .from('chat_messages')
               .update({'is_read': true})
-              .eq('room_id', roomId);
+              .eq('room_id', roomId)
+              .eq('is_read', false);
+          if (effectiveUserId != null && effectiveUserId.isNotEmpty) {
+            query = query.neq('sender_id', effectiveUserId);
+          }
+          await query;
         } catch (_) {}
       }
 
       if (_mockMessages.containsKey(roomId)) {
-        _mockMessages[roomId] = _mockMessages[roomId]!
-            .map((m) => m.copyWith(isRead: true))
-            .toList();
+        _mockMessages[roomId] = applyMarkMessagesAsReadLocally(
+          _mockMessages[roomId]!,
+          currentUserId: effectiveUserId,
+        );
       }
 
       final roomIdx = _mockRooms.indexWhere((r) => r.id == roomId);

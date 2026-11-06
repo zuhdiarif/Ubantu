@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ubantu/data/repositories/rating_repository_impl.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/models/rating_model.dart';
 import 'package:ubantu/domain/repositories/rating_repository.dart';
 
@@ -7,7 +7,9 @@ class RatingProvider extends ChangeNotifier {
   final IRatingRepository _repository;
 
   RatingProvider({IRatingRepository? repository})
-      : _repository = repository ?? RatingRepositoryImpl();
+      : _repository = repository ?? ServiceLocator.instance.ratingRepository;
+
+  IRatingRepository get repository => _repository;
 
   List<RatingModel> _ratings = [];
   bool _isLoading = false;

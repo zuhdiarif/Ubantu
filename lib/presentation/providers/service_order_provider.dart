@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
+import 'package:ubantu/data/services/supabase_storage_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
@@ -21,29 +22,37 @@ class ServiceOrderProvider extends ChangeNotifier {
   final AcceptOrderUseCase _acceptOrderUseCase;
   final UpdateOrderStatusUseCase _updateOrderStatusUseCase;
   final CompleteOrderWithProofUseCase _completeOrderWithProofUseCase;
+  final SupabaseStorageService _storageService;
   final Map<String, Set<MoveServiceStatus>> _notifiedStatusTransitions = {};
 
   ServiceOrderProvider({
     required IServiceOrderRepository repository,
     INotificationRepository? notificationRepository,
     CompleteOrderWithProofUseCase? completeOrderWithProofUseCase,
+    SupabaseStorageService? storageService,
   })  : _repository = repository,
         _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository,
         _createOrderUseCase = CreateServiceOrderUseCase(repository),
         _getActiveOrdersUseCase = GetActiveOrdersUseCase(repository),
         _acceptOrderUseCase = AcceptOrderUseCase(repository),
         _updateOrderStatusUseCase = UpdateOrderStatusUseCase(repository),
-        _completeOrderWithProofUseCase = completeOrderWithProofUseCase ?? CompleteOrderWithProofUseCase(repository);
+        _completeOrderWithProofUseCase = completeOrderWithProofUseCase ?? CompleteOrderWithProofUseCase(repository),
+        _storageService = storageService ?? SupabaseStorageService();
 
   List<ServiceOrderModel> _activeOrders = [];
   List<ServiceOrderModel> _myOrders = [];
   ServiceOrderModel? _activeOrder;
   StreamSubscription<ServiceOrderModel?>? _orderSubscription;
   bool _isLoading = false;
+  bool _isSubmitting = false;
   String? _errorMessage;
 
   List<ServiceOrderModel> get activeOrders => List.unmodifiable(_activeOrders);
   List<ServiceOrderModel> get myOrders => List.unmodifiable(_myOrders);
+  bool get isLoading => _isLoading;
+  bool get isSubmitting => _isSubmitting;
+  String? get errorMessage => _errorMessage;
+
   ServiceOrderModel? get activeOrder {
     if (_activeOrder != null) return _activeOrder;
     try {
@@ -70,9 +79,6 @@ class ServiceOrderProvider extends ChangeNotifier {
     _activeOrder = null;
     notifyListeners();
   }
-
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
 
   Future<void> loadActiveOrders() async {
     _isLoading = true;
@@ -106,6 +112,50 @@ class ServiceOrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> submitOrder({
+    required ServiceOrderModel order,
+    String? barterPhotoPath,
+  }) async {
+    _isSubmitting = true;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    String? photoUrl = order.barterPhotoUrl;
+
+    if (barterPhotoPath != null && barterPhotoPath.isNotEmpty) {
+      final uploadRes = await _storageService.uploadOrderPhoto(
+        File(barterPhotoPath),
+        order.category.name,
+      );
+      if (uploadRes.isFailure) {
+        _errorMessage = uploadRes.errorOrNull ?? 'Gagal mengunggah foto barang.';
+        _isSubmitting = false;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      photoUrl = uploadRes.data;
+    }
+
+    final finalOrder = photoUrl != null ? order.copyWith(barterPhotoUrl: photoUrl) : order;
+    final result = await _createOrderUseCase.execute(finalOrder);
+
+    _isSubmitting = false;
+    _isLoading = false;
+
+    if (result.isSuccess) {
+      _myOrders = [result.data!, ..._myOrders];
+      _activeOrders = [result.data!, ..._activeOrders];
+      notifyListeners();
+      return true;
+    } else {
+      _errorMessage = result.errorMessage;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> createPindahKosOrder({
     required String locationOrigin,
     required String locationDestination,
@@ -119,8 +169,25 @@ class ServiceOrderProvider extends ChangeNotifier {
     bool isFemaleOnly = false,
   }) async {
     _isLoading = true;
+    _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
+
+    String? uploadedUrl = photoUrl;
+    if (photoUrl != null && photoUrl.isNotEmpty && !photoUrl.startsWith('http')) {
+      final uploadRes = await _storageService.uploadOrderPhoto(
+        File(photoUrl),
+        ServiceCategory.pindahKos.name,
+      );
+      if (uploadRes.isFailure) {
+        _errorMessage = uploadRes.errorOrNull ?? 'Gagal mengunggah foto barang.';
+        _isSubmitting = false;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      uploadedUrl = uploadRes.data;
+    }
 
     final userId =
         SupabaseService.instance.isInitialized
@@ -138,7 +205,7 @@ class ServiceOrderProvider extends ChangeNotifier {
       itemDescription: itemDescription,
       barterType: barterType,
       barterDescription: barterDescription,
-      barterPhotoUrl: photoUrl,
+      barterPhotoUrl: uploadedUrl,
       vehicleType: vehicleType,
       weightKg: weightKg,
       isFemaleOnly: isFemaleOnly,
@@ -147,6 +214,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     final result = await _createOrderUseCase.execute(order);
 
+    _isSubmitting = false;
     _isLoading = false;
 
     if (result.isSuccess) {
@@ -172,8 +240,25 @@ class ServiceOrderProvider extends ChangeNotifier {
     bool isFemaleOnly = false,
   }) async {
     _isLoading = true;
+    _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
+
+    String? uploadedUrl = photoUrl;
+    if (photoUrl != null && photoUrl.isNotEmpty && !photoUrl.startsWith('http')) {
+      final uploadRes = await _storageService.uploadOrderPhoto(
+        File(photoUrl),
+        ServiceCategory.bersihKos.name,
+      );
+      if (uploadRes.isFailure) {
+        _errorMessage = uploadRes.errorOrNull ?? 'Gagal mengunggah foto barang.';
+        _isSubmitting = false;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      uploadedUrl = uploadRes.data;
+    }
 
     final userId = SupabaseService.instance.isInitialized
         ? SupabaseService.instance.client.auth.currentUser?.id ?? ''
@@ -190,13 +275,14 @@ class ServiceOrderProvider extends ChangeNotifier {
       itemDescription: jobDetail,
       barterType: barterType,
       barterDescription: barterDescription,
-      barterPhotoUrl: photoUrl,
+      barterPhotoUrl: uploadedUrl,
       isFemaleOnly: isFemaleOnly,
       createdAt: DateTime.now(),
     );
 
     final result = await _createOrderUseCase.execute(order);
 
+    _isSubmitting = false;
     _isLoading = false;
 
     if (result.isSuccess) {
@@ -226,8 +312,25 @@ class ServiceOrderProvider extends ChangeNotifier {
     bool isFemaleOnly = false,
   }) async {
     _isLoading = true;
+    _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();
+
+    String? uploadedUrl = photoUrl;
+    if (photoUrl != null && photoUrl.isNotEmpty && !photoUrl.startsWith('http')) {
+      final uploadRes = await _storageService.uploadOrderPhoto(
+        File(photoUrl),
+        ServiceCategory.antarJemput.name,
+      );
+      if (uploadRes.isFailure) {
+        _errorMessage = uploadRes.errorOrNull ?? 'Gagal mengunggah foto barang.';
+        _isSubmitting = false;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+      uploadedUrl = uploadRes.data;
+    }
 
     final userId = SupabaseService.instance.isInitialized
         ? SupabaseService.instance.client.auth.currentUser?.id ?? ''
@@ -244,7 +347,7 @@ class ServiceOrderProvider extends ChangeNotifier {
       itemDescription: itemDescription,
       barterType: barterType,
       barterDescription: barterDescription,
-      barterPhotoUrl: photoUrl,
+      barterPhotoUrl: uploadedUrl,
       vehicleType: vehicleType,
       weightKg: weightKg,
       isFemaleOnly: isFemaleOnly,
@@ -255,6 +358,7 @@ class ServiceOrderProvider extends ChangeNotifier {
 
     final result = await _createOrderUseCase.execute(order);
 
+    _isSubmitting = false;
     _isLoading = false;
 
     if (result.isSuccess) {

@@ -74,13 +74,19 @@ void main() {
       expect(provider.availableVouchers, 2);
     });
 
-    test('SupabaseStorageService uploadChatAttachment fallback returns local path when uninitialized', () async {
+    test('SupabaseStorageService uploadChatAttachment returns failure when uninitialized', () async {
       final storageService = SupabaseStorageService();
       final tempFile = File('temp_test.png');
-      final result = await storageService.uploadChatAttachment(tempFile, 'room_123');
-
-      expect(result.isSuccess, isTrue);
-      expect(result.data, 'temp_test.png');
+      await tempFile.writeAsBytes([1, 2, 3]);
+      try {
+        final result = await storageService.uploadChatAttachment(tempFile, 'room_123');
+        expect(result.isFailure, isTrue);
+        expect(result.isSuccess, isFalse);
+      } finally {
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+      }
     });
 
     test('ServiceLocator provides SupabaseStorageService instance', () {

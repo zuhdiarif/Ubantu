@@ -10,6 +10,9 @@ class AuthRepositoryImpl implements IAuthRepository {
   UserModel? _currentUser;
   bool _signUpReturnedSession = false;
 
+  bool get hasRemoteService => true;
+  SupabaseAuthService get remoteService => _authService;
+
   AuthRepositoryImpl({SupabaseAuthService? service})
       : _authService = service ?? SupabaseAuthService();
 

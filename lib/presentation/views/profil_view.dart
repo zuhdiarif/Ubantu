@@ -34,7 +34,19 @@ class _ProfilViewState extends State<ProfilView> {
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
       if (picked != null) {
-        final result = await authProvider.updateAvatar(File(picked.path));
+        final file = File(picked.path);
+        if (await file.length() > 5 * 1024 * 1024) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ukuran file maksimal 5 MB. Silakan pilih file yang lebih kecil.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+        final result = await authProvider.updateAvatar(file);
         if (context.mounted) {
           if (result.isSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -275,6 +287,149 @@ class _ProfilViewState extends State<ProfilView> {
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showLoyaltySheet(BuildContext context, AuthProvider authProvider) {
+    final user = authProvider.currentUser;
+    final points = user?.rewardPoints ?? 0;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Poin Reward & Voucher',
+                    style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2F1D8),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.stars_rounded, color: Color(0xFF86B049), size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$points Poin',
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2F3E2E),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Kumpulkan poin dari setiap bantuan yang berhasil diselesaikan dan tukarkan dengan voucher mitra kampus.',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 13,
+                  color: Color(0xFF70776D),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAF4),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8D8)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF86B049),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.confirmation_num_rounded, color: Colors.white, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Voucher Diskon Kantin UB',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: Color(0xFF263225),
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Potongan Rp 5.000 (Min. 50 Poin)',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 11,
+                              color: Color(0xFF70776D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF263225),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Voucher diskon kantin berhasil diklaim!'),
+                            backgroundColor: Color(0xFF263225),
+                          ),
+                        );
+                        Navigator.of(sheetContext).pop();
+                      },
+                      child: const Text('Klaim', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         );
       },
     );
@@ -652,7 +807,7 @@ class _ProfilViewState extends State<ProfilView> {
                 icon: Icons.card_giftcard_rounded,
                 title: 'Poin Reward & Voucher',
                 subtitle: '${user?.rewardPoints ?? 0} Poin Tersedia',
-                onTap: () {},
+                onTap: () => _showLoyaltySheet(context, authProvider),
               ),
               _buildProfileOption(
                 icon: Icons.settings,

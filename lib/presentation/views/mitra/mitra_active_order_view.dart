@@ -107,7 +107,7 @@ class MitraActiveOrderView extends StatelessWidget {
 
   Widget _buildStatusStepper(BuildContext context, MoveServiceStatus status) {
     int currentStep = 0;
-    if (status == MoveServiceStatus.accepted) {
+    if (status == MoveServiceStatus.accepted || status == MoveServiceStatus.waiting) {
       currentStep = 1;
     } else if (status == MoveServiceStatus.inProgress) {
       currentStep = 2;
@@ -542,7 +542,7 @@ class MitraActiveOrderView extends StatelessWidget {
               ),
             ),
             onPressed: () async {
-              if (status == MoveServiceStatus.accepted) {
+              if (status == MoveServiceStatus.accepted || status == MoveServiceStatus.waiting) {
                 await provider.advanceActiveOrderStatus();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -693,8 +693,20 @@ class _CompletionProofBottomSheetState extends State<_CompletionProofBottomSheet
         maxWidth: 1600,
       );
       if (picked != null) {
+        final file = File(picked.path);
+        if (await file.length() > 5 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ukuran file maksimal 5 MB. Silakan pilih file yang lebih kecil.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
         setState(() {
-          _selectedPhoto = File(picked.path);
+          _selectedPhoto = file;
         });
       }
     } catch (e) {

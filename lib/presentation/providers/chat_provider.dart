@@ -253,7 +253,7 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> markAsRead(String roomId) async {
+  Future<void> markAsRead(String roomId, {String? currentUserId}) async {
     _locallyReadRooms[roomId] = DateTime.now();
     final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
     if (roomIndex != -1) {
@@ -261,7 +261,15 @@ class ChatProvider extends ChangeNotifier {
       _applySearch();
       notifyListeners();
     }
-    await _repository.markMessagesAsRead(roomId);
+    final repo = _repository;
+    if (repo is ChatRepositoryImpl) {
+      await repo.markMessagesAsRead(
+        roomId,
+        currentUserId: currentUserId,
+      );
+    } else {
+      await repo.markMessagesAsRead(roomId);
+    }
   }
 
   Future<ChatRoomModel?> selectOrCreateRoomForOrder({
