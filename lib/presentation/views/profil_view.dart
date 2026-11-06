@@ -11,6 +11,17 @@ import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
+import 'package:ubantu/presentation/providers/barter_provider.dart';
+import 'package:ubantu/presentation/providers/chat_provider.dart';
+import 'package:ubantu/presentation/providers/loyalty_provider.dart';
+import 'package:ubantu/presentation/providers/mitra_provider.dart';
+import 'package:ubantu/presentation/providers/notification_provider.dart';
+import 'package:ubantu/presentation/providers/profile_provider.dart';
+import 'package:ubantu/presentation/providers/rating_provider.dart';
+import 'package:ubantu/presentation/providers/schedule_provider.dart';
+import 'package:ubantu/presentation/providers/service_order_provider.dart';
+import 'package:ubantu/presentation/providers/sos_provider.dart';
+import 'package:ubantu/presentation/providers/task_provider.dart';
 
 class ProfilView extends StatefulWidget {
   const ProfilView({super.key});
@@ -20,6 +31,42 @@ class ProfilView extends StatefulWidget {
 }
 
 class _ProfilViewState extends State<ProfilView> {
+  void _resetUserSessionProviders(BuildContext context) {
+    try {
+      context.read<MitraProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<ServiceOrderProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<ProfileProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<NotificationProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<ScheduleProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<BarterProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<RatingProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<TaskProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<SosProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<ChatProvider>().resetSession();
+    } catch (_) {}
+    try {
+      context.read<LoyaltyProvider>().resetSession();
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -519,6 +566,7 @@ class _ProfilViewState extends State<ProfilView> {
               ),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
+                _resetUserSessionProviders(context);
                 await authProvider.logout();
                 if (context.mounted) {
                   context.go(AppRouter.login);
@@ -829,6 +877,7 @@ class _ProfilViewState extends State<ProfilView> {
                 title: 'Keluar Akun',
                 textColor: Colors.red,
                 onTap: () async {
+                  _resetUserSessionProviders(context);
                   await authProvider.logout();
                   if (context.mounted) {
                     context.go(AppRouter.login);

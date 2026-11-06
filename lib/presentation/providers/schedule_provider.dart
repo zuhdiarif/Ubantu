@@ -28,6 +28,14 @@ class ScheduleProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  void resetSession() {
+    _schedules = [];
+    _studentSchedules = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   List<SmartScheduleModel> get schedules => List.unmodifiable(_schedules);
   List<StudentScheduleModel> get studentSchedules =>
       List.unmodifiable(_studentSchedules);

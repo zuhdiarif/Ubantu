@@ -340,6 +340,23 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetSession() {
+    _messagesSubscription?.cancel();
+    _messagesSubscription = null;
+    _notifiedMessageIds.clear();
+    _locallyReadRooms.clear();
+    _rooms = [];
+    _filteredRooms = [];
+    _searchQuery = '';
+    _activeRoom = null;
+    _activeMessages = [];
+    _isLoadingRooms = false;
+    _isLoadingMessages = false;
+    _isSendingMessage = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     unsubscribeRoom();

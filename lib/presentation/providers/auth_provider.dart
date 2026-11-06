@@ -354,11 +354,15 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    await _repository.logout();
-    _currentUser = null;
-    _errorMessage = null;
-    AppAuthNotifier.instance.setLoggedIn(false);
-    notifyListeners();
+    try {
+      await _repository.logout();
+    } finally {
+      _currentUser = null;
+      _errorMessage = null;
+      AppAuthNotifier.instance.setLoggedIn(false);
+      ServiceLocator.instance.clearSessionCaches();
+      notifyListeners();
+    }
   }
 
   @override

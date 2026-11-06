@@ -3,9 +3,10 @@ import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/data/services/supabase_sos_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/sos_report_model.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 import 'package:ubantu/domain/repositories/sos_repository.dart';
 
-class SosRepositoryImpl implements ISosRepository {
+class SosRepositoryImpl implements ISosRepository, SessionScoped {
   final SupabaseSosService _supabaseSosService;
   SosStatus _status = SosStatus.received;
 
@@ -44,5 +45,10 @@ class SosRepositoryImpl implements ISosRepository {
   @override
   Future<void> updateSosStatus(SosStatus status) async {
     _status = status;
+  }
+
+  @override
+  void clearSessionCache() {
+    _status = SosStatus.received;
   }
 }

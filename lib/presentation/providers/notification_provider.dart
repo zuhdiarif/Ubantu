@@ -20,6 +20,11 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetSession() {
+    _selectedFilter = 'Semua';
+    notifyListeners();
+  }
+
   String get selectedFilter => _selectedFilter;
 
   void setFilter(String filter) {

@@ -5,8 +5,9 @@ import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/chat_message_model.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/repositories/chat_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class ChatRepositoryImpl implements IChatRepository {
+class ChatRepositoryImpl implements IChatRepository, SessionScoped {
   final List<ChatRoomModel> _mockRooms = [];
 
   final Map<String, List<ChatMessageModel>> _mockMessages = {};
@@ -190,38 +191,6 @@ class ChatRepositoryImpl implements IChatRepository {
           }
         }
 
-        if (resultRooms.isEmpty) {
-          final defaultRoom = ChatRoomModel(
-            id: 'order-demo-antar-jemput',
-            orderId: 'demo-order-1',
-            orderNumber: '#UB-8890',
-            serviceTitle: 'Layanan Antar Jemput',
-            serviceStatus: 'SEDANG BERLANGSUNG',
-            otherUserName: 'Budi Santoso',
-            otherUserFaculty: 'Fakultas Ilmu Komputer',
-            lastMessage: 'Halo kak, saya sudah di titik penjemputan ya.',
-            lastMessageTime: DateTime.now().subtract(const Duration(minutes: 5)),
-            unreadCount: 1,
-            isActive: true,
-            itemSummary: 'Antar Jemput Kampus UB ke Suhat',
-            pickupLocation: 'Gerbang Veteran UB',
-            destinationLocation: 'Kost Putri Suhat',
-            totalPrice: 'Seblak Pedas Level 3',
-          );
-          resultRooms.add(defaultRoom);
-          _mockMessages.putIfAbsent(defaultRoom.id, () => [
-            ChatMessageModel(
-              id: 'msg-demo-1',
-              roomId: defaultRoom.id,
-              senderId: 'helper-demo',
-              senderName: 'Budi Santoso',
-              message: 'Halo kak, saya sudah di titik penjemputan ya.',
-              createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-              isMe: false,
-              isRead: false,
-            ),
-          ]);
-        }
 
         resultRooms.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
 
@@ -608,5 +577,25 @@ class ChatRepositoryImpl implements IChatRepository {
     } catch (e) {
       return AppResult.failure(e.toString());
     }
+  }
+
+  void seedMockRoomsForTesting(List<ChatRoomModel> rooms) {
+    _mockRooms.clear();
+    _mockRooms.addAll(rooms);
+  }
+
+  List<ChatRoomModel> getMockRoomsForTesting() {
+    return List.unmodifiable(_mockRooms);
+  }
+
+  @override
+  void clearSessionCache() {
+    _mockRooms.clear();
+    _mockMessages.clear();
+    _readRoomTimestamps.clear();
+    for (final controller in _mockMessageControllers.values) {
+      controller.close();
+    }
+    _mockMessageControllers.clear();
   }
 }

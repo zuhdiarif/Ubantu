@@ -32,6 +32,7 @@ import 'package:ubantu/domain/repositories/notification_repository.dart';
 import 'package:ubantu/domain/repositories/profile_repository.dart';
 import 'package:ubantu/domain/repositories/rating_repository.dart';
 import 'package:ubantu/domain/repositories/schedule_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 import 'package:ubantu/domain/repositories/service_order_repository.dart';
 import 'package:ubantu/domain/repositories/sos_repository.dart';
 import 'package:ubantu/domain/repositories/task_repository.dart';
@@ -236,5 +237,27 @@ class ServiceLocator {
       ratingRepository: ratingRepository,
       textRecognitionService: textRecognitionService,
     );
+  }
+
+  void clearSessionCaches() {
+    final repos = [
+      authRepository,
+      taskRepository,
+      sosRepository,
+      serviceOrderRepository,
+      chatRepository,
+      mitraRepository,
+      notificationRepository,
+      loyaltyRepository,
+      profileRepository,
+      barterRepository,
+      scheduleRepository,
+      ratingRepository,
+    ];
+    for (final repo in repos) {
+      if (repo is SessionScoped) {
+        repo.clearSessionCache();
+      }
+    }
   }
 }

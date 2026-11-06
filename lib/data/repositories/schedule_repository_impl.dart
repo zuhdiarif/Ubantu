@@ -6,13 +6,14 @@ import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/smart_schedule_model.dart';
 import 'package:ubantu/domain/models/student_schedule_model.dart';
 import 'package:ubantu/domain/repositories/schedule_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class ScheduleRepositoryImpl implements IScheduleRepository {
+class ScheduleRepositoryImpl implements IScheduleRepository, SessionScoped {
   final SupabaseScheduleService _remoteService;
   final SupabaseOrderService _orderService;
 
-  final List<StudentScheduleModel> _mockStudentSchedules = [
-    const StudentScheduleModel(
+  static const List<StudentScheduleModel> _defaultStudentSchedules = [
+    StudentScheduleModel(
       id: 'sched_1',
       userId: 'mock_mitra',
       dayOfWeek: 1,
@@ -20,7 +21,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       endTime: '09:40',
       courseName: 'Pemrograman Mobile',
     ),
-    const StudentScheduleModel(
+    StudentScheduleModel(
       id: 'sched_2',
       userId: 'mock_mitra',
       dayOfWeek: 3,
@@ -28,7 +29,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       endTime: '11:40',
       courseName: 'Basis Data Terdistribusi',
     ),
-    const StudentScheduleModel(
+    StudentScheduleModel(
       id: 'sched_3',
       userId: 'mock_mitra',
       dayOfWeek: 5,
@@ -37,6 +38,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
       courseName: 'Praktikum Jaringan Komputer',
     ),
   ];
+
+  final List<StudentScheduleModel> _mockStudentSchedules = List.from(_defaultStudentSchedules);
 
   ScheduleRepositoryImpl({
     SupabaseScheduleService? remoteService,
@@ -130,5 +133,11 @@ class ScheduleRepositoryImpl implements IScheduleRepository {
 
     _mockStudentSchedules.removeWhere((s) => s.id == scheduleId);
     return AppResult.success(true);
+  }
+
+  @override
+  void clearSessionCache() {
+    _mockStudentSchedules.clear();
+    _mockStudentSchedules.addAll(_defaultStudentSchedules);
   }
 }

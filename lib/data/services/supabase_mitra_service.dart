@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 
@@ -37,27 +38,60 @@ class SupabaseMitraService {
     }
   }
 
-  Future<void> updateOnlineStatus(String userId, bool isOnline) async {
-    if (!isAvailable) return;
+  Future<Map<String, dynamic>?> fetchActiveOrder(String userId) async {
+    if (!isAvailable) return null;
     final activeClient = _effectiveClient;
-    if (activeClient == null) return;
+    if (activeClient == null) return null;
+    try {
+      final res = await activeClient
+          .from('service_orders')
+          .select()
+          .eq('helper_id', userId)
+          .inFilter('status', [
+            MoveServiceStatus.accepted.name,
+            MoveServiceStatus.inProgress.name,
+          ])
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return res;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<AppResult<void>> updateOnlineStatus(String userId, bool isOnline) async {
+    if (!isAvailable) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
+    final activeClient = _effectiveClient;
+    if (activeClient == null) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
     try {
       await activeClient.from('profiles').update({
         'is_online': isOnline,
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', userId);
-    } catch (_) {}
+      return AppResult.success(null);
+    } catch (e) {
+      return AppResult.failure('Gagal memperbarui status online: ');
+    }
   }
 
-  Future<void> updateMitraRegistration({
+  Future<AppResult<void>> updateMitraRegistration({
     required String userId,
     required List<ServiceCategory> categories,
     String? vehicleType,
     String? vehiclePlate,
   }) async {
-    if (!isAvailable) return;
+    if (!isAvailable) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
     final activeClient = _effectiveClient;
-    if (activeClient == null) return;
+    if (activeClient == null) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
     try {
       await activeClient.from('profiles').update({
         'mitra_categories': categories.map((c) => c.name).toList(),
@@ -66,16 +100,23 @@ class SupabaseMitraService {
         'role': 'helper',
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', userId);
-    } catch (_) {}
+      return AppResult.success(null);
+    } catch (e) {
+      return AppResult.failure('Gagal memperbarui data pendaftaran mitra: ');
+    }
   }
 
-  Future<void> recordDeclinedOrder({
+  Future<AppResult<void>> recordDeclinedOrder({
     required String mitraId,
     required String orderId,
   }) async {
-    if (!isAvailable) return;
+    if (!isAvailable) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
     final activeClient = _effectiveClient;
-    if (activeClient == null) return;
+    if (activeClient == null) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
     try {
       await activeClient.from('mitra_declined_orders').upsert(
         {
@@ -84,7 +125,10 @@ class SupabaseMitraService {
         },
         onConflict: 'mitra_id,order_id',
       );
-    } catch (_) {}
+      return AppResult.success(null);
+    } catch (e) {
+      return AppResult.failure('Gagal mencatat penolakan pesanan: ');
+    }
   }
 
   Future<Set<String>> fetchDeclinedOrderIds(String mitraId) async {
