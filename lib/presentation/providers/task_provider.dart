@@ -29,6 +29,16 @@ class TaskProvider extends ChangeNotifier {
   String _searchQuery = '';
   bool _isFemaleOnlyFilter = false;
 
+  void resetSession() {
+    _allTasks = [];
+    _filteredTasks = [];
+    _isLoading = false;
+    _selectedModeIndex = 0;
+    _searchQuery = '';
+    _isFemaleOnlyFilter = false;
+    notifyListeners();
+  }
+
   List<TaskModel> get tasks => List.unmodifiable(_filteredTasks.isNotEmpty || _searchQuery.isNotEmpty || _isFemaleOnlyFilter ? _filteredTasks : _allTasks);
   bool get isLoading => _isLoading;
   int get selectedModeIndex => _selectedModeIndex;

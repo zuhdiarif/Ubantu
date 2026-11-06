@@ -15,6 +15,13 @@ class RatingProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  void resetSession() {
+    _ratings = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   List<RatingModel> get ratings => List.unmodifiable(_ratings);
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;

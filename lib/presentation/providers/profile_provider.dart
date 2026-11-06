@@ -14,6 +14,11 @@ class ProfileProvider extends ChangeNotifier {
 
   ProfileStateModel get profileStats => _profileStats;
 
+  void resetSession() {
+    _profileStats = ProfileStateModel.initial();
+    notifyListeners();
+  }
+
   void incrementCompletedTask() {
     _profileStats = ProfileStateModel(
       completedTasksCount: _profileStats.completedTasksCount + 1,

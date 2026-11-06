@@ -19,6 +19,13 @@ class BarterProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  void resetSession() {
+    _items = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   List<BarterItemModel> get items => _items;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;

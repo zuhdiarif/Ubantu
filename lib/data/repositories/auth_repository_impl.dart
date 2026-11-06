@@ -4,8 +4,9 @@ import 'package:ubantu/data/services/supabase_auth_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/user_model.dart';
 import 'package:ubantu/domain/repositories/auth_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class AuthRepositoryImpl implements IAuthRepository {
+class AuthRepositoryImpl implements IAuthRepository, SessionScoped {
   final SupabaseAuthService _authService;
   UserModel? _currentUser;
   bool _signUpReturnedSession = false;
@@ -231,5 +232,11 @@ class AuthRepositoryImpl implements IAuthRepository {
 
   void setCurrentUser(UserModel user) {
     _currentUser = user;
+  }
+
+  @override
+  void clearSessionCache() {
+    _currentUser = null;
+    _signUpReturnedSession = false;
   }
 }

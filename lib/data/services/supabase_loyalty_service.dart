@@ -16,70 +16,83 @@ class SupabaseLoyaltyService {
           .from('loyalty_points')
           .select()
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
+
+      if (response == null) {
+        return AppResult.success(RewardPointsModel(userId: userId));
+      }
 
       return AppResult.success(RewardPointsModel.fromJson(response));
+    } on PostgrestException catch (e) {
+      return AppResult.failure(_mapPostgrestError(e.message));
     } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('insufficient_points') || msg.contains('order_not_eligible')) {
+        return AppResult.failure(_mapPostgrestError(msg));
+      }
       return AppResult.failure(e.toString());
     }
   }
 
-  Future<AppResult<RewardPointsModel>> claimVoucher(String userId, int pointsRequired) async {
+  Future<AppResult<RewardPointsModel>> claimVoucher([String? userId, int? pointsRequired]) async {
     try {
-      final current = await getLoyaltyPoints(userId);
-      if (!current.isSuccess || current.data == null) {
-        return AppResult.failure('Gagal memuat poin loyalty');
-      }
-
-      final points = current.data!;
-      if (points.totalPoints < pointsRequired) {
-        return AppResult.failure('Poin kamu tidak mencukupi untuk klaim voucher ini');
-      }
-
-      final newTotal = points.totalPoints - pointsRequired;
-      final newVouchers = points.availableVouchers + 1;
-      final newCodes = List<String>.from(points.claimedVoucherCodes)
-        ..add('GRATIS1X_${DateTime.now().millisecondsSinceEpoch}');
-
-      final response = await _effectiveClient
-          .from('loyalty_points')
-          .update({
-            'total_points': newTotal,
-            'available_vouchers': newVouchers,
-            'claimed_voucher_codes': newCodes,
-          })
-          .eq('user_id', userId)
-          .select()
-          .single();
-
-      return AppResult.success(RewardPointsModel.fromJson(response));
+      final response = await _effectiveClient.rpc('claim_loyalty_voucher');
+      return AppResult.success(_parseRpcResult(response));
+    } on PostgrestException catch (e) {
+      return AppResult.failure(_mapPostgrestError(e.message));
     } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('insufficient_points') || msg.contains('order_not_eligible')) {
+        return AppResult.failure(_mapPostgrestError(msg));
+      }
       return AppResult.failure(e.toString());
     }
   }
 
-  Future<AppResult<RewardPointsModel>> addPoints(String userId, int pointsToAdd) async {
+  Future<AppResult<RewardPointsModel>> awardOrderPoints(String orderId) async {
     try {
-      final current = await getLoyaltyPoints(userId);
-      if (!current.isSuccess || current.data == null) {
-        return AppResult.failure('Gagal memuat poin loyalty');
-      }
-
-      final points = current.data!;
-      final newTotal = points.totalPoints + pointsToAdd;
-
-      final response = await _effectiveClient
-          .from('loyalty_points')
-          .update({
-            'total_points': newTotal,
-          })
-          .eq('user_id', userId)
-          .select()
-          .single();
-
-      return AppResult.success(RewardPointsModel.fromJson(response));
+      final response = await _effectiveClient.rpc(
+        'award_order_points',
+        params: {'p_order_id': orderId},
+      );
+      return AppResult.success(_parseRpcResult(response));
+    } on PostgrestException catch (e) {
+      return AppResult.failure(_mapPostgrestError(e.message));
     } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('insufficient_points') || msg.contains('order_not_eligible')) {
+        return AppResult.failure(_mapPostgrestError(msg));
+      }
       return AppResult.failure(e.toString());
     }
+  }
+
+  RewardPointsModel _parseRpcResult(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return RewardPointsModel.fromJson(data);
+    }
+    if (data is Map) {
+      return RewardPointsModel.fromJson(Map<String, dynamic>.from(data));
+    }
+    if (data is List && data.isNotEmpty) {
+      final first = data.first;
+      if (first is Map<String, dynamic>) {
+        return RewardPointsModel.fromJson(first);
+      }
+      if (first is Map) {
+        return RewardPointsModel.fromJson(Map<String, dynamic>.from(first));
+      }
+    }
+    return const RewardPointsModel(userId: '');
+  }
+
+  String _mapPostgrestError(String message) {
+    if (message.contains('insufficient_points')) {
+      return 'Poin kamu tidak mencukupi untuk klaim voucher ini';
+    }
+    if (message.contains('order_not_eligible')) {
+      return 'Pesanan belum selesai atau bukan milik kamu';
+    }
+    return 'Gagal memproses poin. Silakan coba lagi.';
   }
 }

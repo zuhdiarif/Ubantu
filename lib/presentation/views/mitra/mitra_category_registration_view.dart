@@ -136,17 +136,28 @@ class _MitraCategoryRegistrationViewState
                     return;
                   }
 
-                  await provider.updateCategories(_selectedCategories.toList());
+                  final ok = await provider.updateCategories(_selectedCategories.toList());
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Pengaturan layanan mitra berhasil disimpan!',
+                    if (ok) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Pengaturan layanan mitra berhasil disimpan!',
+                          ),
+                          backgroundColor: AppColors.primaryGreen,
                         ),
-                        backgroundColor: AppColors.primaryGreen,
-                      ),
-                    );
-                    context.pop();
+                      );
+                      context.pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            provider.errorMessage ?? 'Gagal menyimpan pengaturan layanan',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   }
                 },
                 child: Text(

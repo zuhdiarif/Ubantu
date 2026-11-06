@@ -47,6 +47,19 @@ class ServiceOrderProvider extends ChangeNotifier {
   bool _isSubmitting = false;
   String? _errorMessage;
 
+  void resetSession() {
+    _orderSubscription?.cancel();
+    _orderSubscription = null;
+    _activeOrders = [];
+    _myOrders = [];
+    _activeOrder = null;
+    _notifiedStatusTransitions.clear();
+    _isLoading = false;
+    _isSubmitting = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   List<ServiceOrderModel> get activeOrders => List.unmodifiable(_activeOrders);
   List<ServiceOrderModel> get myOrders => List.unmodifiable(_myOrders);
   bool get isLoading => _isLoading;

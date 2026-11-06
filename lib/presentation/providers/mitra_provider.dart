@@ -85,15 +85,35 @@ class MitraProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleOnlineStatus(bool value) async {
-    final result = await _repository.toggleOnlineStatus(value);
-    if (result.isSuccess) {
-      _profile = _profile?.copyWith(isOnline: value);
-      notifyListeners();
-    }
+  void resetSession() {
+    _profile = null;
+    _incomingOrders = [];
+    _activeOrder = null;
+    _completedOrders = [];
+    _earningsHistory = [];
+    _isLoading = false;
+    _errorMessage = null;
+    notifyListeners();
   }
 
-  Future<void> updateCategories(
+  Future<bool> toggleOnlineStatus(bool value) async {
+    final previousValue = isOnline;
+    _profile = _profile?.copyWith(isOnline: value);
+    notifyListeners();
+
+    final result = await _repository.toggleOnlineStatus(value);
+    if (result.isSuccess) {
+      _errorMessage = null;
+      return true;
+    }
+
+    _profile = _profile?.copyWith(isOnline: previousValue);
+    _errorMessage = result.errorMessage ?? 'Gagal mengubah status online';
+    notifyListeners();
+    return false;
+  }
+
+  Future<bool> updateCategories(
     List<ServiceCategory> categories, {
     String? vehicleType,
     String? vehiclePlate,
@@ -118,16 +138,21 @@ class MitraProvider extends ChangeNotifier {
         vehicleInfo: vehicleType ?? _profile?.vehicleInfo,
         vehiclePlate: vehiclePlate ?? _profile?.vehiclePlate,
       );
+      _errorMessage = null;
       notifyListeners();
+      return true;
     }
+    _errorMessage = result.errorMessage ?? 'Gagal menyimpan kategori mitra';
+    notifyListeners();
+    return false;
   }
 
-  Future<void> registerCategories(
+  Future<bool> registerCategories(
     List<ServiceCategory> categories, {
     String? vehicleType,
     String? vehiclePlate,
   }) async {
-    await updateCategories(
+    return updateCategories(
       categories,
       vehicleType: vehicleType,
       vehiclePlate: vehiclePlate,
@@ -156,9 +181,12 @@ class MitraProvider extends ChangeNotifier {
     if (result.isSuccess) {
       _incomingOrders =
           _incomingOrders.where((order) => order.id != orderId).toList();
+      _errorMessage = null;
       notifyListeners();
       return true;
     }
+    _errorMessage = result.errorMessage ?? 'Gagal menolak pesanan';
+    notifyListeners();
     return false;
   }
 

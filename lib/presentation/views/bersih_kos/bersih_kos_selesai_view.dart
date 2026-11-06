@@ -48,7 +48,10 @@ class _BersihKosSelesaiViewState extends State<BersihKosSelesaiView> {
     try {
       final user = authProvider.currentUser;
       if (user != null && user.id.isNotEmpty) {
-        await loyaltyProvider.addPoints(user.id, 10);
+        final orderId = activeOrder?.id;
+        if (orderId != null && orderId.isNotEmpty) {
+          await loyaltyProvider.awardOrderPoints(user.id, orderId);
+        }
       }
     } catch (_) {}
 

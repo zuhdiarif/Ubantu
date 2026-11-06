@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
 import 'package:ubantu/data/services/supabase_mitra_service.dart';
@@ -41,14 +42,15 @@ class FakeSupabaseMitraService extends SupabaseMitraService {
   }
 
   @override
-  Future<void> updateOnlineStatus(String userId, bool isOnline) async {
+  Future<AppResult<void>> updateOnlineStatus(String userId, bool isOnline) async {
     updateOnlineStatusCalled = true;
     lastOnlineUserId = userId;
     lastOnlineStatus = isOnline;
+    return AppResult.success(null);
   }
 
   @override
-  Future<void> updateMitraRegistration({
+  Future<AppResult<void>> updateMitraRegistration({
     required String userId,
     required List<ServiceCategory> categories,
     String? vehicleType,
@@ -59,16 +61,18 @@ class FakeSupabaseMitraService extends SupabaseMitraService {
     lastCategories = categories;
     lastVehicleType = vehicleType;
     lastVehiclePlate = vehiclePlate;
+    return AppResult.success(null);
   }
 
   @override
-  Future<void> recordDeclinedOrder({
+  Future<AppResult<void>> recordDeclinedOrder({
     required String mitraId,
     required String orderId,
   }) async {
     recordDeclinedOrderCalled = true;
     lastDeclinedMitraId = mitraId;
     lastDeclinedOrderId = orderId;
+    return AppResult.success(null);
   }
 
   @override

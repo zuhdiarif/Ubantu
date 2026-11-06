@@ -3,8 +3,9 @@ import 'package:ubantu/data/services/supabase_notification_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/notification_model.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class NotificationRepositoryImpl implements INotificationRepository {
+class NotificationRepositoryImpl implements INotificationRepository, SessionScoped {
   final NotificationService _service;
   final SupabaseNotificationService _supabaseService;
 
@@ -36,5 +37,10 @@ class NotificationRepositoryImpl implements INotificationRepository {
     if (isRemoteActive) {
       _supabaseService.markAllAsRead();
     }
+  }
+
+  @override
+  void clearSessionCache() {
+    _service.clear();
   }
 }

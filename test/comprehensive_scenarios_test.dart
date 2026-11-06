@@ -444,9 +444,9 @@ class _FakeLoyaltyRepository implements ILoyaltyRepository {
   }
 
   @override
-  Future<AppResult<RewardPointsModel>> addPoints(String userId, int pointsToAdd) async {
+  Future<AppResult<RewardPointsModel>> awardOrderPoints(String userId, String orderId) async {
     points = points.copyWith(
-      totalPoints: points.totalPoints + pointsToAdd,
+      totalPoints: points.totalPoints + 10,
     );
     return AppResult.success(points);
   }

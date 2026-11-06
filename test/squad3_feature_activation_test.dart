@@ -45,8 +45,8 @@ class _MockLoyaltyRepo implements ILoyaltyRepository {
   }
 
   @override
-  Future<AppResult<RewardPointsModel>> addPoints(String userId, int pointsToAdd) async {
-    points += pointsToAdd;
+  Future<AppResult<RewardPointsModel>> awardOrderPoints(String userId, String orderId) async {
+    points += 10;
     return AppResult.success(RewardPointsModel(
       userId: userId,
       totalPoints: points,

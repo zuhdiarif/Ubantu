@@ -332,7 +332,7 @@ drop policy if exists "Ratings insert" on public.ratings;
 create policy "Ratings insert" on public.ratings for insert with check (reviewer_id = auth.uid());
 
 drop policy if exists "Loyalty points access" on public.loyalty_points;
-create policy "Loyalty points access" on public.loyalty_points for all using (user_id = auth.uid());
+create policy "Loyalty points access" on public.loyalty_points for select using (user_id = auth.uid());
 
 drop policy if exists "Loyalty transactions access" on public.loyalty_transactions;
 create policy "Loyalty transactions access" on public.loyalty_transactions for all using (user_id = auth.uid());

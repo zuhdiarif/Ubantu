@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/chat_message_model.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/presentation/providers/chat_provider.dart';
@@ -63,12 +64,16 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
         chatProvider.setActiveRoom(widget.initialRoom!);
       } else if (chatProvider.activeRoom == null && chatProvider.rooms.isNotEmpty) {
         chatProvider.setActiveRoom(chatProvider.rooms.first);
-      } else if (chatProvider.activeRoom == null) {
+      } else if (chatProvider.activeRoom == null && !SupabaseService.instance.isInitialized) {
         chatProvider.setActiveRoom(_fallbackRoom);
       }
-      final active = chatProvider.activeRoom ?? widget.initialRoom ?? _fallbackRoom;
-      chatProvider.subscribeToRoom(active.id);
-      chatProvider.markAsRead(active.id);
+      final active = chatProvider.activeRoom ??
+          widget.initialRoom ??
+          (!SupabaseService.instance.isInitialized ? _fallbackRoom : null);
+      if (active != null) {
+        chatProvider.subscribeToRoom(active.id);
+        chatProvider.markAsRead(active.id);
+      }
       _scrollToBottom();
     });
   }
@@ -401,7 +406,50 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
     final room = chatProvider.activeRoom ??
         widget.initialRoom ??
         (chatProvider.rooms.isNotEmpty ? chatProvider.rooms.first : null) ??
-        _fallbackRoom;
+        (!SupabaseService.instance.isInitialized ? _fallbackRoom : null);
+
+    if (room == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF1E281C),
+              size: 20,
+            ),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRouter.chatInbox);
+              }
+            },
+          ),
+          title: const Text(
+            'Chat',
+            style: TextStyle(
+              color: Color(0xFF1E281C),
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+        ),
+        body: const Center(
+          child: Text(
+            'Percakapan tidak ditemukan',
+            style: TextStyle(
+              color: Color(0xFF8C9688),
+              fontSize: 14,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+        ),
+      );
+    }
 
 
 

@@ -357,7 +357,19 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
           Switch.adaptive(
             value: isOnline,
             activeTrackColor: AppColors.primaryGreen,
-            onChanged: (val) => provider.toggleOnlineStatus(val),
+            onChanged: (val) async {
+              final ok = await provider.toggleOnlineStatus(val);
+              if (!ok && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      provider.errorMessage ?? 'Gagal mengubah status online',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
           ),
         ],
       ),
@@ -1276,14 +1288,25 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
               ),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                await provider.declineOrder(order.id);
+                final ok = await provider.declineOrder(order.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Pesanan berhasil ditolak'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  if (ok) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Pesanan berhasil ditolak'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          provider.errorMessage ?? 'Gagal menolak pesanan',
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text('Tolak'),

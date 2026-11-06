@@ -10,6 +10,8 @@ class PhotoUploadCard extends StatefulWidget {
   final ValueChanged<String?> onPhotoChanged;
   final Color accentColor;
   final String category;
+  final SupabaseStorageService? storageService;
+  final ImagePicker? imagePicker;
 
   const PhotoUploadCard({
     super.key,
@@ -19,16 +21,70 @@ class PhotoUploadCard extends StatefulWidget {
     required this.onPhotoChanged,
     this.accentColor = const Color(0xFF86B049),
     this.category = 'order',
+    this.storageService,
+    this.imagePicker,
   });
 
   @override
-  State<PhotoUploadCard> createState() => _PhotoUploadCardState();
+  State<PhotoUploadCard> createState() => PhotoUploadCardState();
 }
 
-class _PhotoUploadCardState extends State<PhotoUploadCard> {
-  final ImagePicker _picker = ImagePicker();
-  final SupabaseStorageService _storageService = SupabaseStorageService();
+class PhotoUploadCardState extends State<PhotoUploadCard> {
+  final ImagePicker _defaultPicker = ImagePicker();
+  final SupabaseStorageService _defaultStorageService = SupabaseStorageService();
   bool _isUploading = false;
+
+  ImagePicker get _picker => widget.imagePicker ?? _defaultPicker;
+  SupabaseStorageService get _storageService => widget.storageService ?? _defaultStorageService;
+
+  @visibleForTesting
+  Future<void> handleFileForTesting(File file) async {
+    await _uploadFile(file);
+  }
+
+  Future<void> _uploadFile(File file) async {
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final uploadResult = await _storageService.uploadOrderPhoto(
+        file,
+        widget.category,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isUploading = false;
+      });
+
+      if (uploadResult.isSuccess && uploadResult.data != null) {
+        widget.onPhotoChanged(uploadResult.data);
+      } else {
+        final errorMsg = (uploadResult.errorMessage != null && uploadResult.errorMessage!.isNotEmpty)
+            ? uploadResult.errorMessage!
+            : 'Gagal mengunggah foto. Silakan coba lagi.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isUploading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Gagal mengunggah foto. Silakan coba lagi.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -39,32 +95,18 @@ class _PhotoUploadCardState extends State<PhotoUploadCard> {
 
       if (picked == null) return;
 
+      await _uploadFile(File(picked.path));
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _isUploading = true;
+        _isUploading = false;
       });
-
-      final uploadResult = await _storageService.uploadOrderPhoto(
-        File(picked.path),
-        widget.category,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Gagal mengunggah foto. Silakan coba lagi.'),
+          backgroundColor: Colors.red,
+        ),
       );
-
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-
-        if (uploadResult.isSuccess && uploadResult.data != null) {
-          widget.onPhotoChanged(uploadResult.data);
-        } else {
-          widget.onPhotoChanged(picked.path);
-        }
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-      }
     }
   }
 

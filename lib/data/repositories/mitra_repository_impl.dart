@@ -6,8 +6,9 @@ import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
 import 'package:ubantu/domain/models/mitra_profile_model.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/repositories/mitra_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class MitraRepositoryImpl implements IMitraRepository {
+class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
   final SupabaseMitraService _mitraService;
   final Set<String> _declinedOrderIds = {};
 
@@ -24,7 +25,13 @@ class MitraRepositoryImpl implements IMitraRepository {
     _incomingOrders.addAll(orders);
   }
 
-  MitraProfileModel _profile = const MitraProfileModel(
+  ServiceOrderModel? get activeOrderForTesting => _activeOrder;
+
+  void seedActiveOrderForTesting(ServiceOrderModel? order) {
+    _activeOrder = order;
+  }
+
+  static const _defaultProfile = MitraProfileModel(
     id: 'mitra_user_1',
     userId: 'user_mitra_001',
     name: 'Ahmad Fauzi (Mitra UB)',
@@ -46,7 +53,9 @@ class MitraRepositoryImpl implements IMitraRepository {
     vehiclePlate: 'N 4821 ABC',
   );
 
-  final List<ServiceOrderModel> _incomingOrders = [
+  MitraProfileModel _profile = _defaultProfile;
+
+  static List<ServiceOrderModel> _defaultIncomingOrders() => [
     ServiceOrderModel(
       id: 'ord-mitra-01',
       requesterId: 'req_mahasiswa_1',
@@ -63,11 +72,13 @@ class MitraRepositoryImpl implements IMitraRepository {
     ),
   ];
 
+  final List<ServiceOrderModel> _incomingOrders = _defaultIncomingOrders();
+
   ServiceOrderModel? _activeOrder;
 
   final List<ServiceOrderModel> _completedOrders = [];
 
-  final List<MitraEarningItemModel> _earningsHistory = [
+  static List<MitraEarningItemModel> _defaultEarningsHistory() => [
     MitraEarningItemModel(
       id: 'earn-01',
       orderId: 'ord-past-01',
@@ -99,6 +110,20 @@ class MitraRepositoryImpl implements IMitraRepository {
       customerName: 'Dhimas Arya (Filkom UB)',
     ),
   ];
+
+  final List<MitraEarningItemModel> _earningsHistory = _defaultEarningsHistory();
+
+  @override
+  void clearSessionCache() {
+    _profile = _defaultProfile;
+    _declinedOrderIds.clear();
+    _activeOrder = null;
+    _incomingOrders.clear();
+    _incomingOrders.addAll(_defaultIncomingOrders());
+    _completedOrders.clear();
+    _earningsHistory.clear();
+    _earningsHistory.addAll(_defaultEarningsHistory());
+  }
 
   @override
   Future<AppResult<MitraProfileModel>> getMitraProfile() async {
@@ -203,13 +228,16 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<bool>> toggleOnlineStatus(bool isOnline) async {
-    _profile = _profile.copyWith(isOnline: isOnline);
     if (_useSupabase) {
       final currentUserId = _mitraService.currentUserId;
       if (currentUserId != null) {
-        await _mitraService.updateOnlineStatus(currentUserId, isOnline);
+        final res = await _mitraService.updateOnlineStatus(currentUserId, isOnline);
+        if (!res.isSuccess) {
+          return AppResult.failure(res.errorMessage ?? 'Gagal memperbarui status online');
+        }
       }
     }
+    _profile = _profile.copyWith(isOnline: isOnline);
     return AppResult.success(_profile.isOnline);
   }
 
@@ -218,22 +246,25 @@ class MitraRepositoryImpl implements IMitraRepository {
     String? vehicleType,
     String? vehiclePlate,
   }) async {
-    _profile = _profile.copyWith(
-      selectedCategories: categories,
-      vehicleInfo: vehicleType ?? _profile.vehicleInfo,
-      vehiclePlate: vehiclePlate ?? _profile.vehiclePlate,
-    );
     if (_useSupabase) {
       final currentUserId = _mitraService.currentUserId;
       if (currentUserId != null) {
-        await _mitraService.updateMitraRegistration(
+        final res = await _mitraService.updateMitraRegistration(
           userId: currentUserId,
           categories: categories,
           vehicleType: vehicleType ?? _profile.vehicleInfo,
           vehiclePlate: vehiclePlate ?? _profile.vehiclePlate,
         );
+        if (!res.isSuccess) {
+          return AppResult.failure(res.errorMessage ?? 'Gagal memperbarui data pendaftaran mitra');
+        }
       }
     }
+    _profile = _profile.copyWith(
+      selectedCategories: categories,
+      vehicleInfo: vehicleType ?? _profile.vehicleInfo,
+      vehiclePlate: vehiclePlate ?? _profile.vehiclePlate,
+    );
     return AppResult.success(true);
   }
 
@@ -297,7 +328,19 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<ServiceOrderModel?>> getActiveOrder() async {
-    if (SupabaseService.instance.isInitialized) {
+    if (_useSupabase) {
+      try {
+        final currentUserId = _mitraService.currentUserId;
+        if (currentUserId != null) {
+          final res = await _mitraService.fetchActiveOrder(currentUserId);
+          if (res != null) {
+            _activeOrder = ServiceOrderModel.fromJson(res);
+          } else {
+            _activeOrder = null;
+          }
+        }
+      } catch (_) {}
+    } else if (SupabaseService.instance.isInitialized) {
       try {
         final currentUserId =
             SupabaseService.instance.client.auth.currentUser?.id;
@@ -316,6 +359,8 @@ class MitraRepositoryImpl implements IMitraRepository {
 
           if (res != null) {
             _activeOrder = ServiceOrderModel.fromJson(res);
+          } else {
+            _activeOrder = null;
           }
         }
       } catch (_) {}
@@ -445,17 +490,20 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<bool>> declineOrder(String orderId) async {
-    _declinedOrderIds.add(orderId);
-    _incomingOrders.removeWhere((o) => o.id == orderId);
     if (_useSupabase) {
       final currentUserId = _mitraService.currentUserId;
       if (currentUserId != null) {
-        await _mitraService.recordDeclinedOrder(
+        final res = await _mitraService.recordDeclinedOrder(
           mitraId: currentUserId,
           orderId: orderId,
         );
+        if (!res.isSuccess) {
+          return AppResult.failure(res.errorMessage ?? 'Gagal mencatat penolakan pesanan');
+        }
       }
     }
+    _declinedOrderIds.add(orderId);
+    _incomingOrders.removeWhere((o) => o.id == orderId);
     return AppResult.success(true);
   }
 

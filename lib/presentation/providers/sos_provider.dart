@@ -17,6 +17,13 @@ class SosProvider extends ChangeNotifier {
   SosStatus _currentStatus = SosStatus.received;
   SosReportModel? _activeReport;
 
+  void resetSession() {
+    _selectedReasonIndex = 0;
+    _currentStatus = SosStatus.received;
+    _activeReport = null;
+    notifyListeners();
+  }
+
   int get selectedReasonIndex => _selectedReasonIndex;
   SosStatus get currentStatus => _currentStatus;
   SosReportModel? get activeReport => _activeReport;
