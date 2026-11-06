@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
@@ -6,6 +8,7 @@ import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
 import 'package:ubantu/domain/repositories/service_order_repository.dart';
 import 'package:ubantu/domain/usecases/accept_order_usecase.dart';
+import 'package:ubantu/domain/usecases/complete_order_with_proof_usecase.dart';
 import 'package:ubantu/domain/usecases/create_service_order_usecase.dart';
 import 'package:ubantu/domain/usecases/get_active_orders_usecase.dart';
 import 'package:ubantu/domain/usecases/update_order_status_usecase.dart';
@@ -17,25 +20,57 @@ class ServiceOrderProvider extends ChangeNotifier {
   final GetActiveOrdersUseCase _getActiveOrdersUseCase;
   final AcceptOrderUseCase _acceptOrderUseCase;
   final UpdateOrderStatusUseCase _updateOrderStatusUseCase;
+  final CompleteOrderWithProofUseCase _completeOrderWithProofUseCase;
   final Map<String, Set<MoveServiceStatus>> _notifiedStatusTransitions = {};
 
   ServiceOrderProvider({
     required IServiceOrderRepository repository,
     INotificationRepository? notificationRepository,
+    CompleteOrderWithProofUseCase? completeOrderWithProofUseCase,
   })  : _repository = repository,
         _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository,
         _createOrderUseCase = CreateServiceOrderUseCase(repository),
         _getActiveOrdersUseCase = GetActiveOrdersUseCase(repository),
         _acceptOrderUseCase = AcceptOrderUseCase(repository),
-        _updateOrderStatusUseCase = UpdateOrderStatusUseCase(repository);
+        _updateOrderStatusUseCase = UpdateOrderStatusUseCase(repository),
+        _completeOrderWithProofUseCase = completeOrderWithProofUseCase ?? CompleteOrderWithProofUseCase(repository);
 
   List<ServiceOrderModel> _activeOrders = [];
   List<ServiceOrderModel> _myOrders = [];
+  ServiceOrderModel? _activeOrder;
+  StreamSubscription<ServiceOrderModel?>? _orderSubscription;
   bool _isLoading = false;
   String? _errorMessage;
 
   List<ServiceOrderModel> get activeOrders => List.unmodifiable(_activeOrders);
   List<ServiceOrderModel> get myOrders => List.unmodifiable(_myOrders);
+  ServiceOrderModel? get activeOrder {
+    if (_activeOrder != null) return _activeOrder;
+    try {
+      return _myOrders.firstWhere(
+        (o) =>
+            o.status == MoveServiceStatus.accepted ||
+            o.status == MoveServiceStatus.inProgress ||
+            o.status == MoveServiceStatus.completed,
+      );
+    } catch (_) {
+      try {
+        return _myOrders.first;
+      } catch (_) {
+        try {
+          return _activeOrders.first;
+        } catch (_) {
+          return null;
+        }
+      }
+    }
+  }
+
+  void clearActiveOrder() {
+    _activeOrder = null;
+    notifyListeners();
+  }
+
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -81,6 +116,7 @@ class ServiceOrderProvider extends ChangeNotifier {
     required BarterType barterType,
     required String barterDescription,
     String? photoUrl,
+    bool isFemaleOnly = false,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -105,6 +141,7 @@ class ServiceOrderProvider extends ChangeNotifier {
       barterPhotoUrl: photoUrl,
       vehicleType: vehicleType,
       weightKg: weightKg,
+      isFemaleOnly: isFemaleOnly,
       createdAt: DateTime.now(),
     );
 
@@ -132,6 +169,7 @@ class ServiceOrderProvider extends ChangeNotifier {
     required String barterDescription,
     String? photoUrl,
     String? locationDestination,
+    bool isFemaleOnly = false,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -153,6 +191,7 @@ class ServiceOrderProvider extends ChangeNotifier {
       barterType: barterType,
       barterDescription: barterDescription,
       barterPhotoUrl: photoUrl,
+      isFemaleOnly: isFemaleOnly,
       createdAt: DateTime.now(),
     );
 
@@ -179,9 +218,12 @@ class ServiceOrderProvider extends ChangeNotifier {
     required DateTime scheduledAt,
     required BarterType barterType,
     required String barterDescription,
+    String? receiverName,
+    String? receiverPhone,
     VehicleType? vehicleType,
     double? weightKg,
     String? photoUrl,
+    bool isFemaleOnly = false,
   }) async {
     _isLoading = true;
     _errorMessage = null;
@@ -205,6 +247,9 @@ class ServiceOrderProvider extends ChangeNotifier {
       barterPhotoUrl: photoUrl,
       vehicleType: vehicleType,
       weightKg: weightKg,
+      isFemaleOnly: isFemaleOnly,
+      receiverName: receiverName,
+      receiverPhone: receiverPhone,
       createdAt: DateTime.now(),
     );
 
@@ -270,6 +315,59 @@ class ServiceOrderProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> completeOrderWithProof(String orderId, File photo) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _completeOrderWithProofUseCase.execute(orderId, photo);
+
+    _isLoading = false;
+
+    if (result.isSuccess && result.data != null) {
+      final updated = result.data!;
+      _myOrders = _myOrders.map((o) => o.id == orderId ? updated : o).toList();
+      final actIdx = _activeOrders.indexWhere((o) => o.id == orderId);
+      if (actIdx != -1) {
+        _activeOrders[actIdx] = updated;
+      }
+      _activeOrder = updated;
+      _notifyOrderStatusChange(orderId, MoveServiceStatus.completed);
+      notifyListeners();
+      return true;
+    } else {
+      _errorMessage = result.errorMessage;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> confirmBarter(String orderId) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _repository.confirmBarter(orderId);
+
+    _isLoading = false;
+
+    if (result.isSuccess && result.data != null) {
+      final updated = result.data!;
+      _myOrders = _myOrders.map((o) => o.id == orderId ? updated : o).toList();
+      final actIdx = _activeOrders.indexWhere((o) => o.id == orderId);
+      if (actIdx != -1) {
+        _activeOrders[actIdx] = updated;
+      }
+      _activeOrder = updated;
+      notifyListeners();
+      return true;
+    } else {
+      _errorMessage = result.errorMessage;
+      notifyListeners();
+      return false;
+    }
+  }
+
   void _notifyOrderStatusChange(String orderId, MoveServiceStatus newStatus) {
     final notifiedSet = _notifiedStatusTransitions.putIfAbsent(
       orderId,
@@ -306,6 +404,67 @@ class ServiceOrderProvider extends ChangeNotifier {
       } catch (_) {
         return null;
       }
+    }
+  }
+
+  Future<bool> updateOrderNegotiation({
+    required String orderId,
+    required String barterDescription,
+    String? locationOrigin,
+    String? locationDestination,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (SupabaseService.instance.isInitialized) {
+        final updatePayload = <String, dynamic>{
+          'barter_description': barterDescription,
+          if (locationOrigin != null && locationOrigin.isNotEmpty)
+            'location_origin': locationOrigin,
+          if (locationDestination != null && locationDestination.isNotEmpty)
+            'location_destination': locationDestination,
+        };
+        await SupabaseService.instance.client
+            .from('service_orders')
+            .update(updatePayload)
+            .eq('id', orderId);
+      }
+
+      final current = getOrderById(orderId);
+      if (current != null) {
+        final updated = current.copyWith(
+          barterDescription: barterDescription,
+          locationOrigin: (locationOrigin != null && locationOrigin.isNotEmpty)
+              ? locationOrigin
+              : current.locationOrigin,
+          locationDestination:
+              (locationDestination != null && locationDestination.isNotEmpty)
+                  ? locationDestination
+                  : current.locationDestination,
+        );
+        final idx = _myOrders.indexWhere((o) => o.id == orderId);
+        if (idx != -1) {
+          _myOrders[idx] = updated;
+        }
+        final actIdx = _activeOrders.indexWhere((o) => o.id == orderId);
+        if (actIdx != -1) {
+          _activeOrders[actIdx] = updated;
+        }
+        if (_activeOrder?.id == orderId) {
+          _activeOrder = updated;
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
@@ -354,5 +513,36 @@ class ServiceOrderProvider extends ChangeNotifier {
     }
     return getOrderById(orderId);
   }
-}
 
+  void subscribeToOrder(String orderId) {
+    _orderSubscription?.cancel();
+    _orderSubscription = _repository.watchOrder(orderId).listen((order) {
+      if (order != null) {
+        _activeOrder = order;
+        final idx = _myOrders.indexWhere((o) => o.id == orderId);
+        if (idx != -1) {
+          _myOrders[idx] = order;
+        } else {
+          _myOrders.insert(0, order);
+        }
+        final actIdx = _activeOrders.indexWhere((o) => o.id == orderId);
+        if (actIdx != -1) {
+          _activeOrders[actIdx] = order;
+        }
+        _notifyOrderStatusChange(orderId, order.status);
+        notifyListeners();
+      }
+    });
+  }
+
+  void cancelOrderSubscription() {
+    _orderSubscription?.cancel();
+    _orderSubscription = null;
+  }
+
+  @override
+  void dispose() {
+    cancelOrderSubscription();
+    super.dispose();
+  }
+}

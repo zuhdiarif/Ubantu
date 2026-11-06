@@ -1,14 +1,20 @@
+import 'dart:io';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_order_service.dart';
+import 'package:ubantu/data/services/supabase_storage_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/repositories/service_order_repository.dart';
 
 class ServiceOrderRepositoryImpl implements IServiceOrderRepository {
   final SupabaseOrderService _service;
+  final SupabaseStorageService _storageService;
 
-  ServiceOrderRepositoryImpl({SupabaseOrderService? service})
-      : _service = service ?? SupabaseOrderService();
+  ServiceOrderRepositoryImpl({
+    SupabaseOrderService? service,
+    SupabaseStorageService? storageService,
+  })  : _service = service ?? SupabaseOrderService(),
+        _storageService = storageService ?? SupabaseStorageService();
 
   @override
   Future<AppResult<List<ServiceOrderModel>>> getActiveOrders() {
@@ -39,5 +45,31 @@ class ServiceOrderRepositoryImpl implements IServiceOrderRepository {
     String helperId,
   ) {
     return _service.acceptOrder(orderId, helperId);
+  }
+
+  @override
+  Stream<ServiceOrderModel?> watchOrder(String orderId) {
+    return _service.watchOrder(orderId);
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> completeOrderWithProof(
+    String orderId,
+    File photo,
+  ) async {
+    final uploadResult = await _storageService.uploadCompletionProof(photo, orderId);
+    if (!uploadResult.isSuccess || uploadResult.data == null) {
+      return AppResult.failure(uploadResult.errorMessage ?? 'Upload bukti foto gagal');
+    }
+    return _service.completeOrderWithProof(
+      orderId,
+      uploadResult.data!,
+      DateTime.now(),
+    );
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) {
+    return _service.confirmBarter(orderId);
   }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/core/utils/campus_locations.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
@@ -51,6 +53,9 @@ class BantuanDetailView extends StatelessWidget {
     final String location = currentOrder?.locationOrigin.isNotEmpty == true
         ? currentOrder!.locationOrigin
         : 'Jl. Veteran, Malang';
+    final String destination = currentOrder?.locationDestination ?? '';
+    final pickupPoint = CampusLocations.resolve(location);
+    final dropoffPoint = CampusLocations.resolve(destination);
 
     final String scheduledDate = currentOrder != null
         ? '${currentOrder.scheduledAt.day} ${_monthName(currentOrder.scheduledAt.month)} ${currentOrder.scheduledAt.year}'
@@ -323,24 +328,12 @@ class BantuanDetailView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFBFC3BE),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'PETA',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 14,
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                    UbantuCampusMap(
+                      pickup: pickupPoint,
+                      dropoff: dropoffPoint,
+                      height: 120,
+                      interactive: false,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ],
                 ),

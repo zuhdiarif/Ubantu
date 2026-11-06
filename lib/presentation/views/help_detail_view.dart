@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ubantu/components/custom_badge.dart';
 import 'package:ubantu/components/custom_button.dart';
+import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/core/utils/campus_locations.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/task_model.dart';
 
@@ -194,50 +196,11 @@ class HelpDetailView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Container(
+              UbantuCampusMap(
+                pickup: CampusLocations.resolve(locationText),
                 height: 180,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Stack(
-                  children: [
-                    const Center(
-                      child: Icon(
-                        Icons.location_on_rounded,
-                        size: 40,
-                        color: AppColors.primaryGreen,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Lihat di Peta',
-                              style: AppTypography.body2.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.open_in_new_rounded, size: 14),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                interactive: true,
+                borderRadius: BorderRadius.circular(20),
               ),
               const SizedBox(height: 24),
               CustomButton(

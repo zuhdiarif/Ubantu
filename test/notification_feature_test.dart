@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -114,6 +115,53 @@ class MockOrderRepo implements IServiceOrderRepository {
           createdAt: DateTime.now(),
         ),
       );
+
+  @override
+  Stream<ServiceOrderModel?> watchOrder(String orderId) => const Stream.empty();
+
+  @override
+  Future<AppResult<ServiceOrderModel>> completeOrderWithProof(
+    String orderId,
+    File photo,
+  ) async {
+    return AppResult.success(
+      ServiceOrderModel(
+        id: orderId,
+        requesterId: 'usr_1',
+        category: ServiceCategory.antarJemput,
+        status: MoveServiceStatus.completed,
+        locationOrigin: 'Origin',
+        locationDestination: 'Destination',
+        scheduledAt: DateTime.now(),
+        itemDescription: 'Item',
+        barterType: BarterType.makanan,
+        barterDescription: 'Snack',
+        completionPhotoUrl: photo.path,
+        completedAt: DateTime.now(),
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) async {
+    return AppResult.success(
+      ServiceOrderModel(
+        id: orderId,
+        requesterId: 'usr_1',
+        category: ServiceCategory.antarJemput,
+        status: MoveServiceStatus.completed,
+        locationOrigin: 'Origin',
+        locationDestination: 'Destination',
+        scheduledAt: DateTime.now(),
+        itemDescription: 'Item',
+        barterType: BarterType.makanan,
+        barterDescription: 'Snack',
+        barterConfirmedByCustomer: true,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
 }
 
 class MockMitraRepo implements IMitraRepository {
@@ -160,6 +208,8 @@ class MockChatRepo implements IChatRepository {
       AppResult.failure('noop');
   @override
   Future<AppResult<bool>> markMessagesAsRead(String roomId) async => AppResult.success(true);
+  @override
+  Stream<List<ChatMessageModel>> watchMessages(String roomId) => const Stream.empty();
 }
 
 class MockAuthRepo implements IAuthRepository {
@@ -185,6 +235,12 @@ class MockAuthRepo implements IAuthRepository {
   Future<AppResult<bool>> sendOtp(String email) async => AppResult.success(true);
 
   @override
+  Future<AppResult<bool>> resendSignupOtp(String email) async => AppResult.success(true);
+
+  @override
+  Future<AppResult<bool>> sendPasswordResetOtp(String email) async => AppResult.success(true);
+
+  @override
   Future<AppResult<bool>> signInWithGoogle() async => AppResult.success(true);
 
   @override
@@ -192,7 +248,23 @@ class MockAuthRepo implements IAuthRepository {
       user != null ? AppResult.success(user!) : AppResult.failure('Not found');
 
   @override
+  Future<AppResult<UserModel>> signUpFallback(String email, String password, Map<String, dynamic> metadata) async =>
+      user != null ? AppResult.success(user!) : AppResult.failure('Not found');
+
+  @override
   Future<AppResult<bool>> verifyOtp(String email, String token) async => AppResult.success(true);
+
+  @override
+  Future<AppResult<bool>> verifyRecoveryOtp(String email, String token) async => AppResult.success(true);
+
+  @override
+  Future<AppResult<bool>> updatePassword(String newPassword) async => AppResult.success(true);
+
+  @override
+  Future<AppResult<UserModel>> updateProfile(UserModel user) async {
+    this.user = user;
+    return AppResult.success(user);
+  }
 }
 
 void main() {

@@ -4,6 +4,7 @@ class ServiceOrderModel {
   final String id;
   final String requesterId;
   final String? helperId;
+  final String? helperName;
   final ServiceCategory category;
   final MoveServiceStatus status;
   final String locationOrigin;
@@ -16,12 +17,18 @@ class ServiceOrderModel {
   final VehicleType? vehicleType;
   final double? weightKg;
   final bool isFemaleOnly;
+  final String? receiverName;
+  final String? receiverPhone;
+  final String? completionPhotoUrl;
+  final DateTime? completedAt;
+  final bool barterConfirmedByCustomer;
   final DateTime createdAt;
 
   const ServiceOrderModel({
     required this.id,
     required this.requesterId,
     this.helperId,
+    this.helperName,
     required this.category,
     required this.status,
     required this.locationOrigin,
@@ -34,6 +41,11 @@ class ServiceOrderModel {
     this.vehicleType,
     this.weightKg,
     this.isFemaleOnly = false,
+    this.receiverName,
+    this.receiverPhone,
+    this.completionPhotoUrl,
+    this.completedAt,
+    this.barterConfirmedByCustomer = false,
     required this.createdAt,
   });
 
@@ -42,6 +54,7 @@ class ServiceOrderModel {
       id: json['id'] as String? ?? '',
       requesterId: json['requester_id'] as String? ?? '',
       helperId: json['helper_id'] as String?,
+      helperName: json['helper_name'] as String?,
       category: ServiceCategory.values.firstWhere(
         (e) => e.name == json['category'],
         orElse: () => ServiceCategory.pindahKos,
@@ -68,6 +81,14 @@ class ServiceOrderModel {
           : null,
       weightKg: (json['weight_kg'] as num?)?.toDouble(),
       isFemaleOnly: json['is_female_only'] as bool? ?? false,
+      receiverName: json['receiver_name'] as String?,
+      receiverPhone: json['receiver_phone'] as String?,
+      completionPhotoUrl: json['completion_photo_url'] as String?,
+      completedAt: json['completed_at'] != null
+          ? DateTime.tryParse(json['completed_at'] as String)
+          : null,
+      barterConfirmedByCustomer:
+          json['barter_confirmed_by_customer'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
@@ -77,6 +98,7 @@ class ServiceOrderModel {
       'id': id,
       'requester_id': requesterId,
       'helper_id': helperId,
+      'helper_name': helperName,
       'category': category.name,
       'status': status.name,
       'location_origin': locationOrigin,
@@ -89,6 +111,12 @@ class ServiceOrderModel {
       'vehicle_type': vehicleType?.name,
       'weight_kg': weightKg,
       'is_female_only': isFemaleOnly,
+      if (receiverName != null) 'receiver_name': receiverName,
+      if (receiverPhone != null) 'receiver_phone': receiverPhone,
+      if (completionPhotoUrl != null)
+        'completion_photo_url': completionPhotoUrl,
+      if (completedAt != null) 'completed_at': completedAt!.toIso8601String(),
+      'barter_confirmed_by_customer': barterConfirmedByCustomer,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -97,6 +125,7 @@ class ServiceOrderModel {
     String? id,
     String? requesterId,
     String? helperId,
+    String? helperName,
     ServiceCategory? category,
     MoveServiceStatus? status,
     String? locationOrigin,
@@ -109,12 +138,18 @@ class ServiceOrderModel {
     VehicleType? vehicleType,
     double? weightKg,
     bool? isFemaleOnly,
+    String? receiverName,
+    String? receiverPhone,
+    String? completionPhotoUrl,
+    DateTime? completedAt,
+    bool? barterConfirmedByCustomer,
     DateTime? createdAt,
   }) {
     return ServiceOrderModel(
       id: id ?? this.id,
       requesterId: requesterId ?? this.requesterId,
       helperId: helperId ?? this.helperId,
+      helperName: helperName ?? this.helperName,
       category: category ?? this.category,
       status: status ?? this.status,
       locationOrigin: locationOrigin ?? this.locationOrigin,
@@ -127,6 +162,12 @@ class ServiceOrderModel {
       vehicleType: vehicleType ?? this.vehicleType,
       weightKg: weightKg ?? this.weightKg,
       isFemaleOnly: isFemaleOnly ?? this.isFemaleOnly,
+      receiverName: receiverName ?? this.receiverName,
+      receiverPhone: receiverPhone ?? this.receiverPhone,
+      completionPhotoUrl: completionPhotoUrl ?? this.completionPhotoUrl,
+      completedAt: completedAt ?? this.completedAt,
+      barterConfirmedByCustomer:
+          barterConfirmedByCustomer ?? this.barterConfirmedByCustomer,
       createdAt: createdAt ?? this.createdAt,
     );
   }

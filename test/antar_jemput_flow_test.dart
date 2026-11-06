@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -51,6 +53,20 @@ class _MockServiceOrderRepository implements IServiceOrderRepository {
     return AppResult.success(created);
   }
 
+  final Map<String, StreamController<ServiceOrderModel?>> orderControllers = {};
+
+  @override
+  Stream<ServiceOrderModel?> watchOrder(String orderId) async* {
+    final match = orders.cast<ServiceOrderModel?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    yield match;
+    yield* orderControllers
+        .putIfAbsent(orderId, () => StreamController<ServiceOrderModel?>.broadcast())
+        .stream;
+  }
+
   @override
   Future<AppResult<ServiceOrderModel>> updateOrderStatus(
     String orderId,
@@ -60,6 +76,7 @@ class _MockServiceOrderRepository implements IServiceOrderRepository {
     if (idx != -1) {
       final updated = orders[idx].copyWith(status: status);
       orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
       return AppResult.success(updated);
     }
     return AppResult.failure('Order not found');
@@ -77,6 +94,40 @@ class _MockServiceOrderRepository implements IServiceOrderRepository {
         status: MoveServiceStatus.accepted,
       );
       orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
+      return AppResult.success(updated);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> completeOrderWithProof(
+    String orderId,
+    File photo,
+  ) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      final updated = orders[idx].copyWith(
+        status: MoveServiceStatus.completed,
+        completionPhotoUrl: photo.path,
+        completedAt: DateTime.now(),
+      );
+      orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
+      return AppResult.success(updated);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      final updated = orders[idx].copyWith(
+        barterConfirmedByCustomer: true,
+      );
+      orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
       return AppResult.success(updated);
     }
     return AppResult.failure('Order not found');
@@ -170,6 +221,34 @@ void main() {
     await tester.tap(find.text('Tebengan / Orang'));
     await tester.pumpAndSettle();
     expect(find.text('Catatan Penjemputan'), findsOneWidget);
+  });
+
+  testWidgets('AntarJemputFormView shows confirmation bottom sheet on submit', (tester) async {
+    await tester.pumpWidget(buildTestableWidget(const AntarJemputFormView()));
+    await tester.pumpAndSettle();
+
+    final textFields = find.byType(TextField);
+    await tester.enterText(textFields.at(0), 'Jl. Veteran No. 1');
+    await tester.enterText(textFields.at(1), 'Jl. MT Haryono No. 2');
+    await tester.enterText(textFields.at(2), 'Budi');
+    await tester.enterText(textFields.at(3), '08123456789');
+    await tester.pumpAndSettle();
+
+    final submitBtn = find.text('Meminta Bantuan');
+    await tester.ensureVisible(submitBtn);
+    await tester.tap(submitBtn);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Konfirmasi Pesanan'), findsWidgets);
+    expect(find.text('Jl. Veteran No. 1'), findsWidgets);
+    expect(find.text('Jl. MT Haryono No. 2'), findsWidgets);
+    expect(find.text('Biaya Admin'), findsOneWidget);
+    expect(find.text('Rp 2.000'), findsOneWidget);
+    expect(find.text('Batal'), findsOneWidget);
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+    expect(find.text('Batal'), findsNothing);
   });
 
   testWidgets('AntarJemputWaitingView renders waiting indicator and tips', (tester) async {

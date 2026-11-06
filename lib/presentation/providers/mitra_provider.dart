@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
@@ -8,16 +9,21 @@ import 'package:ubantu/domain/repositories/mitra_repository.dart';
 
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
+import 'package:ubantu/domain/usecases/complete_order_with_proof_usecase.dart';
 
 class MitraProvider extends ChangeNotifier {
   final IMitraRepository _repository;
   final INotificationRepository _notificationRepository;
+  final CompleteOrderWithProofUseCase _completeOrderWithProofUseCase;
 
   MitraProvider({
     IMitraRepository? repository,
     INotificationRepository? notificationRepository,
+    CompleteOrderWithProofUseCase? completeOrderWithProofUseCase,
   })  : _repository = repository ?? MitraRepositoryImpl(),
-        _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository;
+        _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository,
+        _completeOrderWithProofUseCase = completeOrderWithProofUseCase ??
+            CompleteOrderWithProofUseCase(ServiceLocator.instance.serviceOrderRepository);
 
   MitraProfileModel? _profile;
   List<ServiceOrderModel> _incomingOrders = [];
@@ -164,5 +170,66 @@ class MitraProvider extends ChangeNotifier {
       return updateActiveOrderStatus(MoveServiceStatus.completed);
     }
     return false;
+  }
+
+  Future<bool> completeActiveOrderWithProof(File photo) async {
+    if (_activeOrder == null) return false;
+
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _completeOrderWithProofUseCase.execute(_activeOrder!.id, photo);
+    _isLoading = false;
+
+    if (result.isSuccess && result.data != null) {
+      final finished = result.data!;
+      _completedOrders.insert(0, finished);
+
+      final newEarning = MitraEarningItemModel(
+        id: 'earn-${DateTime.now().millisecondsSinceEpoch}',
+        orderId: finished.id,
+        orderNumber:
+            'UB-ORD-${finished.id.length > 4 ? finished.id.substring(0, 4).toUpperCase() : '9901'}',
+        serviceTitle: 'Layanan ${_categoryTitle(finished.category)}',
+        date: DateTime.now(),
+        barterDescription: finished.barterDescription,
+        pointsEarned: 10,
+        customerName: 'Mahasiswa UB',
+      );
+      _earningsHistory.insert(0, newEarning);
+
+      _profile = _profile?.copyWith(
+        totalOrdersCompleted: (_profile?.totalOrdersCompleted ?? 0) + 1,
+        totalBarterPoints: (_profile?.totalBarterPoints ?? 0) + 10,
+      );
+
+      _activeOrder = null;
+      _incomingOrders.removeWhere((o) => o.id == finished.id);
+
+      _notificationRepository.addNotification(
+        'Pesanan Bantuan Selesai',
+        'Helper telah menyelesaikan bantuan pesanan dengan sukses.',
+        type: 'order',
+      );
+
+      await loadMitraData();
+      return true;
+    } else {
+      _errorMessage = result.errorMessage;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  String _categoryTitle(ServiceCategory cat) {
+    switch (cat) {
+      case ServiceCategory.pindahKos:
+        return 'Pindah Kos';
+      case ServiceCategory.bersihKos:
+        return 'Bersih Kos';
+      case ServiceCategory.antarJemput:
+        return 'Antar Jemput';
+    }
   }
 }

@@ -1,8 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/core/utils/campus_locations.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
@@ -18,41 +19,50 @@ class AntarJemputInProgressView extends StatefulWidget {
 }
 
 class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
-  Timer? _pollTimer;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-    _startPolling();
-  }
-
-  void _startPolling() {
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<ServiceOrderProvider>();
-      final activeOrder = provider.myOrders
-          .where(
-            (o) =>
-                o.category == ServiceCategory.antarJemput &&
-                (o.status == MoveServiceStatus.accepted ||
-                    o.status == MoveServiceStatus.inProgress ||
-                    o.status == MoveServiceStatus.completed),
-          )
-          .firstOrNull;
-
+      final activeOrder = _findActiveOrder(provider);
       if (activeOrder != null && activeOrder.id.isNotEmpty) {
-        final updated = await provider.checkOrderStatus(activeOrder.id);
-        if (!mounted) return;
-        if (updated != null && updated.status == MoveServiceStatus.completed) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.antarJemputSelesai);
-        }
+        provider.subscribeToOrder(activeOrder.id);
+        _handleStatusTransition(activeOrder.status);
       }
     });
   }
 
+  ServiceOrderModel? _findActiveOrder(ServiceOrderProvider provider) {
+    return provider.myOrders
+        .where(
+          (o) =>
+              o.category == ServiceCategory.antarJemput &&
+              (o.status == MoveServiceStatus.accepted ||
+                  o.status == MoveServiceStatus.inProgress ||
+                  o.status == MoveServiceStatus.completed),
+        )
+        .firstOrNull ?? (provider.activeOrder?.category == ServiceCategory.antarJemput ? provider.activeOrder : null);
+  }
+
+  void _handleStatusTransition(MoveServiceStatus status) {
+    if (_hasNavigated || !mounted) return;
+    if (status == MoveServiceStatus.completed) {
+      _hasNavigated = true;
+      context.read<ServiceOrderProvider>().cancelOrderSubscription();
+      context.go(AppRouter.antarJemputSelesai);
+    }
+  }
+
   @override
   void dispose() {
-    _pollTimer?.cancel();
+    if (!_hasNavigated) {
+      try {
+        context.read<ServiceOrderProvider>().cancelOrderSubscription();
+      } catch (_) {}
+    }
     super.dispose();
   }
 
@@ -63,24 +73,13 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
     try {
       chatProvider = context.watch<ChatProvider>();
     } catch (_) {}
-    final activeOrder = provider.myOrders
-        .where(
-          (o) =>
-              o.category == ServiceCategory.antarJemput &&
-              (o.status == MoveServiceStatus.accepted ||
-                  o.status == MoveServiceStatus.inProgress ||
-                  o.status == MoveServiceStatus.completed),
-        )
-        .firstOrNull;
+    final activeOrder = _findActiveOrder(provider);
     final hasUnread = chatProvider?.rooms.any((r) => (r.orderId == activeOrder?.id || r.id == activeOrder?.id) && r.unreadCount > 0) ?? false;
 
     if (activeOrder != null &&
         activeOrder.status == MoveServiceStatus.completed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.antarJemputSelesai);
-        }
+        _handleStatusTransition(activeOrder.status);
       });
     }
 
@@ -105,13 +104,14 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
       {'title': 'Tiba di tujuan & selesai', 'time': ''},
     ];
 
-    final helperName = activeOrder?.helperId != null
-        ? (SupabaseService.instance.isInitialized
-            ? 'Mitra Penolong UB'
-            : 'Nasya')
-        : (SupabaseService.instance.isInitialized
-            ? 'Menunggu Helper'
-            : 'Nasya');
+    final helperName = activeOrder?.helperName ??
+        (activeOrder?.helperId != null
+            ? (SupabaseService.instance.isInitialized
+                ? 'Mitra Penolong UB'
+                : 'Nasya')
+            : (SupabaseService.instance.isInitialized
+                ? 'Menunggu Helper'
+                : 'Nasya'));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -405,6 +405,14 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          UbantuCampusMap(
+            pickup: CampusLocations.resolve(pickup),
+            dropoff: CampusLocations.resolve(dest),
+            height: 140,
+            interactive: false,
+            borderRadius: BorderRadius.circular(10),
           ),
           const Divider(height: 16, color: Color(0xFFE8EBE4)),
           Row(

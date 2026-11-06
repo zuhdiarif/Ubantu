@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
+import 'package:ubantu/presentation/providers/password_reset_provider.dart';
+import 'package:ubantu/presentation/views/aktivitas_view.dart';
+import 'package:ubantu/presentation/views/forgot_password_view.dart';
 import 'package:ubantu/presentation/views/help_detail_view.dart';
 import 'package:ubantu/presentation/views/ktm_verification_view.dart';
 import 'package:ubantu/presentation/views/login_view.dart';
@@ -77,6 +81,7 @@ class AppRouter {
   static const String register = '/register';
   static const String ktmVerification = '/ktm-verification';
   static const String otpVerification = '/otp-verification';
+  static const String forgotPassword = '/forgot-password';
   static const String home = '/home';
   static const String helpDetail = '/help-detail';
   static const String sosForm = '/sos-form';
@@ -107,6 +112,7 @@ class AppRouter {
   static const String mitraRegister = '/mitra/register';
   static const String bantuanDetail = '/bantuan-detail';
   static const String notificationHistory = '/notification-history';
+  static const String aktivitas = '/aktivitas';
 
   static final router = GoRouter(
     initialLocation: onboarding,
@@ -151,6 +157,13 @@ class AppRouter {
       GoRoute(
         path: otpVerification,
         builder: (context, state) => const OtpVerificationView(),
+      ),
+      GoRoute(
+        path: forgotPassword,
+        builder: (context, state) => ChangeNotifierProvider(
+          create: (_) => PasswordResetProvider(),
+          child: const ForgotPasswordView(),
+        ),
       ),
       GoRoute(
         path: home,
@@ -277,6 +290,10 @@ class AppRouter {
       GoRoute(
         path: notificationHistory,
         builder: (context, state) => const NotificationView(),
+      ),
+      GoRoute(
+        path: aktivitas,
+        builder: (context, state) => const AktivitasView(),
       ),
     ],
   );
