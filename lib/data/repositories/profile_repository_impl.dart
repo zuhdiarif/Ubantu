@@ -24,9 +24,9 @@ class ProfileRepositoryImpl implements IProfileRepository {
       id: userId,
       fullName: 'Mahasiswa UB',
       email: 'mahasiswa@student.ub.ac.id',
-      phoneNumber: '081234567890',
-      nim: '245150200111001',
-      verificationStatus: KtmVerificationStatus.verified,
+      phoneNumber: '',
+      nim: '',
+      verificationStatus: KtmVerificationStatus.pending,
     ));
   }
 

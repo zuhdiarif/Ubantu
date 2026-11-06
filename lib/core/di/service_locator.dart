@@ -4,6 +4,7 @@ import 'package:ubantu/data/repositories/sos_repository_impl.dart';
 import 'package:ubantu/data/repositories/task_repository_impl.dart';
 import 'package:ubantu/data/services/mock_task_service.dart';
 import 'package:ubantu/data/services/supabase_order_service.dart';
+import 'package:ubantu/data/services/supabase_sos_service.dart';
 import 'package:ubantu/data/services/supabase_task_service.dart';
 import 'package:ubantu/domain/repositories/auth_repository.dart';
 import 'package:ubantu/domain/repositories/service_order_repository.dart';
@@ -26,7 +27,6 @@ import 'package:ubantu/data/services/notification_service.dart';
 import 'package:ubantu/data/services/supabase_notification_service.dart';
 import 'package:ubantu/domain/repositories/mitra_repository.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
-import 'package:ubantu/core/utils/mock_data_factory.dart';
 import 'package:ubantu/domain/usecases/update_order_status_usecase.dart';
 
 class ServiceLocator {
@@ -37,6 +37,7 @@ class ServiceLocator {
   late final MockTaskService mockTaskService = MockTaskService();
   late final SupabaseTaskService supabaseTaskService = SupabaseTaskService();
   late final SupabaseOrderService supabaseOrderService = SupabaseOrderService();
+  late final SupabaseSosService supabaseSosService = SupabaseSosService();
 
   late final IAuthRepository authRepository = AuthRepositoryImpl();
   late final ITaskRepository taskRepository =
@@ -44,13 +45,13 @@ class ServiceLocator {
         mockService: mockTaskService,
         remoteService: supabaseTaskService,
       );
-  late final ISosRepository sosRepository = SosRepositoryImpl();
+  late final ISosRepository sosRepository =
+      SosRepositoryImpl(service: supabaseSosService);
   late final IServiceOrderRepository serviceOrderRepository =
       ServiceOrderRepositoryImpl(service: supabaseOrderService);
   late final IChatRepository chatRepository = ChatRepositoryImpl();
   late final IMitraRepository mitraRepository = MitraRepositoryImpl();
-  late final NotificationService notificationService =
-      NotificationService(initialNotifications: MockDataFactory.mockNotifications);
+  late final NotificationService notificationService = NotificationService();
   late final SupabaseNotificationService supabaseNotificationService =
       SupabaseNotificationService();
   late final INotificationRepository notificationRepository =

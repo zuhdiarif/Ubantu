@@ -5,12 +5,29 @@ import 'package:ubantu/components/custom_button.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/models/task_model.dart';
 
 class HelpDetailView extends StatelessWidget {
-  const HelpDetailView({super.key});
+  final TaskModel? task;
+
+  const HelpDetailView({super.key, this.task});
 
   @override
   Widget build(BuildContext context) {
+    final requester = task?.requesterName ?? 'Mahasiswa UB';
+    final initial = requester.isNotEmpty ? requester[0].toUpperCase() : 'M';
+    final ratingStr = task != null ? '${task!.rating.toStringAsFixed(1)} (${task!.ratingCount})' : '5.0 (Baru)';
+    final categoryText = switch (task?.category) {
+      ServiceCategory.pindahKos => 'Pindah Kos',
+      ServiceCategory.bersihKos => 'Bersih Kos',
+      ServiceCategory.antarJemput => 'Antar Jemput',
+      null => 'Bantuan Mahasiswa',
+    };
+    final locationText = task?.location.isNotEmpty == true ? task!.location : 'Kampus UB, Jl. Veteran, Malang';
+    final dateTimeText = task != null ? '${task!.date} • ${task!.time}' : 'Hari ini • Fleksibel';
+    final notesText = task?.notes.isNotEmpty == true ? task!.notes : 'Bantuan saling bantu antar mahasiswa UB.';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -24,7 +41,7 @@ class HelpDetailView extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Bantuan Berlangsung',
+          'Detail Permintaan Bantuan',
           style: AppTypography.h4.copyWith(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -67,7 +84,7 @@ class HelpDetailView extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Status: Aktif',
+                      'Status: Aktif Membutuhkan Bantuan',
                       style: AppTypography.body1.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primaryGreen,
@@ -78,7 +95,7 @@ class HelpDetailView extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Informasi Pengguna',
+                'Informasi Pemohon',
                 style: AppTypography.body1.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primaryDark,
@@ -87,12 +104,12 @@ class HelpDetailView extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 26,
                     backgroundColor: AppColors.primarySage,
                     child: Text(
-                      'D',
-                      style: TextStyle(
+                      initial,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -103,7 +120,7 @@ class HelpDetailView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Dinda Putri',
+                        requester,
                         style: AppTypography.h5.copyWith(
                           fontWeight: FontWeight.bold,
                           color: AppColors.primaryDark,
@@ -118,7 +135,7 @@ class HelpDetailView extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '4.6 (18)',
+                            ratingStr,
                             style: AppTypography.body2.copyWith(
                               color: Colors.grey.shade600,
                             ),
@@ -141,7 +158,7 @@ class HelpDetailView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Detail Bantuan',
+                      task?.title ?? 'Detail Bantuan',
                       style: AppTypography.h5.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primaryDark,
@@ -150,8 +167,8 @@ class HelpDetailView extends StatelessWidget {
                     const SizedBox(height: 16),
                     _buildDetailRow(
                       label: 'Jenis Layanan',
-                      child: const CustomBadge(
-                        text: 'Bersih Kos',
+                      child: CustomBadge(
+                        text: categoryText,
                         type: BadgeType.green,
                       ),
                     ),
@@ -159,19 +176,19 @@ class HelpDetailView extends StatelessWidget {
                     _buildDetailRow(
                       label: 'Lokasi',
                       icon: Icons.location_on_outlined,
-                      text: 'Jl. Kaliurang Km 5, Yogyakarta',
+                      text: locationText,
                     ),
                     const SizedBox(height: 12),
                     _buildDetailRow(
                       label: 'Tanggal & Jam',
                       icon: Icons.calendar_today_outlined,
-                      text: '2 Jun 2025 • 10:00',
+                      text: dateTimeText,
                     ),
                     const SizedBox(height: 12),
                     _buildDetailRow(
                       label: 'Catatan',
                       icon: Icons.chat_bubble_outline_rounded,
-                      text: 'Bantu bersihkan kamar kos, alat sudah disiapkan.',
+                      text: notesText,
                     ),
                   ],
                 ),
@@ -224,13 +241,13 @@ class HelpDetailView extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               CustomButton(
-                text: 'Chat',
+                text: 'Chat Pemohon',
                 icon: Icons.chat_bubble_outline_rounded,
-                onPressed: () {},
+                onPressed: () => context.push(AppRouter.chatInbox),
               ),
               const SizedBox(height: 12),
               CustomButton(
-                text: 'Bantuan (SOS)',
+                text: 'Bantuan Darurat (SOS)',
                 type: CustomButtonType.dangerOutline,
                 icon: Icons.warning_amber_rounded,
                 onPressed: () => context.push(AppRouter.sosForm),

@@ -79,6 +79,7 @@ class _AktivitasViewState extends State<AktivitasView> {
                     children: [
                       Expanded(
                         child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () {
                             setState(() {
                               _selectedTab = 0;
@@ -108,6 +109,7 @@ class _AktivitasViewState extends State<AktivitasView> {
                       ),
                       Expanded(
                         child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () {
                             setState(() {
                               _selectedTab = 1;
@@ -188,8 +190,36 @@ class _AktivitasViewState extends State<AktivitasView> {
         '${order.scheduledAt.day} ${_monthName(order.scheduledAt.month)} ${order.scheduledAt.year} - ${order.scheduledAt.hour.toString().padLeft(2, '0')}:${order.scheduledAt.minute.toString().padLeft(2, '0')}';
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
-        context.push(AppRouter.bantuanDetail, extra: order);
+        if (order.status == MoveServiceStatus.accepted ||
+            order.status == MoveServiceStatus.inProgress) {
+          switch (order.category) {
+            case ServiceCategory.pindahKos:
+              context.push(AppRouter.pindahKosInProgress);
+              break;
+            case ServiceCategory.bersihKos:
+              context.push(AppRouter.bersihKosInProgress);
+              break;
+            case ServiceCategory.antarJemput:
+              context.push(AppRouter.antarJemputInProgress);
+              break;
+          }
+        } else if (order.status == MoveServiceStatus.completed) {
+          switch (order.category) {
+            case ServiceCategory.pindahKos:
+              context.push(AppRouter.pindahKosSelesai);
+              break;
+            case ServiceCategory.bersihKos:
+              context.push(AppRouter.bersihKosSelesai);
+              break;
+            case ServiceCategory.antarJemput:
+              context.push(AppRouter.antarJemputSelesai);
+              break;
+          }
+        } else {
+          context.push(AppRouter.bantuanDetail, extra: order);
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),

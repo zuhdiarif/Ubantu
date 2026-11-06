@@ -42,7 +42,11 @@ class UbantuApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
-        ChangeNotifierProvider(create: (_) => SosProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SosProvider(
+            repository: ServiceLocator.instance.sosRepository,
+          ),
+        ),
         ChangeNotifierProvider(create: (_) => RegistrationProvider()),
         ChangeNotifierProvider(create: (_) => ProfileProvider()),
         ChangeNotifierProvider(create: (_) => BarterProvider()),

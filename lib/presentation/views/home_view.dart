@@ -100,23 +100,20 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildHeader(UserModel? user) {
-    final displayName = user != null && user.fullName.isNotEmpty
+    final rawName = user != null && user.fullName.isNotEmpty
         ? user.fullName.split(' ').first
-        : 'Farel';
+        : 'Mahasiswa';
+    final displayName = rawName.isNotEmpty
+        ? rawName[0].toUpperCase() + rawName.substring(1)
+        : 'Mahasiswa';
 
     return Row(
       children: [
-        user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-            ? CustomAvatar(
-                name: user.fullName,
-                imageUrl: user.avatarUrl,
-                radius: 26,
-              )
-            : const CircleAvatar(
-                radius: 26,
-                backgroundColor: Color(0xFFE2F1D8),
-                backgroundImage: AssetImage('assets/images/img_avatar_farel.png'),
-              ),
+        CustomAvatar(
+          name: user?.fullName.isNotEmpty == true ? user!.fullName : displayName,
+          imageUrl: user?.avatarUrl,
+          radius: 26,
+        ),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -1061,7 +1058,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
               ),
               ElevatedButton(
-                onPressed: () => context.push(AppRouter.helpDetail),
+                onPressed: () => context.push(AppRouter.helpDetail, extra: task),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF283626),
                   foregroundColor: Colors.white,
