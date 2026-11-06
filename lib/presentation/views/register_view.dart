@@ -25,6 +25,7 @@ class _RegisterViewState extends State<RegisterView> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _agreedToTerms = false;
 
   @override
   void dispose() {
@@ -33,6 +34,49 @@ class _RegisterViewState extends State<RegisterView> {
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _showTermsDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Syarat & Ketentuan UBantu',
+          style: AppTypography.h4.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Text(
+            '1. Pengguna wajib memberikan data yang valid dan dapat dipertanggungjawabkan.\n\n'
+            '2. Mahasiswa wajib memverifikasi identitas dengan KTM resmi dari kampus.\n\n'
+            '3. Pengguna dilarang menyalahgunakan layanan, melakukan tindakan ilegal, atau membahayakan sesama pengguna.\n\n'
+            '4. Fitur SOS darurat hanya boleh digunakan pada kondisi gawat darurat yang sesungguhnya.\n\n'
+            '5. UBantu berhak menonaktifkan akun yang melanggar ketentuan komunitas.',
+            style: AppTypography.body2.copyWith(
+              color: Colors.grey.shade800,
+              height: 1.5,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Tutup',
+              style: AppTypography.body1.copyWith(
+                color: AppColors.primaryGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onNext() async {
@@ -65,7 +109,35 @@ class _RegisterViewState extends State<RegisterView> {
           context.go(AppRouter.home);
         }
         break;
+      case RegistrationNextStep.otpSkipped:
+        await context.read<AuthProvider>().login(
+              _emailController.text,
+              _passwordController.text,
+            );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Layanan email sedang sibuk, verifikasi email dilewati sementara'),
+              backgroundColor: AppColors.primaryDark,
+            ),
+          );
+          CustomToast.show(
+            context,
+            message: 'Akun berhasil dibuat! Selamat datang.',
+            type: ToastType.success,
+          );
+          context.go(AppRouter.home);
+        }
+        break;
       case RegistrationNextStep.ktmVerification:
+        if (regProvider.emailOtpSkipped) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Layanan email sedang sibuk, verifikasi email dilewati sementara'),
+              backgroundColor: AppColors.primaryDark,
+            ),
+          );
+        }
         context.push(AppRouter.ktmVerification);
         break;
       case RegistrationNextStep.otpVerification:
@@ -175,10 +247,67 @@ class _RegisterViewState extends State<RegisterView> {
                   isPassword: true,
                   validator: AppValidators.validatePassword,
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: Checkbox(
+                        value: _agreedToTerms,
+                        activeColor: AppColors.primaryGreen,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        onChanged: (val) {
+                          setState(() {
+                            _agreedToTerms = val ?? false;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _agreedToTerms = !_agreedToTerms;
+                          });
+                        },
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'Saya menyetujui ',
+                            style: AppTypography.body2.copyWith(
+                              color: Colors.grey.shade700,
+                            ),
+                            children: [
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: GestureDetector(
+                                  onTap: _showTermsDialog,
+                                  child: Text(
+                                    'Syarat & Ketentuan',
+                                    style: AppTypography.body2.copyWith(
+                                      color: AppColors.primaryGreen,
+                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const TextSpan(text: ' UBantu'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
                 CustomButton(
                   text: regProvider.isSigningUp ? 'Mendaftarkan...' : 'Lanjutkan',
-                  onPressed: regProvider.isSigningUp ? () {} : _onNext,
+                  onPressed: (_agreedToTerms && !regProvider.isSigningUp) ? _onNext : null,
                 ),
                 const SizedBox(height: 24),
                 Row(

@@ -30,13 +30,30 @@ class SupabaseProfileService {
 
   Future<AppResult<UserModel>> updateProfile(UserModel user) async {
     try {
-      final response = await _effectiveClient
-          .from('profiles')
-          .upsert(user.toJson())
-          .select()
-          .single();
+      final json = user.toJson();
+      try {
+        final response = await _effectiveClient
+            .from('profiles')
+            .upsert(json)
+            .select()
+            .single();
 
-      return AppResult.success(UserModel.fromJson(response));
+        return AppResult.success(UserModel.fromJson(response));
+      } catch (upsertError) {
+        final err = upsertError.toString().toLowerCase();
+        if (err.contains('faculty') || err.contains('bio') || err.contains('pgrst204')) {
+          final fallbackJson = Map<String, dynamic>.from(json)
+            ..remove('faculty')
+            ..remove('bio');
+          final response = await _effectiveClient
+              .from('profiles')
+              .upsert(fallbackJson)
+              .select()
+              .single();
+          return AppResult.success(UserModel.fromJson(response));
+        }
+        rethrow;
+      }
     } catch (e) {
       return AppResult.failure(e.toString());
     }
@@ -54,13 +71,30 @@ class SupabaseProfileService {
         return AppResult.success(UserModel.fromJson(existing));
       }
 
-      final response = await _effectiveClient
-          .from('profiles')
-          .upsert(user.toJson())
-          .select()
-          .single();
+      final json = user.toJson();
+      try {
+        final response = await _effectiveClient
+            .from('profiles')
+            .upsert(json)
+            .select()
+            .single();
 
-      return AppResult.success(UserModel.fromJson(response));
+        return AppResult.success(UserModel.fromJson(response));
+      } catch (upsertError) {
+        final err = upsertError.toString().toLowerCase();
+        if (err.contains('faculty') || err.contains('bio') || err.contains('pgrst204')) {
+          final fallbackJson = Map<String, dynamic>.from(json)
+            ..remove('faculty')
+            ..remove('bio');
+          final response = await _effectiveClient
+              .from('profiles')
+              .upsert(fallbackJson)
+              .select()
+              .single();
+          return AppResult.success(UserModel.fromJson(response));
+        }
+        rethrow;
+      }
     } catch (e) {
       return AppResult.failure(e.toString());
     }

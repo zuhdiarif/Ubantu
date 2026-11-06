@@ -4,4 +4,5 @@ import 'package:ubantu/domain/models/reward_points_model.dart';
 abstract class ILoyaltyRepository {
   Future<AppResult<RewardPointsModel>> getLoyaltyPoints(String userId);
   Future<AppResult<RewardPointsModel>> claimVoucher(String userId, int pointsRequired);
+  Future<AppResult<RewardPointsModel>> addPoints(String userId, int pointsToAdd);
 }

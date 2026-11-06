@@ -44,4 +44,22 @@ class LoyaltyRepositoryImpl implements ILoyaltyRepository {
       claimedVoucherCodes: const ['GRATIS1X_MOCK', 'GRATIS1X_NEW'],
     ));
   }
+
+  @override
+  Future<AppResult<RewardPointsModel>> addPoints(String userId, int pointsToAdd) async {
+    final service = _supabaseLoyaltyService;
+    if (service != null) {
+      final result = await service.addPoints(userId, pointsToAdd);
+      if (result.isSuccess) {
+        return result;
+      }
+    }
+
+    return AppResult.success(RewardPointsModel(
+      userId: userId,
+      totalPoints: 120 + pointsToAdd,
+      availableVouchers: 1,
+      claimedVoucherCodes: const ['GRATIS1X_MOCK'],
+    ));
+  }
 }

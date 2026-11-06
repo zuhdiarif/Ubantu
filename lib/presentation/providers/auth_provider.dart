@@ -69,6 +69,8 @@ class AuthProvider extends ChangeNotifier {
           email: sessionUser.email ?? '',
           phoneNumber: sessionUser.phone ?? (meta['phone_number'] as String? ?? ''),
           nim: meta['nim'] as String? ?? '',
+          faculty: meta['faculty'] as String?,
+          bio: meta['bio'] as String?,
         );
       }
     }
@@ -136,6 +138,8 @@ class AuthProvider extends ChangeNotifier {
     String? phoneNumber,
     UserGender? gender,
     bool? isFemaleOnlyPreferred,
+    String? faculty,
+    String? bio,
   }) async {
     final baseUser = _getBaseUser();
 
@@ -144,6 +148,8 @@ class AuthProvider extends ChangeNotifier {
       phoneNumber: phoneNumber,
       gender: gender,
       isFemaleOnlyPreferred: isFemaleOnlyPreferred,
+      faculty: faculty,
+      bio: bio,
     );
 
     _currentUser = updated;
@@ -159,6 +165,8 @@ class AuthProvider extends ChangeNotifier {
           if (updated.phoneNumber.isNotEmpty) 'phone_number': updated.phoneNumber,
           'gender': updated.gender.name,
           'is_female_only_preferred': updated.isFemaleOnlyPreferred,
+          if (updated.faculty != null) 'faculty': updated.faculty,
+          if (updated.bio != null) 'bio': updated.bio,
         });
         await SupabaseProfileService().updateProfile(updated);
       }
