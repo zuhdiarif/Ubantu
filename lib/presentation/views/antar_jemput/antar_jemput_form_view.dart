@@ -283,7 +283,12 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
     if (success) {
       context.push(AppRouter.antarJemputWaiting);
     } else {
-      context.push(AppRouter.antarJemputWaiting);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.errorMessage ?? 'Gagal membuat pesanan. Silakan coba lagi.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

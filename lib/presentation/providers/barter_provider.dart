@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:ubantu/data/repositories/barter_repository_impl.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/models/barter_item_model.dart';
 import 'package:ubantu/domain/repositories/barter_repository.dart';
 import 'package:ubantu/domain/usecases/get_barter_items_usecase.dart';
 
 class BarterProvider extends ChangeNotifier {
+  final IBarterRepository _repository;
   final GetBarterItemsUseCase _getBarterItemsUseCase;
 
   BarterProvider({IBarterRepository? repository})
-      : _getBarterItemsUseCase =
-            GetBarterItemsUseCase(repository ?? BarterRepositoryImpl());
+      : _repository = repository ?? ServiceLocator.instance.barterRepository,
+        _getBarterItemsUseCase =
+            GetBarterItemsUseCase(repository ?? ServiceLocator.instance.barterRepository);
+
+  IBarterRepository get repository => _repository;
 
   List<BarterItemModel> _items = [];
   bool _isLoading = false;

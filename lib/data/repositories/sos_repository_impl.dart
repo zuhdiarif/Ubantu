@@ -6,20 +6,22 @@ import 'package:ubantu/domain/models/sos_report_model.dart';
 import 'package:ubantu/domain/repositories/sos_repository.dart';
 
 class SosRepositoryImpl implements ISosRepository {
-  final SupabaseSosService? _supabaseSosService;
+  final SupabaseSosService _supabaseSosService;
   SosStatus _status = SosStatus.received;
 
-  SosRepositoryImpl({SupabaseSosService? service})
-      : _supabaseSosService = service ??
-            (SupabaseService.instance.isInitialized
-                ? SupabaseSosService()
-                : null);
+  SosRepositoryImpl({
+    SupabaseSosService? service,
+    SupabaseSosService? remoteService,
+  }) : _supabaseSosService = remoteService ?? service ?? SupabaseSosService();
+
+  bool get hasRemoteService => true;
+  SupabaseSosService get remoteService => _supabaseSosService;
+  bool get isRemoteActive => SupabaseService.instance.isInitialized;
 
   @override
   Future<AppResult<SosReportModel>> submitSosReport(String issueType) async {
-    final service = _supabaseSosService;
-    if (service != null) {
-      final result = await service.submitSosReport(issueType);
+    if (isRemoteActive) {
+      final result = await _supabaseSosService.submitSosReport(issueType);
       if (result.isSuccess) {
         return result;
       }

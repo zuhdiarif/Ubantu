@@ -1,20 +1,27 @@
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_barter_service.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/barter_item_model.dart';
 import 'package:ubantu/domain/repositories/barter_repository.dart';
 
 class BarterRepositoryImpl implements IBarterRepository {
-  final SupabaseBarterService? _supabaseBarterService;
+  final SupabaseBarterService _remoteService;
 
-  BarterRepositoryImpl({SupabaseBarterService? service})
-      : _supabaseBarterService = service;
+  BarterRepositoryImpl({
+    SupabaseBarterService? remoteService,
+    SupabaseBarterService? service,
+  }) : _remoteService = remoteService ?? service ?? SupabaseBarterService();
+
+  bool get hasRemoteService => true;
+  SupabaseBarterService get remoteService => _remoteService;
+  bool get isRemoteActive => SupabaseService.instance.isInitialized;
+  bool get _useSupabase => isRemoteActive;
 
   @override
   Future<AppResult<List<BarterItemModel>>> getBarterItems() async {
-    final service = _supabaseBarterService;
-    if (service != null) {
-      final result = await service.getBarterItems();
+    if (_useSupabase) {
+      final result = await _remoteService.getBarterItems();
       if (result.isSuccess) {
         return result;
       }

@@ -5,25 +5,25 @@ import 'package:ubantu/domain/models/rating_model.dart';
 import 'package:ubantu/domain/repositories/rating_repository.dart';
 
 class RatingRepositoryImpl implements IRatingRepository {
-  final SupabaseRatingService? _supabaseRatingService;
+  final SupabaseRatingService _remoteService;
 
-  RatingRepositoryImpl({SupabaseRatingService? remoteService})
-      : _supabaseRatingService = remoteService ??
-            (SupabaseService.instance.isInitialized
-                ? SupabaseRatingService()
-                : null);
+  RatingRepositoryImpl({
+    SupabaseRatingService? remoteService,
+    SupabaseRatingService? service,
+  }) : _remoteService = remoteService ?? service ?? SupabaseRatingService();
+
+  bool get hasRemoteService => true;
+  SupabaseRatingService get remoteService => _remoteService;
+  bool get isRemoteActive => SupabaseService.instance.isInitialized;
+  bool get _useSupabase => isRemoteActive;
 
   @override
   Future<AppResult<List<RatingModel>>> getRatings(String targetUserId) async {
-    final service = _supabaseRatingService;
-    if (service != null) {
-      final result = await service.getRatings(targetUserId);
+    if (_useSupabase) {
+      final result = await _remoteService.getRatings(targetUserId);
       if (result.isSuccess) {
         return result;
       }
-    }
-
-    if (SupabaseService.instance.isInitialized) {
       return AppResult.success([]);
     }
 
@@ -51,9 +51,8 @@ class RatingRepositoryImpl implements IRatingRepository {
     double score,
     String reviewText,
   ) async {
-    final service = _supabaseRatingService;
-    if (service != null) {
-      final result = await service.addRating(targetUserId, score, reviewText);
+    if (_useSupabase) {
+      final result = await _remoteService.addRating(targetUserId, score, reviewText);
       if (result.isSuccess) {
         return result;
       }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ubantu/data/repositories/schedule_repository_impl.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/models/smart_schedule_model.dart';
 import 'package:ubantu/domain/models/student_schedule_model.dart';
@@ -15,11 +15,13 @@ class ScheduleProvider extends ChangeNotifier {
   ScheduleProvider({
     IScheduleRepository? repository,
     CheckScheduleConflictUseCase? checkConflictUseCase,
-  })  : _repository = repository ?? ScheduleRepositoryImpl(),
+  })  : _repository = repository ?? ServiceLocator.instance.scheduleRepository,
         _bookScheduleUseCase =
-            BookScheduleUseCase(repository ?? ScheduleRepositoryImpl()),
+            BookScheduleUseCase(repository ?? ServiceLocator.instance.scheduleRepository),
         _checkConflictUseCase =
             checkConflictUseCase ?? const CheckScheduleConflictUseCase();
+
+  IScheduleRepository get repository => _repository;
 
   List<SmartScheduleModel> _schedules = [];
   List<StudentScheduleModel> _studentSchedules = [];

@@ -29,7 +29,7 @@ class AuthProvider extends ChangeNotifier {
     IAuthRepository? repository,
     INotificationRepository? notificationRepository,
   }) : this._internal(
-         repository ?? AuthRepositoryImpl(),
+         repository ?? ServiceLocator.instance.authRepository,
          notificationRepository ?? ServiceLocator.instance.notificationRepository,
        );
 
@@ -52,6 +52,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  IAuthRepository get repository => _repository;
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;

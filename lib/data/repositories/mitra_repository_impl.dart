@@ -1,4 +1,5 @@
 import 'package:ubantu/core/errors/app_result.dart';
+import 'package:ubantu/data/services/supabase_mitra_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
@@ -7,6 +8,22 @@ import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/repositories/mitra_repository.dart';
 
 class MitraRepositoryImpl implements IMitraRepository {
+  final SupabaseMitraService _mitraService;
+  final Set<String> _declinedOrderIds = {};
+
+  MitraRepositoryImpl({SupabaseMitraService? mitraService})
+      : _mitraService = mitraService ?? SupabaseMitraService();
+
+  bool get _useSupabase => _mitraService.isAvailable;
+
+  Set<String> get declinedOrderIdsForTesting =>
+      Set.unmodifiable(_declinedOrderIds);
+
+  void seedIncomingOrdersForTesting(List<ServiceOrderModel> orders) {
+    _incomingOrders.clear();
+    _incomingOrders.addAll(orders);
+  }
+
   MitraProfileModel _profile = const MitraProfileModel(
     id: 'mitra_user_1',
     userId: 'user_mitra_001',
@@ -85,56 +102,80 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<MitraProfileModel>> getMitraProfile() async {
-    if (SupabaseService.instance.isInitialized) {
+    if (_useSupabase) {
       try {
-        final currentUserId =
-            SupabaseService.instance.client.auth.currentUser?.id;
+        final currentUserId = _mitraService.currentUserId;
         if (currentUserId != null) {
-          final profileData = await SupabaseService.instance.client
-              .from('profiles')
-              .select()
-              .eq('id', currentUserId)
-              .maybeSingle();
+          final profileData =
+              await _mitraService.fetchMitraProfileData(currentUserId);
 
-          final ordersRes = await SupabaseService.instance.client
-              .from('service_orders')
-              .select('id')
-              .eq('helper_id', currentUserId)
-              .eq('status', MoveServiceStatus.completed.name);
-          final completedCount = (ordersRes as List).length;
+          var completedCount = _profile.totalOrdersCompleted;
+          var totalRev = _profile.totalReviews;
+          var avgRating = _profile.rating;
 
-          final ratingsRes = await SupabaseService.instance.client
-              .from('ratings')
-              .select('score')
-              .eq('target_user_id', currentUserId);
-          final ratingList = (ratingsRes as List);
-          final totalRev = ratingList.length;
-          double avgRating = 5.0;
-          if (totalRev > 0) {
-            final sum = ratingList.fold<double>(
-              0.0,
-              (acc, curr) =>
-                  acc + ((curr['score'] as num?)?.toDouble() ?? 5.0),
-            );
-            avgRating = double.parse((sum / totalRev).toStringAsFixed(1));
+          if (SupabaseService.instance.isInitialized) {
+            try {
+              final ordersRes = await SupabaseService.instance.client
+                  .from('service_orders')
+                  .select('id')
+                  .eq('helper_id', currentUserId)
+                  .eq('status', MoveServiceStatus.completed.name);
+              completedCount = (ordersRes as List).length;
+
+              final ratingsRes = await SupabaseService.instance.client
+                  .from('ratings')
+                  .select('score')
+                  .eq('target_user_id', currentUserId);
+              final ratingList = (ratingsRes as List);
+              totalRev = ratingList.length;
+              if (totalRev > 0) {
+                final sum = ratingList.fold<double>(
+                  0.0,
+                  (acc, curr) =>
+                      acc + ((curr['score'] as num?)?.toDouble() ?? 5.0),
+                );
+                avgRating = double.parse((sum / totalRev).toStringAsFixed(1));
+              }
+            } catch (_) {}
           }
 
-          final authUser = SupabaseService.instance.client.auth.currentUser;
+          final authUser = SupabaseService.instance.isInitialized
+              ? SupabaseService.instance.client.auth.currentUser
+              : null;
           final rawName = profileData?['full_name'] as String? ??
               profileData?['username'] as String? ??
               authUser?.userMetadata?['full_name'] as String? ??
               authUser?.email?.split('@').first ??
-              'Mitra UB';
+              _profile.name;
           final realName = rawName.contains('(Mitra UB)')
               ? rawName
               : '$rawName (Mitra UB)';
           final realFaculty = profileData?['faculty'] as String? ??
-              'Universitas Brawijaya';
+              _profile.faculty;
           final realPhone = profileData?['phone_number'] as String? ??
               authUser?.phone ??
-              '';
+              _profile.phone;
           final realPoints = (profileData?['barter_points'] as num?)?.toInt() ??
               (completedCount * 10);
+
+          List<ServiceCategory> parsedCategories = _profile.selectedCategories;
+          if (profileData?['mitra_categories'] != null) {
+            final catList = (profileData!['mitra_categories'] as List)
+                .map((e) => e.toString())
+                .toList();
+            final matched = catList
+                .map((name) {
+                  for (final cat in ServiceCategory.values) {
+                    if (cat.name == name) return cat;
+                  }
+                  return null;
+                })
+                .whereType<ServiceCategory>()
+                .toList();
+            if (matched.isNotEmpty) {
+              parsedCategories = matched;
+            }
+          }
 
           _profile = _profile.copyWith(
             id: currentUserId,
@@ -142,6 +183,13 @@ class MitraRepositoryImpl implements IMitraRepository {
             name: realName,
             faculty: realFaculty,
             phone: realPhone,
+            avatarUrl: profileData?['avatar_url'] as String? ?? _profile.avatarUrl,
+            isOnline: profileData?['is_online'] as bool? ?? _profile.isOnline,
+            selectedCategories: parsedCategories,
+            vehicleInfo: profileData?['mitra_vehicle_type'] as String? ??
+                _profile.vehicleInfo,
+            vehiclePlate: profileData?['mitra_vehicle_plate'] as String? ??
+                _profile.vehiclePlate,
             totalOrdersCompleted: completedCount,
             totalReviews: totalRev,
             rating: totalRev > 0 ? avgRating : 5.0,
@@ -156,23 +204,62 @@ class MitraRepositoryImpl implements IMitraRepository {
   @override
   Future<AppResult<bool>> toggleOnlineStatus(bool isOnline) async {
     _profile = _profile.copyWith(isOnline: isOnline);
+    if (_useSupabase) {
+      final currentUserId = _mitraService.currentUserId;
+      if (currentUserId != null) {
+        await _mitraService.updateOnlineStatus(currentUserId, isOnline);
+      }
+    }
     return AppResult.success(_profile.isOnline);
+  }
+
+  Future<AppResult<bool>> registerMitraCategories(
+    List<ServiceCategory> categories, {
+    String? vehicleType,
+    String? vehiclePlate,
+  }) async {
+    _profile = _profile.copyWith(
+      selectedCategories: categories,
+      vehicleInfo: vehicleType ?? _profile.vehicleInfo,
+      vehiclePlate: vehiclePlate ?? _profile.vehiclePlate,
+    );
+    if (_useSupabase) {
+      final currentUserId = _mitraService.currentUserId;
+      if (currentUserId != null) {
+        await _mitraService.updateMitraRegistration(
+          userId: currentUserId,
+          categories: categories,
+          vehicleType: vehicleType ?? _profile.vehicleInfo,
+          vehiclePlate: vehiclePlate ?? _profile.vehiclePlate,
+        );
+      }
+    }
+    return AppResult.success(true);
   }
 
   @override
   Future<AppResult<bool>> updateServiceCategories(
     List<ServiceCategory> categories,
   ) async {
-    _profile = _profile.copyWith(selectedCategories: categories);
-    return AppResult.success(true);
+    return registerMitraCategories(categories);
   }
 
   @override
   Future<AppResult<List<ServiceOrderModel>>> getIncomingOrders() async {
-    if (SupabaseService.instance.isInitialized) {
+    if (_useSupabase) {
+      final currentUserId = _mitraService.currentUserId;
+      if (currentUserId != null) {
+        try {
+          final remoteDeclined =
+              await _mitraService.fetchDeclinedOrderIds(currentUserId);
+          _declinedOrderIds.addAll(remoteDeclined);
+        } catch (_) {}
+      }
+    }
+
+    if (_useSupabase && SupabaseService.instance.isInitialized) {
       try {
-        final currentUserId =
-            SupabaseService.instance.client.auth.currentUser?.id;
+        final currentUserId = _mitraService.currentUserId;
         final response = await SupabaseService.instance.client
             .from('service_orders')
             .select()
@@ -183,6 +270,9 @@ class MitraRepositoryImpl implements IMitraRepository {
             .map((e) => ServiceOrderModel.fromJson(e as Map<String, dynamic>))
             .where((order) {
               if (currentUserId != null && order.requesterId == currentUserId) {
+                return false;
+              }
+              if (_declinedOrderIds.contains(order.id)) {
                 return false;
               }
               if (_profile.selectedCategories.isNotEmpty &&
@@ -198,7 +288,11 @@ class MitraRepositoryImpl implements IMitraRepository {
         return AppResult.success(List.unmodifiable(_incomingOrders));
       } catch (_) {}
     }
-    return AppResult.success(List.unmodifiable(_incomingOrders));
+
+    final localFiltered = _incomingOrders
+        .where((order) => !_declinedOrderIds.contains(order.id))
+        .toList();
+    return AppResult.success(List.unmodifiable(localFiltered));
   }
 
   @override
@@ -222,8 +316,6 @@ class MitraRepositoryImpl implements IMitraRepository {
 
           if (res != null) {
             _activeOrder = ServiceOrderModel.fromJson(res);
-          } else {
-            _activeOrder = null;
           }
         }
       } catch (_) {}
@@ -353,7 +445,17 @@ class MitraRepositoryImpl implements IMitraRepository {
 
   @override
   Future<AppResult<bool>> declineOrder(String orderId) async {
+    _declinedOrderIds.add(orderId);
     _incomingOrders.removeWhere((o) => o.id == orderId);
+    if (_useSupabase) {
+      final currentUserId = _mitraService.currentUserId;
+      if (currentUserId != null) {
+        await _mitraService.recordDeclinedOrder(
+          mitraId: currentUserId,
+          orderId: orderId,
+        );
+      }
+    }
     return AppResult.success(true);
   }
 
@@ -362,16 +464,23 @@ class MitraRepositoryImpl implements IMitraRepository {
     String orderId,
     MoveServiceStatus status,
   ) async {
-    if (_activeOrder != null && _activeOrder!.id == orderId) {
+    final target = (_activeOrder != null && _activeOrder!.id == orderId)
+        ? _activeOrder
+        : _incomingOrders.cast<ServiceOrderModel?>().firstWhere(
+              (o) => o?.id == orderId,
+              orElse: () => null,
+            ) ??
+            _activeOrder;
+    if (target != null) {
       if (status == MoveServiceStatus.completed) {
-        final finished = _activeOrder!.copyWith(status: status);
+        final finished = target.copyWith(status: status);
         _completedOrders.insert(0, finished);
 
         final newEarning = MitraEarningItemModel(
           id: 'earn-${DateTime.now().millisecondsSinceEpoch}',
           orderId: finished.id,
           orderNumber:
-              'UB-ORD-${finished.id.length > 4 ? finished.id.substring(0, 4).toUpperCase() : '9901'}',
+              'UB-ORD-${finished.id.length > 4 ? finished.id.substring(0, 4).toUpperCase() : "9901"}',
           serviceTitle: 'Layanan ${_categoryTitle(finished.category)}',
           date: DateTime.now(),
           barterDescription: finished.barterDescription,
@@ -388,7 +497,7 @@ class MitraRepositoryImpl implements IMitraRepository {
         _activeOrder = null;
         _incomingOrders.removeWhere((o) => o.id == orderId);
       } else {
-        _activeOrder = _activeOrder!.copyWith(status: status);
+        _activeOrder = target.copyWith(status: status);
         final idx = _incomingOrders.indexWhere((o) => o.id == orderId);
         if (idx != -1) {
           _incomingOrders[idx] = _activeOrder!;

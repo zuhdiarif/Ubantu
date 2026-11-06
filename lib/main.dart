@@ -45,19 +45,51 @@ class UbantuApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(
+            repository: ServiceLocator.instance.authRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => TaskProvider(
+            repository: ServiceLocator.instance.taskRepository,
+          ),
+        ),
         ChangeNotifierProvider(
           create: (_) => SosProvider(
             repository: ServiceLocator.instance.sosRepository,
           ),
         ),
-        ChangeNotifierProvider(create: (_) => RegistrationProvider()),
-        ChangeNotifierProvider(create: (_) => ProfileProvider()),
-        ChangeNotifierProvider(create: (_) => BarterProvider()),
-        ChangeNotifierProvider(create: (_) => RatingProvider()),
-        ChangeNotifierProvider(create: (_) => LoyaltyProvider()),
-        ChangeNotifierProvider(create: (_) => ScheduleProvider()),
+        ChangeNotifierProvider(
+          create: (_) => RegistrationProvider(
+            repository: ServiceLocator.instance.authRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProfileProvider(
+            repository: ServiceLocator.instance.profileRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => BarterProvider(
+            repository: ServiceLocator.instance.barterRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RatingProvider(
+            repository: ServiceLocator.instance.ratingRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => LoyaltyProvider(
+            repository: ServiceLocator.instance.loyaltyRepository,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ScheduleProvider(
+            repository: ServiceLocator.instance.scheduleRepository,
+          ),
+        ),
         ChangeNotifierProvider(
           create: (_) => ServiceOrderProvider(
             repository: ServiceLocator.instance.serviceOrderRepository,

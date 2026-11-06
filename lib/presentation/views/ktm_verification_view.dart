@@ -103,6 +103,17 @@ class _KtmVerificationContentState extends State<_KtmVerificationContent> {
       );
       if (picked != null) {
         final file = File(picked.path);
+        if (await file.length() > 5 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ukuran file maksimal 5 MB. Silakan pilih file yang lebih kecil.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
         setState(() {
           _selectedKtmFile = file;
         });

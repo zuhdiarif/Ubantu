@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/data/repositories/auth_repository_impl.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/repositories/auth_repository.dart';
 import 'package:ubantu/domain/usecases/resend_signup_otp_usecase.dart';
@@ -20,11 +20,13 @@ class RegistrationProvider extends ChangeNotifier {
   RegistrationProvider({
     IAuthRepository? repository,
     ResendSignupOtpUseCase? resendSignupOtpUseCase,
-  })  : _repository = repository ?? AuthRepositoryImpl(),
-        _sendOtpUseCase = SendOtpUseCase(repository ?? AuthRepositoryImpl()),
-        _verifyOtpUseCase = VerifyOtpUseCase(repository ?? AuthRepositoryImpl()),
+  })  : _repository = repository ?? ServiceLocator.instance.authRepository,
+        _sendOtpUseCase = SendOtpUseCase(repository ?? ServiceLocator.instance.authRepository),
+        _verifyOtpUseCase = VerifyOtpUseCase(repository ?? ServiceLocator.instance.authRepository),
         _resendSignupOtpUseCase = resendSignupOtpUseCase ??
-            ResendSignupOtpUseCase(repository ?? AuthRepositoryImpl());
+            ResendSignupOtpUseCase(repository ?? ServiceLocator.instance.authRepository);
+
+  IAuthRepository get repository => _repository;
 
   String _fullName = '';
   String _email = '';
