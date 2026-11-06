@@ -51,64 +51,112 @@ class UbantuApp extends StatelessWidget {
           ),
         ),
         ChangeNotifierProvider(
-          create: (_) => TaskProvider(
-            repository: ServiceLocator.instance.taskRepository,
-          ),
+          create: (_) {
+            final p = TaskProvider(
+              repository: ServiceLocator.instance.taskRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => SosProvider(
-            repository: ServiceLocator.instance.sosRepository,
-          ),
+          create: (_) {
+            final p = SosProvider(
+              repository: ServiceLocator.instance.sosRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => RegistrationProvider(
-            repository: ServiceLocator.instance.authRepository,
-          ),
+          create: (_) {
+            final p = RegistrationProvider(
+              repository: ServiceLocator.instance.authRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => ProfileProvider(
-            repository: ServiceLocator.instance.profileRepository,
-          ),
+          create: (_) {
+            final p = ProfileProvider(
+              repository: ServiceLocator.instance.profileRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => BarterProvider(
-            repository: ServiceLocator.instance.barterRepository,
-          ),
+          create: (_) {
+            final p = BarterProvider(
+              repository: ServiceLocator.instance.barterRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => RatingProvider(
-            repository: ServiceLocator.instance.ratingRepository,
-          ),
+          create: (_) {
+            final p = RatingProvider(
+              repository: ServiceLocator.instance.ratingRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => LoyaltyProvider(
-            repository: ServiceLocator.instance.loyaltyRepository,
-          ),
+          create: (_) {
+            final p = LoyaltyProvider(
+              repository: ServiceLocator.instance.loyaltyRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => ScheduleProvider(
-            repository: ServiceLocator.instance.scheduleRepository,
-          ),
+          create: (_) {
+            final p = ScheduleProvider(
+              repository: ServiceLocator.instance.scheduleRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => ServiceOrderProvider(
-            repository: ServiceLocator.instance.serviceOrderRepository,
-          ),
+          create: (_) {
+            final p = ServiceOrderProvider(
+              repository: ServiceLocator.instance.serviceOrderRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => ChatProvider(
-            repository: ServiceLocator.instance.chatRepository,
-          ),
+          create: (_) {
+            final p = ChatProvider(
+              repository: ServiceLocator.instance.chatRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => MitraProvider(
-            repository: ServiceLocator.instance.mitraRepository,
-          ),
+          create: (_) {
+            final p = MitraProvider(
+              repository: ServiceLocator.instance.mitraRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
         ChangeNotifierProvider(
-          create: (_) => NotificationProvider(
-            repository: ServiceLocator.instance.notificationRepository,
-          ),
+          create: (_) {
+            final p = NotificationProvider(
+              repository: ServiceLocator.instance.notificationRepository,
+            );
+            ServiceLocator.instance.registerProviderResetCallback(p.resetSession);
+            return p;
+          },
         ),
       ],
       child: MaterialApp.router(

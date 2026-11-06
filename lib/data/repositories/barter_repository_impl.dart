@@ -4,14 +4,18 @@ import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/barter_item_model.dart';
 import 'package:ubantu/domain/repositories/barter_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class BarterRepositoryImpl implements IBarterRepository {
+class BarterRepositoryImpl implements IBarterRepository, SessionScoped {
   final SupabaseBarterService _remoteService;
 
   BarterRepositoryImpl({
     SupabaseBarterService? remoteService,
     SupabaseBarterService? service,
   }) : _remoteService = remoteService ?? service ?? SupabaseBarterService();
+
+  @override
+  void clearSessionCache() {}
 
   bool get hasRemoteService => true;
   SupabaseBarterService get remoteService => _remoteService;

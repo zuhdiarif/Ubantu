@@ -4,6 +4,8 @@ import 'package:ubantu/data/repositories/auth_repository_impl.dart';
 import 'package:ubantu/data/repositories/sos_repository_impl.dart';
 import 'package:ubantu/data/repositories/task_repository_impl.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/domain/repositories/task_repository.dart';
 
 void main() {
   group('Clean MVVM Repository Implementation Unit Tests', () {
@@ -44,6 +46,12 @@ void main() {
 
       expect(result.isSuccess, true);
       expect(result.data?.isNotEmpty, true);
+    });
+
+    test('TaskRepositoryImpl implements SessionScoped', () {
+      final ITaskRepository repo = TaskRepositoryImpl();
+      expect(repo, isA<SessionScoped>());
+      (repo as SessionScoped).clearSessionCache();
     });
 
     test('SosRepositoryImpl submit & status mutation', () async {

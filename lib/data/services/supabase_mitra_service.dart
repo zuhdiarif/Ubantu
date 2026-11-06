@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
 
 class SupabaseMitraService {
   final SupabaseClient? client;
@@ -75,7 +76,7 @@ class SupabaseMitraService {
       }).eq('id', userId);
       return AppResult.success(null);
     } catch (e) {
-      return AppResult.failure('Gagal memperbarui status online: ');
+      return AppResult.failure('Gagal memperbarui status online: $e');
     }
   }
 
@@ -102,7 +103,7 @@ class SupabaseMitraService {
       }).eq('id', userId);
       return AppResult.success(null);
     } catch (e) {
-      return AppResult.failure('Gagal memperbarui data pendaftaran mitra: ');
+      return AppResult.failure('Gagal memperbarui data pendaftaran mitra: $e');
     }
   }
 
@@ -127,7 +128,7 @@ class SupabaseMitraService {
       );
       return AppResult.success(null);
     } catch (e) {
-      return AppResult.failure('Gagal mencatat penolakan pesanan: ');
+      return AppResult.failure('Gagal mencatat penolakan pesanan: $e');
     }
   }
 
@@ -148,6 +149,66 @@ class SupabaseMitraService {
           .toSet();
     } catch (_) {
       return <String>{};
+    }
+  }
+
+  Future<AppResult<ServiceOrderModel>> acceptOrder({
+    required String orderId,
+    required String helperId,
+  }) async {
+    if (!isAvailable) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
+    final activeClient = _effectiveClient;
+    if (activeClient == null) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
+    try {
+      final res = await activeClient
+          .from('service_orders')
+          .update({
+            'helper_id': helperId,
+            'status': MoveServiceStatus.accepted.name,
+          })
+          .eq('id', orderId)
+          .eq('status', MoveServiceStatus.waiting.name)
+          .select()
+          .maybeSingle();
+      if (res == null) {
+        return AppResult.failure(
+          'Pesanan sudah diambil mitra lain atau tidak lagi tersedia.',
+        );
+      }
+      return AppResult.success(ServiceOrderModel.fromJson(res));
+    } catch (e) {
+      return AppResult.failure('Gagal mengambil pesanan: $e');
+    }
+  }
+
+  Future<AppResult<ServiceOrderModel>> updateOrderStatus({
+    required String orderId,
+    required MoveServiceStatus status,
+  }) async {
+    if (!isAvailable) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
+    final activeClient = _effectiveClient;
+    if (activeClient == null) {
+      return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
+    }
+    try {
+      final res = await activeClient
+          .from('service_orders')
+          .update({'status': status.name})
+          .eq('id', orderId)
+          .select()
+          .maybeSingle();
+      if (res == null) {
+        return AppResult.failure('Pesanan tidak ditemukan di server.');
+      }
+      return AppResult.success(ServiceOrderModel.fromJson(res));
+    } catch (e) {
+      return AppResult.failure('Gagal memperbarui status pesanan: $e');
     }
   }
 }

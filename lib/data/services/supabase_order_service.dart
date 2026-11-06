@@ -8,7 +8,7 @@ import 'package:ubantu/domain/models/service_order_model.dart';
 class SupabaseOrderService {
   static const String _table = 'service_orders';
 
-  final List<ServiceOrderModel> _fallbackWaitingOrders = [
+  static List<ServiceOrderModel> _defaultWaitingOrders() => [
     ServiceOrderModel(
       id: 'ord-mitra-01',
       requesterId: 'req_mahasiswa_1',
@@ -52,6 +52,8 @@ class SupabaseOrderService {
     ),
   ];
 
+  final List<ServiceOrderModel> _fallbackWaitingOrders = _defaultWaitingOrders();
+
   Future<AppResult<List<ServiceOrderModel>>> getActiveOrders() async {
     try {
       if (SupabaseService.instance.isInitialized) {
@@ -67,7 +69,10 @@ class SupabaseOrderService {
         return AppResult.success(orders);
       }
       return AppResult.success(List.from(_fallbackWaitingOrders));
-    } catch (_) {
+    } catch (e) {
+      if (SupabaseService.instance.isInitialized) {
+        return AppResult.failure('Gagal memuat pesanan aktif: $e');
+      }
       return AppResult.success(List.from(_fallbackWaitingOrders));
     }
   }
@@ -194,8 +199,15 @@ class SupabaseOrderService {
               'status': MoveServiceStatus.accepted.name,
             })
             .eq('id', orderId)
+            .eq('status', MoveServiceStatus.waiting.name)
             .select()
-            .single();
+            .maybeSingle();
+
+        if (response == null) {
+          return AppResult.failure(
+            'Pesanan sudah diambil mitra lain atau tidak lagi tersedia.',
+          );
+        }
 
         final updated = ServiceOrderModel.fromJson(response);
         _mockOrderControllers[orderId]?.add(updated);
@@ -300,5 +312,16 @@ class SupabaseOrderService {
     } catch (e) {
       return AppResult.failure(e.toString());
     }
+  }
+
+  void clearSessionCache() {
+    for (final controller in _mockOrderControllers.values) {
+      if (!controller.isClosed) {
+        controller.close();
+      }
+    }
+    _mockOrderControllers.clear();
+    _fallbackWaitingOrders.clear();
+    _fallbackWaitingOrders.addAll(_defaultWaitingOrders());
   }
 }

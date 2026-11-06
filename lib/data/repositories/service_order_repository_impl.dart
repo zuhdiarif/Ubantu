@@ -5,8 +5,9 @@ import 'package:ubantu/data/services/supabase_storage_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/domain/repositories/service_order_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class ServiceOrderRepositoryImpl implements IServiceOrderRepository {
+class ServiceOrderRepositoryImpl implements IServiceOrderRepository, SessionScoped {
   final SupabaseOrderService _service;
   final SupabaseStorageService _storageService;
 
@@ -18,6 +19,11 @@ class ServiceOrderRepositoryImpl implements IServiceOrderRepository {
     SupabaseStorageService? storageService,
   })  : _service = service ?? SupabaseOrderService(),
         _storageService = storageService ?? SupabaseStorageService();
+
+  @override
+  void clearSessionCache() {
+    _service.clearSessionCache();
+  }
 
   @override
   Future<AppResult<List<ServiceOrderModel>>> getActiveOrders() {

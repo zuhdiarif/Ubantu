@@ -114,20 +114,24 @@ class AppRouter {
   static const String notificationHistory = '/notification-history';
   static const String aktivitas = '/aktivitas';
 
+  static bool hasActiveSession() {
+    return AppAuthNotifier.instance.isLoggedIn ||
+        (SupabaseService.instance.isInitialized &&
+            SupabaseService.instance.client.auth.currentSession != null);
+  }
+
   static final router = GoRouter(
     initialLocation: onboarding,
     refreshListenable: AppAuthNotifier.instance,
     redirect: (context, state) {
       final loc = state.matchedLocation;
       final uri = state.uri;
+      final bool hasSession = hasActiveSession();
       if (loc == loginCallback ||
           uri.path == loginCallback ||
           uri.path.startsWith('$loginCallback/')) {
-        return home;
+        return hasSession ? home : login;
       }
-      final bool hasSession = AppAuthNotifier.instance.isLoggedIn ||
-          (SupabaseService.instance.isInitialized &&
-              SupabaseService.instance.client.auth.currentSession != null);
       if (hasSession && (loc == onboarding || loc == login || loc == register)) {
         return home;
       }
@@ -148,7 +152,7 @@ class AppRouter {
       ),
       GoRoute(
         path: loginCallback,
-        redirect: (context, state) => home,
+        redirect: (context, state) => hasActiveSession() ? home : login,
       ),
       GoRoute(
         path: ktmVerification,

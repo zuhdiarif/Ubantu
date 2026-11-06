@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/core/errors/app_result.dart';
@@ -41,7 +42,9 @@ class SupabaseAuthService {
       if (isAvailable) {
         profileResponse = await _effectiveClient
             .from('profiles')
-            .select('verification_status, role')
+            .select(
+              'full_name, phone_number, nim, avatar_url, ktm_photo_url, verification_status, role, gender, is_female_only_preferred, reward_points, faculty, bio, email_otp_skipped',
+            )
             .eq('id', user.id)
             .maybeSingle();
       }
@@ -52,29 +55,52 @@ class SupabaseAuthService {
     return mapped;
   }
 
+  @visibleForTesting
+  UserModel buildUserModelForTesting(User user, [Map<String, dynamic>? profileResponse]) =>
+      _buildUserModel(user, profileResponse);
+
+  String? _nonEmptyStr(dynamic value) {
+    if (value is String && value.trim().isNotEmpty) return value;
+    return null;
+  }
+
   UserModel _buildUserModel(User user, [Map<String, dynamic>? profileResponse]) {
     final meta = user.userMetadata ?? {};
-    final fullName = meta['full_name'] as String? ?? user.email?.split('@').first ?? '';
-    final phone = user.phone ?? (meta['phone_number'] as String? ?? '');
-    final nim = meta['nim'] as String? ?? '';
-    final avatarUrl = meta['avatar_url'] as String? ?? meta['picture'] as String?;
-    final ktmPhotoUrl = meta['ktm_photo_url'] as String?;
-    final verificationStatus = profileResponse != null
-        ? (profileResponse['verification_status'] as String? ?? 'unverified')
-        : (meta['verification_status'] as String?);
-    final role = profileResponse != null
-        ? (profileResponse['role'] as String? ?? 'customer')
-        : (meta['role'] as String?);
-    final genderStr = meta['gender'] as String?;
-    final isFemaleOnly = meta['is_female_only_preferred'] as bool? ?? false;
-    final rewardPoints = meta['reward_points'] as int? ?? 0;
-    final faculty = profileResponse != null
-        ? (profileResponse['faculty'] as String?)
-        : (meta['faculty'] as String?);
-    final bio = profileResponse != null
-        ? (profileResponse['bio'] as String?)
-        : (meta['bio'] as String?);
-    final emailOtpSkipped = meta['email_otp_skipped'] as bool? ?? false;
+    final fullName = _nonEmptyStr(profileResponse?['full_name']) ??
+        _nonEmptyStr(meta['full_name']) ??
+        user.email?.split('@').first ??
+        '';
+    final phone = _nonEmptyStr(profileResponse?['phone_number']) ??
+        _nonEmptyStr(user.phone) ??
+        _nonEmptyStr(meta['phone_number']) ??
+        '';
+    final nim = _nonEmptyStr(profileResponse?['nim']) ??
+        _nonEmptyStr(meta['nim']) ??
+        '';
+    final avatarUrl = _nonEmptyStr(profileResponse?['avatar_url']) ??
+        _nonEmptyStr(meta['avatar_url']) ??
+        _nonEmptyStr(meta['picture']);
+    final ktmPhotoUrl = _nonEmptyStr(profileResponse?['ktm_photo_url']) ??
+        _nonEmptyStr(meta['ktm_photo_url']);
+    final verificationStatus = _nonEmptyStr(profileResponse?['verification_status']) ??
+        _nonEmptyStr(meta['verification_status']);
+    final role = _nonEmptyStr(profileResponse?['role']) ??
+        _nonEmptyStr(meta['role']);
+    final genderStr = _nonEmptyStr(profileResponse?['gender']) ??
+        _nonEmptyStr(meta['gender']);
+    final isFemaleOnly = (profileResponse?['is_female_only_preferred'] as bool?) ??
+        (meta['is_female_only_preferred'] as bool?) ??
+        false;
+    final rewardPoints = (profileResponse?['reward_points'] as num?)?.toInt() ??
+        (meta['reward_points'] as num?)?.toInt() ??
+        0;
+    final faculty = _nonEmptyStr(profileResponse?['faculty']) ??
+        _nonEmptyStr(meta['faculty']);
+    final bio = _nonEmptyStr(profileResponse?['bio']) ??
+        _nonEmptyStr(meta['bio']);
+    final emailOtpSkipped = (profileResponse?['email_otp_skipped'] as bool?) ??
+        (meta['email_otp_skipped'] as bool?) ??
+        false;
 
     return UserModel(
       id: user.id,

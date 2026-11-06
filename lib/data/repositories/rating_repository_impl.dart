@@ -3,14 +3,18 @@ import 'package:ubantu/data/services/supabase_rating_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/rating_model.dart';
 import 'package:ubantu/domain/repositories/rating_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class RatingRepositoryImpl implements IRatingRepository {
+class RatingRepositoryImpl implements IRatingRepository, SessionScoped {
   final SupabaseRatingService _remoteService;
 
   RatingRepositoryImpl({
     SupabaseRatingService? remoteService,
     SupabaseRatingService? service,
   }) : _remoteService = remoteService ?? service ?? SupabaseRatingService();
+
+  @override
+  void clearSessionCache() {}
 
   bool get hasRemoteService => true;
   SupabaseRatingService get remoteService => _remoteService;

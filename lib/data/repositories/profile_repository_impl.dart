@@ -5,8 +5,9 @@ import 'package:ubantu/data/services/supabase_storage_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/user_model.dart';
 import 'package:ubantu/domain/repositories/profile_repository.dart';
+import 'package:ubantu/domain/repositories/session_scoped.dart';
 
-class ProfileRepositoryImpl implements IProfileRepository {
+class ProfileRepositoryImpl implements IProfileRepository, SessionScoped {
   final SupabaseProfileService _remoteService;
   final SupabaseStorageService _storageService;
 
@@ -16,6 +17,9 @@ class ProfileRepositoryImpl implements IProfileRepository {
     SupabaseStorageService? storageService,
   })  : _remoteService = remoteService ?? service ?? SupabaseProfileService(),
         _storageService = storageService ?? SupabaseStorageService();
+
+  @override
+  void clearSessionCache() {}
 
   bool get hasRemoteService => true;
   SupabaseProfileService get remoteService => _remoteService;

@@ -1,4 +1,5 @@
 import 'package:ubantu/core/config/app_config.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_auth_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
@@ -211,6 +212,7 @@ class AuthRepositoryImpl implements IAuthRepository, SessionScoped {
     }
     _currentUser = null;
     _signUpReturnedSession = false;
+    ServiceLocator.instance.clearSessionCaches();
   }
 
   @override

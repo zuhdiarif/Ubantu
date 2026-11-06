@@ -239,6 +239,14 @@ class ServiceLocator {
     );
   }
 
+  final List<void Function()> _providerResetCallbacks = [];
+
+  void registerProviderResetCallback(void Function() callback) {
+    if (!_providerResetCallbacks.contains(callback)) {
+      _providerResetCallbacks.add(callback);
+    }
+  }
+
   void clearSessionCaches() {
     final repos = [
       authRepository,
@@ -258,6 +266,11 @@ class ServiceLocator {
       if (repo is SessionScoped) {
         repo.clearSessionCache();
       }
+    }
+    for (final callback in List<void Function()>.from(_providerResetCallbacks)) {
+      try {
+        callback();
+      } catch (_) {}
     }
   }
 }
