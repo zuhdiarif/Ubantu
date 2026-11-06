@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -22,22 +21,26 @@ class HomeView extends StatefulWidget {
   State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
+class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   int _modeTab = 0;
   int _activityTab = 0;
-  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshData();
-    });
-    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (mounted) {
         _refreshData();
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _refreshData();
+    }
   }
 
   Future<void> _refreshData() async {
@@ -54,7 +57,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -64,9 +67,20 @@ class _HomeViewState extends State<HomeView> {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
 
-    return Material(
-      color: AppColors.background,
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'home_sos_fab',
+        backgroundColor: const Color(0xFFD32F2F),
+        foregroundColor: Colors.white,
+        tooltip: 'Darurat SOS',
+        onPressed: () => context.push(AppRouter.sosForm),
+        child: const Icon(
+          Icons.emergency_rounded,
+          size: 30,
+        ),
+      ),
+      body: SafeArea(
         top: true,
         bottom: false,
         child: RefreshIndicator(
@@ -74,7 +88,7 @@ class _HomeViewState extends State<HomeView> {
           color: AppColors.primaryGreen,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 80),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -297,7 +311,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 const SizedBox(height: 14),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => _showPromoSheet(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF283626),
@@ -553,15 +567,9 @@ class _HomeViewState extends State<HomeView> {
       ServiceCategory.antarJemput => 'assets/images/ic_antar_jemput.png',
     };
 
-    final statusText = switch (order.status) {
-      MoveServiceStatus.waiting => 'Menunggu',
-      MoveServiceStatus.accepted => 'Diterima',
-      MoveServiceStatus.inProgress => 'Berlangsung',
-      MoveServiceStatus.completed => 'Selesai',
-      MoveServiceStatus.cancelled => 'Batal',
-    };
-
-    final isOngoing = order.status != MoveServiceStatus.completed;
+    final statusText = order.status.label;
+    final badgeBg = order.status.badgeBgColor;
+    final badgeText = order.status.badgeTextColor;
 
     final dateStr =
         '${order.scheduledAt.day} ${_monthName(order.scheduledAt.month)} ${order.scheduledAt.year} - ${order.scheduledAt.hour.toString().padLeft(2, '0')}:${order.scheduledAt.minute.toString().padLeft(2, '0')}';
@@ -660,17 +668,13 @@ class _HomeViewState extends State<HomeView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: isOngoing
-                    ? const Color(0xFFE2F1D8)
-                    : Colors.grey.shade200,
+                color: badgeBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 statusText,
                 style: AppTypography.caption.copyWith(
-                  color: isOngoing
-                      ? const Color(0xFF283626)
-                      : Colors.grey.shade700,
+                  color: badgeText,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -958,6 +962,27 @@ class _HomeViewState extends State<HomeView> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Color(0xFF86B049),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '~${_estimateDistance(order)} km',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF86B049),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
               if (order.barterDescription.isNotEmpty) ...[
@@ -1235,5 +1260,90 @@ class _HomeViewState extends State<HomeView> {
       case ServiceCategory.antarJemput:
         return Icons.two_wheeler_rounded;
     }
+  }
+
+  String _estimateDistance(ServiceOrderModel order) {
+    if (order.locationOrigin.isEmpty && order.id.isEmpty) {
+      return '1.2';
+    }
+    final seed = (order.id.isNotEmpty ? order.id : order.locationOrigin).hashCode.abs();
+    final km = 0.5 + (seed % 26) / 10.0;
+    return km.toStringAsFixed(1);
+  }
+
+  void _showPromoSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Promo UBantu 🎉',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 16),
+                _buildPromoCard(
+                  title: 'Gratis Biaya Admin!',
+                  description: 'Tukar 100 poin reward untuk 1 voucher gratis biaya admin layanan.',
+                  icon: Icons.card_giftcard,
+                ),
+                const SizedBox(height: 12),
+                _buildPromoCard(
+                  title: 'Bonus Poin Pertama',
+                  description: 'Daftar sebagai Mitra dan selesaikan bantuan pertamamu untuk bonus 20 poin!',
+                  icon: Icons.star,
+                ),
+                const SizedBox(height: 12),
+                _buildPromoCard(
+                  title: 'Ajak Teman',
+                  description: 'Ajak teman mahasiswa bergabung UBantu, dapatkan masing-masing 10 poin bonus.',
+                  icon: Icons.people,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPromoCard({
+    required String title,
+    required String description,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAF4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF86B049).withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF86B049), size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(description, style: const TextStyle(fontSize: 12, color: Color(0xFF666666))),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

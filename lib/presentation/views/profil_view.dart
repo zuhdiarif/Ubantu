@@ -133,6 +133,8 @@ class _ProfilViewState extends State<ProfilView> {
     final user = authProvider.currentUser;
     final nameController = TextEditingController(text: user?.fullName ?? '');
     final phoneController = TextEditingController(text: user?.phoneNumber ?? '');
+    final facultyController = TextEditingController(text: user?.faculty ?? '');
+    final bioController = TextEditingController(text: user?.bio ?? '');
     UserGender selectedGender = user?.gender ?? UserGender.unspecified;
     bool femaleOnly = user?.isFemaleOnlyPreferred ?? false;
 
@@ -185,6 +187,18 @@ class _ProfilViewState extends State<ProfilView> {
                       controller: phoneController,
                       placeholder: 'Contoh: 081234567890',
                       keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 16),
+                    CustomInputField(
+                      label: 'Fakultas / Jurusan',
+                      controller: facultyController,
+                      placeholder: 'Contoh: FILKOM / Teknik Informatika',
+                    ),
+                    const SizedBox(height: 16),
+                    CustomInputField(
+                      label: 'Bio Singkat',
+                      controller: bioController,
+                      placeholder: 'Ceritakan sedikit tentang dirimu...',
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -242,6 +256,8 @@ class _ProfilViewState extends State<ProfilView> {
                           phoneNumber: phoneController.text.trim(),
                           gender: selectedGender,
                           isFemaleOnlyPreferred: femaleOnly,
+                          faculty: facultyController.text.trim(),
+                          bio: bioController.text.trim(),
                         );
                         if (context.mounted) {
                           Navigator.of(sheetContext).pop();
@@ -256,6 +272,214 @@ class _ProfilViewState extends State<ProfilView> {
                     ),
                   ],
                 ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAccountSettingsSheet(BuildContext context, AuthProvider authProvider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Pengaturan Akun',
+                style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.lock_reset_rounded, color: AppColors.primaryDark),
+                title: const Text('Ubah Password', style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text('Reset password via kode OTP ke email'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  context.push(AppRouter.forgotPassword);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                title: const Text('Hapus Akun', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                subtitle: const Text('Hapus akun dan semua data secara permanen'),
+                trailing: const Icon(Icons.chevron_right_rounded, color: Colors.red),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _showDeleteAccountDialog(context, authProvider);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context, AuthProvider authProvider) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Hapus Akun', style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text(
+            'Apakah kamu yakin ingin menghapus akun? Semua data profil dan riwayat bantuan akan dihapus secara permanen.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await authProvider.logout();
+                if (context.mounted) {
+                  context.go(AppRouter.login);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Akun berhasil dihapus'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showFaqSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Bantuan & Pusat Informasi (FAQ)',
+                    style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  const ExpansionTile(
+                    title: Text(
+                      'Bagaimana cara verifikasi KTM UB?',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                        child: Text(
+                          'Unggah foto KTM UB aktif dan masukkan NIM Anda pada menu Verifikasi KTM UB. Verifikasi akan diproses maksimal 1x24 jam oleh sistem.',
+                          style: TextStyle(fontSize: 13, color: Color(0xFF5C6658)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const ExpansionTile(
+                    title: Text(
+                      'Bagaimana cara menjadi Mitra UBantu?',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                        child: Text(
+                          'Setelah KTM Anda terverifikasi, buka menu Dashboard dan aktifkan status aktif Anda untuk menerima pesanan bantuan dari mahasiswa UB lainnya.',
+                          style: TextStyle(fontSize: 13, color: Color(0xFF5C6658)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const ExpansionTile(
+                    title: Text(
+                      'Bagaimana sistem reward poin bekerja?',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                        child: Text(
+                          'Setiap kali Anda berhasil menyelesaikan bantuan, poin reward akan ditambahkan ke akun Anda dan dapat ditukarkan di masa mendatang.',
+                          style: TextStyle(fontSize: 13, color: Color(0xFF5C6658)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const ExpansionTile(
+                    title: Text(
+                      'Kapan fitur Tombol SOS digunakan?',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                        child: Text(
+                          'Tombol SOS digunakan saat keadaan darurat atau bahaya di kampus untuk menyiarkan sinyal darurat ke mahasiswa terdekat dan tim keamanan.',
+                          style: TextStyle(fontSize: 13, color: Color(0xFF5C6658)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             );
           },
@@ -343,8 +567,57 @@ class _ProfilViewState extends State<ProfilView> {
                         color: const Color(0xFF5C6658),
                       ),
                     ),
+                    if (user?.faculty != null && user!.faculty!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        user.faculty!,
+                        style: AppTypography.body2.copyWith(
+                          color: const Color(0xFF86B049),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    if (user?.bio != null && user!.bio!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          user.bio!,
+                          textAlign: TextAlign.center,
+                          style: AppTypography.caption.copyWith(
+                            color: const Color(0xFF5C6658),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     _buildVerificationBadge(user?.verificationStatus ?? KtmVerificationStatus.unverified),
+                    if (user?.emailOtpSkipped == true) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3CD),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFFEEBA)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.info_outline_rounded, color: Color(0xFF856404), size: 14),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Email belum diverifikasi',
+                              style: AppTypography.caption.copyWith(
+                                color: const Color(0xFF856404),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -366,10 +639,30 @@ class _ProfilViewState extends State<ProfilView> {
                 onTap: () => context.push(AppRouter.ktmVerification),
               ),
               _buildProfileOption(
+                icon: Icons.dashboard,
+                title: 'Dashboard',
+                onTap: () => context.push(AppRouter.mitraDashboard),
+              ),
+              _buildProfileOption(
+                icon: Icons.history,
+                title: 'Riwayat Bantuan',
+                onTap: () => context.push(AppRouter.aktivitas),
+              ),
+              _buildProfileOption(
                 icon: Icons.card_giftcard_rounded,
                 title: 'Poin Reward & Voucher',
                 subtitle: '${user?.rewardPoints ?? 0} Poin Tersedia',
                 onTap: () {},
+              ),
+              _buildProfileOption(
+                icon: Icons.settings,
+                title: 'Pengaturan Akun',
+                onTap: () => _showAccountSettingsSheet(context, authProvider),
+              ),
+              _buildProfileOption(
+                icon: Icons.help_outline,
+                title: 'Bantuan & Pusat Informasi (FAQ)',
+                onTap: () => _showFaqSheet(context),
               ),
               _buildProfileOption(
                 icon: Icons.sos_rounded,

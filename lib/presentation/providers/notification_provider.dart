@@ -36,6 +36,12 @@ class NotificationProvider extends ChangeNotifier {
     if (_selectedFilter == 'Pesanan') {
       return all.where((n) => n.type == 'order').toList();
     }
+    if (_selectedFilter == 'Transaksi') {
+      return all.where((n) => n.type == 'transaction' || n.type == 'transaksi').toList();
+    }
+    if (_selectedFilter == 'Bantuan') {
+      return all.where((n) => n.type == 'sos' || n.type == 'bantuan' || n.type == 'help').toList();
+    }
     if (_selectedFilter == 'KTM') {
       return all.where((n) => n.type == 'ktm').toList();
     }

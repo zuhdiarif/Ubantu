@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -15,28 +14,30 @@ class InboxView extends StatefulWidget {
   State<InboxView> createState() => _InboxViewState();
 }
 
-class _InboxViewState extends State<InboxView> {
+class _InboxViewState extends State<InboxView> with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
-  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().loadRooms();
-    });
-
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (!mounted) return;
-      if (_searchController.text.isEmpty) {
-        context.read<ChatProvider>().loadRooms(isPolling: true);
+      if (mounted) {
+        context.read<ChatProvider>().loadRooms();
       }
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<ChatProvider>().loadRooms();
+    }
+  }
+
+  @override
   void dispose() {
-    _pollTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
   }

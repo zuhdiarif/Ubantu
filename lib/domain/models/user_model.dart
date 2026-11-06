@@ -13,6 +13,9 @@ class UserModel {
   final UserGender gender;
   final bool isFemaleOnlyPreferred;
   final int rewardPoints;
+  final String? faculty;
+  final String? bio;
+  final bool emailOtpSkipped;
 
   const UserModel({
     required this.id,
@@ -27,6 +30,9 @@ class UserModel {
     this.gender = UserGender.unspecified,
     this.isFemaleOnlyPreferred = false,
     this.rewardPoints = 0,
+    this.faculty,
+    this.bio,
+    this.emailOtpSkipped = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +58,9 @@ class UserModel {
       ),
       isFemaleOnlyPreferred: json['is_female_only_preferred'] as bool? ?? false,
       rewardPoints: json['reward_points'] as int? ?? 0,
+      faculty: json['faculty'] as String?,
+      bio: json['bio'] as String?,
+      emailOtpSkipped: json['email_otp_skipped'] as bool? ?? false,
     );
   }
 
@@ -69,6 +78,9 @@ class UserModel {
       'gender': gender.name,
       'is_female_only_preferred': isFemaleOnlyPreferred,
       'reward_points': rewardPoints,
+      'faculty': faculty,
+      'bio': bio,
+      'email_otp_skipped': emailOtpSkipped,
     };
   }
 
@@ -85,6 +97,9 @@ class UserModel {
     UserGender? gender,
     bool? isFemaleOnlyPreferred,
     int? rewardPoints,
+    String? faculty,
+    String? bio,
+    bool? emailOtpSkipped,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -99,6 +114,9 @@ class UserModel {
       gender: gender ?? this.gender,
       isFemaleOnlyPreferred: isFemaleOnlyPreferred ?? this.isFemaleOnlyPreferred,
       rewardPoints: rewardPoints ?? this.rewardPoints,
+      faculty: faculty ?? this.faculty,
+      bio: bio ?? this.bio,
+      emailOtpSkipped: emailOtpSkipped ?? this.emailOtpSkipped,
     );
   }
 }

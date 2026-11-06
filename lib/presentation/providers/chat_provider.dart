@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
@@ -16,6 +17,7 @@ class ChatProvider extends ChangeNotifier {
   final GetChatMessagesUseCase _getChatMessagesUseCase;
   final SendChatMessageUseCase _sendChatMessageUseCase;
   final Set<String> _notifiedMessageIds = {};
+  StreamSubscription<List<ChatMessageModel>>? _messagesSubscription;
 
   ChatProvider({
     IChatRepository? repository,
@@ -122,7 +124,48 @@ class ChatProvider extends ChangeNotifier {
     _activeRoom = room;
     notifyListeners();
     loadMessages(room.id);
+    subscribeToRoom(room.id);
     markAsRead(room.id);
+  }
+
+  void subscribeToRoom(String roomId) {
+    _messagesSubscription?.cancel();
+    _messagesSubscription = _repository.watchMessages(roomId).listen((messages) {
+      _activeMessages = messages;
+      if (_activeRoom?.id == roomId) {
+        _locallyReadRooms[roomId] = DateTime.now();
+        final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
+        if (roomIndex != -1) {
+          if (messages.isNotEmpty) {
+            final latest = messages.last;
+            _rooms[roomIndex] = _rooms[roomIndex].copyWith(
+              lastMessage: latest.message,
+              lastMessageTime: latest.createdAt,
+              unreadCount: 0,
+            );
+          } else {
+            _rooms[roomIndex] = _rooms[roomIndex].copyWith(unreadCount: 0);
+          }
+          _applySearch();
+        }
+      }
+      for (final msg in messages) {
+        if (!msg.isMe && !msg.isRead && !_notifiedMessageIds.contains(msg.id)) {
+          _notifiedMessageIds.add(msg.id);
+          _notificationRepository.addNotification(
+            'Pesan Baru dari ${msg.senderName}',
+            msg.message,
+            type: 'chat',
+          );
+        }
+      }
+      notifyListeners();
+    });
+  }
+
+  void unsubscribeRoom() {
+    _messagesSubscription?.cancel();
+    _messagesSubscription = null;
   }
 
   Future<void> loadMessages(String roomId, {bool isPolling = false}) async {
@@ -265,5 +308,33 @@ class ChatProvider extends ChangeNotifier {
     _applySearch();
     setActiveRoom(newRoom);
     return newRoom;
+  }
+
+  void updateActiveRoomDetails({
+    String? totalPrice,
+    String? itemSummary,
+    String? pickupLocation,
+    String? destinationLocation,
+  }) {
+    if (_activeRoom == null) return;
+    final updated = _activeRoom!.copyWith(
+      totalPrice: totalPrice ?? _activeRoom!.totalPrice,
+      itemSummary: itemSummary ?? _activeRoom!.itemSummary,
+      pickupLocation: pickupLocation ?? _activeRoom!.pickupLocation,
+      destinationLocation: destinationLocation ?? _activeRoom!.destinationLocation,
+    );
+    _activeRoom = updated;
+    final idx = _rooms.indexWhere((r) => r.id == updated.id);
+    if (idx != -1) {
+      _rooms[idx] = updated;
+      _applySearch();
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    unsubscribeRoom();
+    super.dispose();
   }
 }

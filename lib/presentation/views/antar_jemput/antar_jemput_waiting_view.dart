@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/models/service_order_model.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
 
 class AntarJemputWaitingView extends StatefulWidget {
@@ -17,7 +17,7 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late Animation<double> _pulseAnimation;
-  Timer? _pollTimer;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -31,46 +31,19 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
       CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
     );
 
-    _startPolling();
-  }
-
-  void _startPolling() {
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final provider = context.read<ServiceOrderProvider>();
-      final activeOrder = provider.myOrders
-          .where(
-            (o) =>
-                o.category == ServiceCategory.antarJemput &&
-                (o.status == MoveServiceStatus.waiting ||
-                    o.status == MoveServiceStatus.accepted ||
-                    o.status == MoveServiceStatus.inProgress),
-          )
-          .firstOrNull;
-
+      final activeOrder = _findActiveOrder(provider);
       if (activeOrder != null && activeOrder.id.isNotEmpty) {
-        final updated = await provider.checkOrderStatus(activeOrder.id);
-        if (!mounted) return;
-        if (updated != null &&
-            (updated.status == MoveServiceStatus.accepted ||
-                updated.status == MoveServiceStatus.inProgress)) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.antarJemputInProgress);
-        }
+        provider.subscribeToOrder(activeOrder.id);
+        _handleStatusTransition(activeOrder.status);
       }
     });
   }
 
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    _animController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.watch<ServiceOrderProvider>();
-    final activeOrder = provider.myOrders
+  ServiceOrderModel? _findActiveOrder(ServiceOrderProvider provider) {
+    return provider.myOrders
         .where(
           (o) =>
               o.category == ServiceCategory.antarJemput &&
@@ -78,16 +51,39 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
                   o.status == MoveServiceStatus.accepted ||
                   o.status == MoveServiceStatus.inProgress),
         )
-        .firstOrNull;
+        .firstOrNull ?? (provider.activeOrder?.category == ServiceCategory.antarJemput ? provider.activeOrder : null);
+  }
+
+  void _handleStatusTransition(MoveServiceStatus status) {
+    if (_hasNavigated || !mounted) return;
+    if (status == MoveServiceStatus.accepted ||
+        status == MoveServiceStatus.inProgress) {
+      _hasNavigated = true;
+      context.go(AppRouter.antarJemputInProgress);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (!_hasNavigated) {
+      try {
+        context.read<ServiceOrderProvider>().cancelOrderSubscription();
+      } catch (_) {}
+    }
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<ServiceOrderProvider>();
+    final activeOrder = _findActiveOrder(provider);
 
     if (activeOrder != null &&
         (activeOrder.status == MoveServiceStatus.accepted ||
             activeOrder.status == MoveServiceStatus.inProgress)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _pollTimer?.cancel();
-          context.go(AppRouter.antarJemputInProgress);
-        }
+        _handleStatusTransition(activeOrder.status);
       });
     }
 
@@ -198,7 +194,7 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
                     ),
                   );
                   if (confirmed == true && context.mounted) {
-                    _pollTimer?.cancel();
+                    provider.cancelOrderSubscription();
                     if (activeOrder != null) {
                       await provider.updateStatus(
                         activeOrder.id,

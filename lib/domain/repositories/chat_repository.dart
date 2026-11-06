@@ -12,4 +12,5 @@ abstract class IChatRepository {
     String? attachmentUrl,
   });
   Future<AppResult<bool>> markMessagesAsRead(String roomId);
+  Stream<List<ChatMessageModel>> watchMessages(String roomId);
 }
