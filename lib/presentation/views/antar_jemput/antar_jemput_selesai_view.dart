@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
+import 'package:ubantu/presentation/providers/auth_provider.dart';
+import 'package:ubantu/presentation/providers/rating_provider.dart';
 
 class AntarJemputSelesaiView extends StatefulWidget {
   const AntarJemputSelesaiView({super.key});
@@ -19,7 +23,34 @@ class _AntarJemputSelesaiViewState extends State<AntarJemputSelesaiView> {
     super.dispose();
   }
 
-  void _submitReview() {
+  Future<void> _submitReview() async {
+    final ratingProvider = context.read<RatingProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final user = authProvider.currentUser;
+    final text = _reviewController.text.trim();
+    final review = text.isNotEmpty ? text : 'Pelayanan sangat baik dan ramah!';
+
+    await ratingProvider.submitRating(
+      '1341868c-f659-4049-878f-bfcaf95c7108',
+      _rating.toDouble(),
+      review,
+    );
+
+    if (user != null && user.id.isNotEmpty && SupabaseService.instance.isInitialized) {
+      try {
+        await SupabaseService.instance.client
+            .from('loyalty_points')
+            .upsert({
+              'user_id': user.id,
+              'total_points': 10,
+              'available_vouchers': 0,
+              'claimed_voucher_codes': <String>[],
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Ulasan berhasil dikirim! Terima kasih.')),
     );

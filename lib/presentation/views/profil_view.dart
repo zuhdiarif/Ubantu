@@ -268,8 +268,8 @@ class _ProfilViewState extends State<ProfilView> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
-    final displayName = user?.fullName.isNotEmpty == true ? user!.fullName : 'Ahmad Farel';
-    final displayEmail = user?.email.isNotEmpty == true ? user!.email : 'farel@student.ub.ac.id';
+    final displayName = user?.fullName.isNotEmpty == true ? user!.fullName : 'Mahasiswa UB';
+    final displayEmail = user?.email.isNotEmpty == true ? user!.email : 'mahasiswa@student.ub.ac.id';
 
     return Material(
       color: AppColors.background,
@@ -304,17 +304,11 @@ class _ProfilViewState extends State<ProfilView> {
                               shape: BoxShape.circle,
                               border: Border.all(color: const Color(0xFF86B049), width: 2),
                             ),
-                            child: user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty
-                                ? CustomAvatar(
-                                    name: displayName,
-                                    imageUrl: user.avatarUrl,
-                                    radius: 46,
-                                  )
-                                : const CircleAvatar(
-                                    radius: 46,
-                                    backgroundColor: Color(0xFFE2F1D8),
-                                    backgroundImage: AssetImage('assets/images/img_avatar_farel.png'),
-                                  ),
+                            child: CustomAvatar(
+                              name: displayName,
+                              imageUrl: user?.avatarUrl,
+                              radius: 46,
+                            ),
                           ),
                         ),
                         GestureDetector(

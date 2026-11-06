@@ -19,7 +19,7 @@ class TaskRepositoryImpl implements ITaskRepository {
     final service = _supabaseService;
     if (service != null) {
       final result = await service.getTasks();
-      if (result.isSuccess) {
+      if (result.isSuccess && result.data != null && result.data!.isNotEmpty) {
         return result;
       }
     }

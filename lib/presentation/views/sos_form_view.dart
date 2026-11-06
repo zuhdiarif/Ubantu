@@ -6,7 +6,6 @@ import 'package:ubantu/components/custom_toast.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/sos_provider.dart';
 
 class SosFormView extends StatelessWidget {
@@ -131,7 +130,16 @@ class SosFormView extends StatelessWidget {
                 type: CustomButtonType.danger,
                 icon: Icons.send_rounded,
                 onPressed: () {
-                  context.read<SosProvider>().updateStatus(SosStatus.received);
+                  final issues = [
+                    'Merasa tidak aman',
+                    'Terjadi masalah dengan pengguna lain',
+                    'Kondisi darurat lainnya',
+                  ];
+                  final index = sosProvider.selectedReasonIndex;
+                  final selectedIssue = (index >= 0 && index < issues.length)
+                      ? issues[index]
+                      : 'Kondisi darurat lainnya';
+                  context.read<SosProvider>().submitReport(selectedIssue);
                   CustomToast.show(
                     context,
                     message: 'Laporan SOS berhasil dikirim! Tim sedang merespon.',

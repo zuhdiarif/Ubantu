@@ -34,8 +34,8 @@ class _LoginViewState extends State<LoginView> {
 
     final authProvider = context.read<AuthProvider>();
     final success = await authProvider.login(
-      _emailController.text,
-      _passwordController.text,
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
     );
 
     if (!mounted) return;

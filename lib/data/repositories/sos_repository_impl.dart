@@ -1,4 +1,5 @@
 import 'package:ubantu/core/errors/app_result.dart';
+import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/data/services/supabase_sos_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/sos_report_model.dart';
@@ -9,7 +10,10 @@ class SosRepositoryImpl implements ISosRepository {
   SosStatus _status = SosStatus.received;
 
   SosRepositoryImpl({SupabaseSosService? service})
-      : _supabaseSosService = service;
+      : _supabaseSosService = service ??
+            (SupabaseService.instance.isInitialized
+                ? SupabaseSosService()
+                : null);
 
   @override
   Future<AppResult<SosReportModel>> submitSosReport(String issueType) async {
@@ -21,9 +25,13 @@ class SosRepositoryImpl implements ISosRepository {
       }
     }
 
+    final currentUserId = SupabaseService.instance.isInitialized
+        ? SupabaseService.instance.client.auth.currentUser?.id ?? 'usr_guest'
+        : 'usr_guest';
+
     final report = SosReportModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: 'usr_farel',
+      userId: currentUserId,
       issueType: issueType,
       status: _status,
       createdAt: DateTime.now(),

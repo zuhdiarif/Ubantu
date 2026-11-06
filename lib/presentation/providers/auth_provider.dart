@@ -14,7 +14,6 @@ import 'package:ubantu/domain/models/user_model.dart';
 import 'package:ubantu/domain/repositories/auth_repository.dart';
 import 'package:ubantu/domain/usecases/login_usecase.dart';
 import 'package:ubantu/domain/usecases/sign_in_with_google_usecase.dart';
-
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
 
@@ -57,6 +56,30 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;
   String? get errorMessage => _errorMessage;
+
+  UserModel _getBaseUser() {
+    if (_currentUser != null) return _currentUser!;
+    if (SupabaseService.instance.isInitialized) {
+      final sessionUser = SupabaseService.instance.client.auth.currentUser;
+      if (sessionUser != null) {
+        final meta = sessionUser.userMetadata ?? {};
+        return UserModel(
+          id: sessionUser.id,
+          fullName: meta['full_name'] as String? ?? sessionUser.email?.split('@').first ?? '',
+          email: sessionUser.email ?? '',
+          phoneNumber: sessionUser.phone ?? (meta['phone_number'] as String? ?? ''),
+          nim: meta['nim'] as String? ?? '',
+        );
+      }
+    }
+    return const UserModel(
+      id: 'usr_current',
+      fullName: '',
+      email: '',
+      phoneNumber: '',
+      nim: '',
+    );
+  }
 
   void _initAuthListener() {
     if (SupabaseService.instance.isInitialized) {
@@ -114,13 +137,7 @@ class AuthProvider extends ChangeNotifier {
     UserGender? gender,
     bool? isFemaleOnlyPreferred,
   }) async {
-    final baseUser = _currentUser ?? const UserModel(
-      id: 'usr_current',
-      fullName: 'Ahmad Farel',
-      email: 'farel@student.ub.ac.id',
-      phoneNumber: '081234567890',
-      nim: '',
-    );
+    final baseUser = _getBaseUser();
 
     final updated = baseUser.copyWith(
       fullName: fullName,
@@ -162,13 +179,7 @@ class AuthProvider extends ChangeNotifier {
 
     if (uploadResult.isSuccess && uploadResult.data != null) {
       final avatarUrl = uploadResult.data!;
-      final baseUser = _currentUser ?? const UserModel(
-        id: 'usr_current',
-        fullName: 'Ahmad Farel',
-        email: 'farel@student.ub.ac.id',
-        phoneNumber: '081234567890',
-        nim: '',
-      );
+      final baseUser = _getBaseUser();
       final updated = baseUser.copyWith(avatarUrl: avatarUrl);
       _currentUser = updated;
 
@@ -203,13 +214,7 @@ class AuthProvider extends ChangeNotifier {
 
     if (uploadResult.isSuccess && uploadResult.data != null) {
       final ktmUrl = uploadResult.data!;
-      final baseUser = _currentUser ?? const UserModel(
-        id: 'usr_current',
-        fullName: 'Ahmad Farel',
-        email: 'farel@student.ub.ac.id',
-        phoneNumber: '081234567890',
-        nim: '',
-      );
+      final baseUser = _getBaseUser();
       final updated = baseUser.copyWith(
         nim: nim,
         ktmPhotoUrl: ktmUrl,
@@ -252,6 +257,7 @@ class AuthProvider extends ChangeNotifier {
     if (result.isSuccess) {
       _currentUser = result.data;
       AppAuthNotifier.instance.setLoggedIn(true);
+      await _syncProfileWithRemote();
       notifyListeners();
       return true;
     } else {

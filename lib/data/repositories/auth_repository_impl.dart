@@ -1,3 +1,4 @@
+import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_auth_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
@@ -24,12 +25,14 @@ class AuthRepositoryImpl implements IAuthRepository {
 
     await Future.delayed(const Duration(milliseconds: 200));
     _currentUser = UserModel(
-      id: 'usr_mock',
-      fullName: 'Mock User',
+      id: 'usr_${DateTime.now().millisecondsSinceEpoch}',
+      fullName: email.split('@').first,
       email: email,
-      phoneNumber: '081234567890',
-      nim: '245150200111001',
-      verificationStatus: KtmVerificationStatus.verified,
+      phoneNumber: '',
+      nim: '',
+      verificationStatus: AppConfig.isUbEmail(email)
+          ? KtmVerificationStatus.pending
+          : KtmVerificationStatus.unverified,
     );
     return AppResult.success(_currentUser!);
   }
@@ -65,12 +68,16 @@ class AuthRepositoryImpl implements IAuthRepository {
   @override
   Future<AppResult<bool>> signInWithGoogle() async {
     if (_authService.isAvailable) {
-      return _authService.signInWithGoogle();
+      final res = await _authService.signInWithGoogle();
+      if (res.isSuccess) {
+        _currentUser = _authService.getCurrentUser();
+        return res;
+      }
     }
 
     await Future.delayed(const Duration(milliseconds: 200));
     _currentUser = const UserModel(
-      id: 'usr_google_mock',
+      id: 'usr_google_user',
       fullName: 'Google User',
       email: 'user@google.com',
       phoneNumber: '',

@@ -30,6 +30,7 @@ import 'package:ubantu/presentation/views/sos_finish_dialog_view.dart';
 import 'package:ubantu/presentation/views/sos_form_view.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/domain/models/task_model.dart';
 import 'package:ubantu/presentation/views/bantuan_detail_view.dart';
 import 'package:ubantu/presentation/views/chat/chat_room_view.dart';
 import 'package:ubantu/presentation/views/chat/inbox_view.dart';
@@ -157,7 +158,7 @@ class AppRouter {
       ),
       GoRoute(
         path: helpDetail,
-        builder: (context, state) => const HelpDetailView(),
+        builder: (context, state) => HelpDetailView(task: state.extra as TaskModel?),
       ),
       GoRoute(
         path: sosForm,

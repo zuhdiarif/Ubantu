@@ -242,12 +242,14 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
                   _y = (_y! + details.delta.dy).clamp(30.0, screenH - 64.0);
                 });
               },
-              onTap: () => setState(() => _isOpen = !_isOpen),
               child: Material(
                 color: Colors.transparent,
                 elevation: 10,
                 shape: const CircleBorder(),
-                child: Container(
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => setState(() => _isOpen = !_isOpen),
+                  child: Container(
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
@@ -291,6 +293,7 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
               ),
             ),
           ),
+        ),
         ],
       );
   }

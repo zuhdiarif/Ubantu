@@ -18,7 +18,7 @@ class SosReportModel {
   factory SosReportModel.fromJson(Map<String, dynamic> json) {
     return SosReportModel(
       id: json['id'] as String? ?? '',
-      userId: json['user_id'] as String? ?? '',
+      userId: json['reporter_id'] as String? ?? json['user_id'] as String? ?? '',
       issueType: json['issue_type'] as String? ?? '',
       status: SosStatus.values.firstWhere(
         (e) => e.name == json['status'],
