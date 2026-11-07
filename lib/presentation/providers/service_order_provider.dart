@@ -47,6 +47,25 @@ class ServiceOrderProvider extends ChangeNotifier {
   bool _isSubmitting = false;
   String? _errorMessage;
 
+  String? _resolveCurrentUserName() {
+    try {
+      final user = ServiceLocator.instance.authRepository.getCurrentUser();
+      if (user?.fullName != null && user!.fullName.trim().isNotEmpty) {
+        return user.fullName.trim();
+      }
+    } catch (_) {}
+    try {
+      if (SupabaseService.instance.isInitialized) {
+        final meta = SupabaseService.instance.client.auth.currentUser?.userMetadata;
+        final raw = meta?['full_name'] as String? ?? meta?['name'] as String?;
+        if (raw != null && raw.trim().isNotEmpty) {
+          return raw.trim();
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   void resetSession() {
     _orderSubscription?.cancel();
     _orderSubscription = null;
@@ -151,7 +170,18 @@ class ServiceOrderProvider extends ChangeNotifier {
       photoUrl = uploadRes.data;
     }
 
-    final finalOrder = photoUrl != null ? order.copyWith(barterPhotoUrl: photoUrl) : order;
+    final resolvedRequesterName = (order.requesterName != null && order.requesterName!.trim().isNotEmpty)
+        ? order.requesterName
+        : _resolveCurrentUserName();
+
+    final orderWithRequesterName = resolvedRequesterName != null
+        ? order.copyWith(requesterName: resolvedRequesterName)
+        : order;
+
+    final finalOrder = photoUrl != null
+        ? orderWithRequesterName.copyWith(barterPhotoUrl: photoUrl)
+        : orderWithRequesterName;
+
     final result = await _createOrderUseCase.execute(finalOrder);
 
     _isSubmitting = false;
@@ -210,6 +240,7 @@ class ServiceOrderProvider extends ChangeNotifier {
     final order = ServiceOrderModel(
       id: '',
       requesterId: userId,
+      requesterName: _resolveCurrentUserName(),
       category: ServiceCategory.pindahKos,
       status: MoveServiceStatus.waiting,
       locationOrigin: locationOrigin,
@@ -280,6 +311,7 @@ class ServiceOrderProvider extends ChangeNotifier {
     final order = ServiceOrderModel(
       id: '',
       requesterId: userId,
+      requesterName: _resolveCurrentUserName(),
       category: ServiceCategory.bersihKos,
       status: MoveServiceStatus.waiting,
       locationOrigin: locationKos,
@@ -352,6 +384,7 @@ class ServiceOrderProvider extends ChangeNotifier {
     final order = ServiceOrderModel(
       id: '',
       requesterId: userId,
+      requesterName: _resolveCurrentUserName(),
       category: ServiceCategory.antarJemput,
       status: MoveServiceStatus.waiting,
       locationOrigin: locationOrigin,

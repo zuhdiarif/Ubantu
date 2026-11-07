@@ -54,6 +54,7 @@ class FakeMitraServiceForReset extends SupabaseMitraService {
   Future<AppResult<ServiceOrderModel>> acceptOrder({
     required String orderId,
     required String helperId,
+    String? requesterId,
   }) async {
     if (failAcceptOrder) {
       return AppResult.failure(

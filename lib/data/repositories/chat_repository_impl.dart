@@ -13,6 +13,11 @@ class ChatRepositoryImpl implements IChatRepository, SessionScoped {
   final Map<String, List<ChatMessageModel>> _mockMessages = {};
   final Map<String, DateTime> _readRoomTimestamps = {};
 
+  static const String inboxMessageColumns = 'room_id, sender_id, message, is_read, created_at';
+  static const int maxMessagesPerRoomInInbox = 20;
+  static int computeInboxMessagesLimit(int roomCount) =>
+      (roomCount <= 0 ? 1 : roomCount) * maxMessagesPerRoomInInbox;
+
   @override
   Future<AppResult<List<ChatRoomModel>>> getChatRooms() async {
     try {
@@ -46,9 +51,10 @@ class ChatRepositoryImpl implements IChatRepository, SessionScoped {
               ? <Map<String, dynamic>>[]
               : await client
                   .from('chat_messages')
-                  .select()
+                  .select(inboxMessageColumns)
                   .inFilter('room_id', roomIds)
-                  .order('created_at', ascending: false);
+                  .order('created_at', ascending: false)
+                  .limit(computeInboxMessagesLimit(roomIds.length));
 
           final messagesByRoom = <String, List<Map<String, dynamic>>>{};
           final latestByRoom = <String, Map<String, dynamic>>{};
@@ -140,9 +146,10 @@ class ChatRepositoryImpl implements IChatRepository, SessionScoped {
               ? <Map<String, dynamic>>[]
               : await client
                   .from('chat_messages')
-                  .select()
+                  .select(inboxMessageColumns)
                   .inFilter('room_id', candidateRoomIds)
-                  .order('created_at', ascending: false);
+                  .order('created_at', ascending: false)
+                  .limit(computeInboxMessagesLimit(candidateRoomIds.length));
 
           final messagesByChatRoom = <String, List<Map<String, dynamic>>>{};
           for (final msg in allChatMessages) {
@@ -173,6 +180,8 @@ class ChatRepositoryImpl implements IChatRepository, SessionScoped {
                   lastMessageTime: lastTime,
                   unreadCount: unread,
                 ));
+              } else if (json['last_message'] != null && json['last_message'].toString().isNotEmpty) {
+                resultRooms.add(ChatRoomModel.fromJson(json));
               }
             }
           }
@@ -439,6 +448,14 @@ class ChatRepositoryImpl implements IChatRepository, SessionScoped {
 
         final sentMsg = ChatMessageModel.fromJson(insertRes, currentUserId: currentUserId);
 
+        try {
+          await client.from('chat_rooms').update({
+            'last_message': message,
+            'last_message_time': sentMsg.createdAt.toIso8601String(),
+            'updated_at': sentMsg.createdAt.toIso8601String(),
+          }).eq('id', roomId);
+        } catch (_) {}
+
         if (!_mockMessages.containsKey(roomId)) {
           _mockMessages[roomId] = [];
         }
@@ -559,6 +576,13 @@ class ChatRepositoryImpl implements IChatRepository, SessionScoped {
             query = query.neq('sender_id', effectiveUserId);
           }
           await query;
+        } catch (_) {}
+
+        try {
+          await client.from('chat_rooms').update({
+            'unread_count': 0,
+            'updated_at': DateTime.now().toIso8601String(),
+          }).eq('id', roomId);
         } catch (_) {}
       }
 

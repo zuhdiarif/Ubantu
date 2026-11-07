@@ -59,6 +59,7 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
     ServiceOrderModel(
       id: 'ord-mitra-01',
       requesterId: 'req_mahasiswa_1',
+      requesterName: 'Bima Aditya (FEB UB)',
       category: ServiceCategory.pindahKos,
       status: MoveServiceStatus.accepted,
       locationOrigin: 'Kos Griya UB, Jl. Watugong No. 12',
@@ -297,15 +298,61 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
             .eq('status', MoveServiceStatus.waiting.name)
             .order('created_at', ascending: false);
 
-        final List<ServiceOrderModel> remoteOrders = (response as List)
-            .map((e) => ServiceOrderModel.fromJson(e as Map<String, dynamic>))
+        final rows = (response as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .where((row) {
+              final reqId = row['requester_id']?.toString();
+              if (currentUserId != null && reqId == currentUserId) {
+                return false;
+              }
+              final orderId = row['id']?.toString();
+              if (orderId != null && _declinedOrderIds.contains(orderId)) {
+                return false;
+              }
+              return true;
+            })
+            .toList();
+
+        final missingRequesterIds = rows
+            .where((r) {
+              final rName = r['requester_name']?.toString();
+              final rId = r['requester_id']?.toString();
+              return (rName == null || rName.trim().isEmpty) &&
+                  (rId != null && rId.trim().isNotEmpty);
+            })
+            .map((r) => r['requester_id'].toString())
+            .toSet();
+
+        if (missingRequesterIds.isNotEmpty) {
+          try {
+            final profilesRes = await SupabaseService.instance.client
+                .from('profiles')
+                .select('id, full_name')
+                .inFilter('id', missingRequesterIds.toList());
+            final Map<String, String> nameMap = {};
+            for (final p in profilesRes as List<dynamic>) {
+              if (p is Map && p['id'] != null && p['full_name'] != null) {
+                final fullName = p['full_name'].toString().trim();
+                if (fullName.isNotEmpty) {
+                  nameMap[p['id'].toString()] = fullName;
+                }
+              }
+            }
+            for (final row in rows) {
+              final rName = row['requester_name']?.toString();
+              final rId = row['requester_id']?.toString();
+              if ((rName == null || rName.trim().isEmpty) &&
+                  rId != null &&
+                  nameMap.containsKey(rId)) {
+                row['requester_name'] = nameMap[rId];
+              }
+            }
+          } catch (_) {}
+        }
+
+        final List<ServiceOrderModel> remoteOrders = rows
+            .map((e) => ServiceOrderModel.fromJson(e))
             .where((order) {
-              if (currentUserId != null && order.requesterId == currentUserId) {
-                return false;
-              }
-              if (_declinedOrderIds.contains(order.id)) {
-                return false;
-              }
               if (_profile.selectedCategories.isNotEmpty &&
                   !_profile.selectedCategories.contains(order.category)) {
                 return false;
@@ -322,8 +369,14 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
       }
     }
 
+    final effectiveUserId = _mitraService.currentUserId ?? _profile.id;
     final localFiltered = _incomingOrders
-        .where((order) => !_declinedOrderIds.contains(order.id))
+        .where((order) {
+          if (order.requesterId == effectiveUserId) {
+            return false;
+          }
+          return !_declinedOrderIds.contains(order.id);
+        })
         .toList();
     return AppResult.success(List.unmodifiable(localFiltered));
   }
@@ -424,7 +477,9 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
               date: order.createdAt,
               barterDescription: order.barterDescription,
               pointsEarned: 10,
-              customerName: 'Mahasiswa UB',
+              customerName: (order.requesterName != null && order.requesterName!.isNotEmpty)
+                  ? order.requesterName!
+                  : 'Mahasiswa UB',
             );
           }).toList();
           _earningsHistory.clear();
@@ -440,11 +495,23 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
 
   @override
   Future<AppResult<bool>> acceptOrder(String orderId) async {
+    final currentUserId = _mitraService.currentUserId ?? _profile.id;
+
+    ServiceOrderModel? selected;
+    final index = _incomingOrders.indexWhere((o) => o.id == orderId);
+    if (index != -1) {
+      selected = _incomingOrders[index];
+    }
+
+    if (selected != null && selected.requesterId == currentUserId) {
+      return AppResult.failure('Tidak dapat mengambil pesanan milik sendiri.');
+    }
+
     if (_useSupabase) {
-      final currentUserId = _mitraService.currentUserId ?? _profile.id;
       final res = await _mitraService.acceptOrder(
         orderId: orderId,
         helperId: currentUserId,
+        requesterId: selected?.requesterId,
       );
       if (!res.isSuccess || res.data == null) {
         return AppResult.failure(res.errorMessage ?? 'Gagal mengambil pesanan.');
@@ -454,16 +521,10 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
       return AppResult.success(true);
     }
 
-    ServiceOrderModel? selected;
-    final index = _incomingOrders.indexWhere((o) => o.id == orderId);
-    if (index != -1) {
-      selected = _incomingOrders[index];
-    }
-
     if (selected != null) {
       final updated = selected.copyWith(
         status: MoveServiceStatus.accepted,
-        helperId: _profile.id,
+        helperId: currentUserId,
       );
       _activeOrder = updated;
       _incomingOrders.removeWhere((o) => o.id == updated.id);
@@ -482,7 +543,7 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
       barterType: BarterType.makanan,
       barterDescription: 'Sesuai kesepakatan',
       createdAt: DateTime.now(),
-      helperId: _profile.id,
+      helperId: currentUserId,
     );
     _activeOrder = dummy;
     _incomingOrders.removeWhere((o) => o.id == orderId);
@@ -547,7 +608,9 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
         date: DateTime.now(),
         barterDescription: finished.barterDescription,
         pointsEarned: 10,
-        customerName: 'Mahasiswa UB',
+        customerName: (finished.requesterName != null && finished.requesterName!.isNotEmpty)
+            ? finished.requesterName!
+            : 'Mahasiswa UB',
       );
       _earningsHistory.insert(0, newEarning);
 

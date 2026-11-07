@@ -12,6 +12,7 @@ class SupabaseOrderService {
     ServiceOrderModel(
       id: 'ord-mitra-01',
       requesterId: 'req_mahasiswa_1',
+      requesterName: 'Bima Aditya (FEB UB)',
       category: ServiceCategory.pindahKos,
       status: MoveServiceStatus.waiting,
       locationOrigin: 'Kos Griya UB, Jl. Watugong No. 12',
@@ -25,6 +26,7 @@ class SupabaseOrderService {
     ServiceOrderModel(
       id: 'ord-mitra-02',
       requesterId: 'req_mahasiswa_2',
+      requesterName: 'Citra Kirana (FIA UB)',
       category: ServiceCategory.bersihKos,
       status: MoveServiceStatus.waiting,
       locationOrigin: 'Kos Melati Indah, Jl. Kerto Raharjo No. 8',
@@ -39,6 +41,7 @@ class SupabaseOrderService {
     ServiceOrderModel(
       id: 'ord-mitra-03',
       requesterId: 'req_mahasiswa_3',
+      requesterName: 'Dhimas Arya (Filkom UB)',
       category: ServiceCategory.antarJemput,
       status: MoveServiceStatus.waiting,
       locationOrigin: 'Gerbang Veteran UB',
@@ -54,26 +57,56 @@ class SupabaseOrderService {
 
   final List<ServiceOrderModel> _fallbackWaitingOrders = _defaultWaitingOrders();
 
-  Future<AppResult<List<ServiceOrderModel>>> getActiveOrders() async {
+  Future<AppResult<List<ServiceOrderModel>>> getActiveOrders({
+    String? excludeRequesterId,
+  }) async {
+    final currentUserId = excludeRequesterId ??
+        (SupabaseService.instance.isInitialized
+            ? SupabaseService.instance.client.auth.currentUser?.id
+            : null);
+
     try {
       if (SupabaseService.instance.isInitialized) {
-        final response = await SupabaseService.instance.client
+        var query = SupabaseService.instance.client
             .from(_table)
             .select()
-            .eq('status', MoveServiceStatus.waiting.name)
-            .order('created_at', ascending: false);
+            .eq('status', MoveServiceStatus.waiting.name);
+
+        if (currentUserId != null && currentUserId.isNotEmpty) {
+          query = query.neq('requester_id', currentUserId);
+        }
+
+        final response = await query.order('created_at', ascending: false);
 
         final orders = response
             .map((e) => ServiceOrderModel.fromJson(e))
+            .where((o) {
+              if (currentUserId != null && currentUserId.isNotEmpty) {
+                return o.requesterId != currentUserId;
+              }
+              return true;
+            })
             .toList();
         return AppResult.success(orders);
       }
-      return AppResult.success(List.from(_fallbackWaitingOrders));
+      final fallbackFiltered = _fallbackWaitingOrders.where((o) {
+        if (currentUserId != null && currentUserId.isNotEmpty) {
+          return o.requesterId != currentUserId;
+        }
+        return true;
+      }).toList();
+      return AppResult.success(List.from(fallbackFiltered));
     } catch (e) {
       if (SupabaseService.instance.isInitialized) {
         return AppResult.failure('Gagal memuat pesanan aktif: $e');
       }
-      return AppResult.success(List.from(_fallbackWaitingOrders));
+      final fallbackFiltered = _fallbackWaitingOrders.where((o) {
+        if (currentUserId != null && currentUserId.isNotEmpty) {
+          return o.requesterId != currentUserId;
+        }
+        return true;
+      }).toList();
+      return AppResult.success(List.from(fallbackFiltered));
     }
   }
 
@@ -190,6 +223,10 @@ class SupabaseOrderService {
     String orderId,
     String helperId,
   ) async {
+    if (helperId.trim().isEmpty) {
+      return AppResult.failure('ID mitra tidak valid.');
+    }
+
     try {
       if (SupabaseService.instance.isInitialized) {
         final response = await SupabaseService.instance.client
@@ -200,12 +237,13 @@ class SupabaseOrderService {
             })
             .eq('id', orderId)
             .eq('status', MoveServiceStatus.waiting.name)
+            .neq('requester_id', helperId)
             .select()
             .maybeSingle();
 
         if (response == null) {
           return AppResult.failure(
-            'Pesanan sudah diambil mitra lain atau tidak lagi tersedia.',
+            'Pesanan tidak dapat diambil (milik sendiri atau sudah diambil mitra lain).',
           );
         }
 
@@ -215,6 +253,9 @@ class SupabaseOrderService {
       }
       final idx = _fallbackWaitingOrders.indexWhere((o) => o.id == orderId);
       if (idx != -1) {
+        if (_fallbackWaitingOrders[idx].requesterId == helperId) {
+          return AppResult.failure('Tidak dapat mengambil pesanan milik sendiri.');
+        }
         final updated = _fallbackWaitingOrders[idx].copyWith(
           helperId: helperId,
           status: MoveServiceStatus.accepted,

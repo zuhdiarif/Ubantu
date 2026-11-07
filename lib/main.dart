@@ -31,6 +31,7 @@ void main() async {
   }
   try {
     await SupabaseService.instance.initialize();
+    AppAuthNotifier.instance.bindAuthStateListener();
   } catch (_) {}
   try {
     await LocalNotificationService.instance.initialize();

@@ -6,21 +6,88 @@ import 'package:ubantu/domain/models/task_model.dart';
 
 class SupabaseTaskService {
   final SupabaseClient? _client;
+  final String? currentUserIdOverride;
 
-  SupabaseTaskService({SupabaseClient? supabaseClient}) : _client = supabaseClient;
+  SupabaseTaskService({
+    SupabaseClient? supabaseClient,
+    this.currentUserIdOverride,
+  }) : _client = supabaseClient;
 
   SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
 
-  Future<AppResult<List<TaskModel>>> getTasks() async {
+  String? get currentUserId =>
+      currentUserIdOverride ??
+      (_client != null
+          ? _client.auth.currentUser?.id
+          : (SupabaseService.instance.isInitialized
+              ? SupabaseService.instance.client.auth.currentUser?.id
+              : null));
+
+  Future<AppResult<List<TaskModel>>> getTasks({String? excludeRequesterId}) async {
     try {
-      final response = await _effectiveClient
+      final activeUserId = excludeRequesterId ?? currentUserId;
+      var query = _effectiveClient
           .from('service_orders')
           .select()
-          .eq('status', MoveServiceStatus.waiting.name)
-          .order('created_at', ascending: false);
+          .eq('status', MoveServiceStatus.waiting.name);
 
-      final tasks = (response as List<dynamic>)
-          .map((json) => TaskModel.fromJson(Map<String, dynamic>.from(json as Map)))
+      if (activeUserId != null && activeUserId.isNotEmpty) {
+        query = query.neq('requester_id', activeUserId);
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      final rows = (response as List<dynamic>)
+          .map((json) => Map<String, dynamic>.from(json as Map))
+          .where((row) {
+            if (activeUserId != null && activeUserId.isNotEmpty) {
+              if (row['requester_id']?.toString() == activeUserId) {
+                return false;
+              }
+            }
+            return true;
+          })
+          .toList();
+
+      final missingRequesterIds = rows
+          .where((r) {
+            final rName = r['requester_name']?.toString();
+            final rId = r['requester_id']?.toString();
+            return (rName == null || rName.trim().isEmpty) &&
+                (rId != null && rId.trim().isNotEmpty);
+          })
+          .map((r) => r['requester_id'].toString())
+          .toSet();
+
+      if (missingRequesterIds.isNotEmpty) {
+        try {
+          final profilesRes = await _effectiveClient
+              .from('profiles')
+              .select('id, full_name')
+              .inFilter('id', missingRequesterIds.toList());
+          final Map<String, String> nameMap = {};
+          for (final p in profilesRes as List<dynamic>) {
+            if (p is Map && p['id'] != null && p['full_name'] != null) {
+              final fullName = p['full_name'].toString().trim();
+              if (fullName.isNotEmpty) {
+                nameMap[p['id'].toString()] = fullName;
+              }
+            }
+          }
+          for (final row in rows) {
+            final rName = row['requester_name']?.toString();
+            final rId = row['requester_id']?.toString();
+            if ((rName == null || rName.trim().isEmpty) &&
+                rId != null &&
+                nameMap.containsKey(rId)) {
+              row['requester_name'] = nameMap[rId];
+            }
+          }
+        } catch (_) {}
+      }
+
+      final tasks = rows
+          .map((json) => TaskModel.fromJson(json))
           .toList();
 
       return AppResult.success(tasks);
@@ -46,6 +113,9 @@ class SupabaseTaskService {
 
       if (currentUserId != null) {
         payload['requester_id'] = currentUserId;
+      }
+      if (task.requesterName.trim().isNotEmpty) {
+        payload['requester_name'] = task.requesterName.trim();
       }
 
       final response = await _effectiveClient

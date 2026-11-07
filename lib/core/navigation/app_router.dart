@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/presentation/providers/password_reset_provider.dart';
 import 'package:ubantu/presentation/views/aktivitas_view.dart';
@@ -49,6 +51,13 @@ class AppAuthNotifier extends ChangeNotifier {
   AppAuthNotifier._();
 
   bool _isLoggedIn = false;
+  StreamSubscription<AuthState>? _authStateSubscription;
+  bool _isOAuthCallbackPending = false;
+  bool get isOAuthCallbackPending => _isOAuthCallbackPending;
+
+  void setOAuthCallbackPending(bool value) {
+    _isOAuthCallbackPending = value;
+  }
   bool get isLoggedIn => _isLoggedIn;
 
   void initLoggedIn(bool value) {
@@ -60,6 +69,33 @@ class AppAuthNotifier extends ChangeNotifier {
       _isLoggedIn = value;
       notify();
     }
+  }
+
+  void bindAuthStateListener({Stream<AuthState>? authStream}) {
+    _authStateSubscription?.cancel();
+    if (SupabaseService.instance.isInitialized &&
+        SupabaseService.instance.client.auth.currentSession != null) {
+      _isLoggedIn = true;
+    }
+    final resolvedStream = authStream ??
+        (SupabaseService.instance.isInitialized
+            ? SupabaseService.instance.client.auth.onAuthStateChange
+            : null);
+    if (resolvedStream == null) return;
+    _authStateSubscription = resolvedStream.listen((state) {
+      if (state.session != null) {
+        _isOAuthCallbackPending = false;
+        setLoggedIn(true);
+      } else if (state.event == AuthChangeEvent.signedOut) {
+        _isOAuthCallbackPending = false;
+        setLoggedIn(false);
+      }
+    });
+  }
+
+  void cancelAuthStateListener() {
+    _authStateSubscription?.cancel();
+    _authStateSubscription = null;
   }
 
   void notify() {
@@ -114,6 +150,13 @@ class AppRouter {
   static const String notificationHistory = '/notification-history';
   static const String aktivitas = '/aktivitas';
 
+  static bool hasOAuthCallbackParams(Uri uri) {
+    return uri.queryParameters.containsKey('code') ||
+        uri.fragment.contains('access_token') ||
+        uri.queryParameters.containsKey('access_token') ||
+        AppAuthNotifier.instance.isOAuthCallbackPending;
+  }
+
   static bool hasActiveSession() {
     return AppAuthNotifier.instance.isLoggedIn ||
         (SupabaseService.instance.isInitialized &&
@@ -130,7 +173,14 @@ class AppRouter {
       if (loc == loginCallback ||
           uri.path == loginCallback ||
           uri.path.startsWith('$loginCallback/')) {
-        return hasSession ? home : login;
+        if (hasSession) {
+          return home;
+        }
+        if (hasOAuthCallbackParams(uri) &&
+            !uri.queryParameters.containsKey('error')) {
+          return null;
+        }
+        return login;
       }
       if (hasSession && (loc == onboarding || loc == login || loc == register)) {
         return home;
@@ -152,7 +202,15 @@ class AppRouter {
       ),
       GoRoute(
         path: loginCallback,
-        redirect: (context, state) => hasActiveSession() ? home : login,
+        redirect: (context, state) {
+          if (hasActiveSession()) return home;
+          if (hasOAuthCallbackParams(state.uri) &&
+              !state.uri.queryParameters.containsKey('error')) {
+            return null;
+          }
+          return login;
+        },
+        builder: (context, state) => const OAuthCallbackLoadingView(),
       ),
       GoRoute(
         path: ktmVerification,
@@ -301,4 +359,47 @@ class AppRouter {
       ),
     ],
   );
+}
+
+class OAuthCallbackLoadingView extends StatefulWidget {
+  final Duration timeoutDuration;
+
+  const OAuthCallbackLoadingView({
+    super.key,
+    this.timeoutDuration = const Duration(seconds: 4),
+  });
+
+  @override
+  State<OAuthCallbackLoadingView> createState() =>
+      _OAuthCallbackLoadingViewState();
+}
+
+class _OAuthCallbackLoadingViewState extends State<OAuthCallbackLoadingView> {
+  Timer? _timeoutTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeoutTimer = Timer(widget.timeoutDuration, () {
+      if (mounted && !AppRouter.hasActiveSession()) {
+        AppAuthNotifier.instance.setOAuthCallbackPending(false);
+        context.go(AppRouter.login);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timeoutTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
 }

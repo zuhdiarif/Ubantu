@@ -91,10 +91,12 @@ class AuthProvider extends ChangeNotifier {
         final session = data.session;
         if (session != null) {
           _currentUser = _repository.getCurrentUser();
+          AppAuthNotifier.instance.setOAuthCallbackPending(false);
           AppAuthNotifier.instance.setLoggedIn(true);
           _syncProfileWithRemote();
         } else if (data.event == AuthChangeEvent.signedOut) {
           _currentUser = null;
+          AppAuthNotifier.instance.setOAuthCallbackPending(false);
           AppAuthNotifier.instance.setLoggedIn(false);
         }
         notifyListeners();
@@ -302,18 +304,20 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> signInWithGoogle() async {
     _isLoading = true;
     _errorMessage = null;
+    AppAuthNotifier.instance.setOAuthCallbackPending(true);
     notifyListeners();
-
     final result = await _signInWithGoogleUseCase.execute();
     _isLoading = false;
 
     if (result.isSuccess) {
       _currentUser = _repository.getCurrentUser();
+      AppAuthNotifier.instance.setOAuthCallbackPending(false);
       AppAuthNotifier.instance.setLoggedIn(true);
       await _syncProfileWithRemote();
       notifyListeners();
       return true;
     } else {
+      AppAuthNotifier.instance.setOAuthCallbackPending(false);
       _errorMessage = result.errorMessage;
       notifyListeners();
       return false;
@@ -359,6 +363,8 @@ class AuthProvider extends ChangeNotifier {
     } finally {
       _currentUser = null;
       _errorMessage = null;
+
+      AppAuthNotifier.instance.setOAuthCallbackPending(false);
       AppAuthNotifier.instance.setLoggedIn(false);
       ServiceLocator.instance.clearSessionCaches();
       notifyListeners();
