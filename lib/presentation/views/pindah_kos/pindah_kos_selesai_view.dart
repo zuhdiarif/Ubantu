@@ -75,7 +75,14 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
             color: Color(0xFF1E281C),
             size: 20,
           ),
-          onPressed: () => context.pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.home);
+            }
+          },
         ),
       ),
       body: SafeArea(

@@ -415,8 +415,9 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
           backgroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
+          tooltip: 'Kembali',
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
               color: Color(0xFF1E281C),
               size: 20,
             ),
@@ -515,6 +516,7 @@ class _ChatRoomViewState extends State<ChatRoomView> with WidgetsBindingObserver
       child: Row(
         children: [
           IconButton(
+            tooltip: 'Kembali',
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
               size: 20,

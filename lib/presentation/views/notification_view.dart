@@ -28,7 +28,14 @@ class NotificationView extends StatelessWidget {
             color: Color(0xFF1E281C),
             size: 20,
           ),
-          onPressed: () => context.pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.home);
+            }
+          },
         ),
         title: Text(
           'Riwayat Notifikasi',

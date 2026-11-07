@@ -209,7 +209,14 @@ class _PindahKosFormViewState extends State<PindahKosFormView> {
             color: Colors.black,
             size: 20,
           ),
-          onPressed: () => context.pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.home);
+            }
+          },
         ),
         title: const Text(
           'Pindah Kos',

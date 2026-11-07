@@ -23,11 +23,20 @@ class MitraActiveOrderView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: AppColors.primaryDark,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.mitraDashboard);
+            }
+          },
         ),
         title: Text(
           'Kelola Order Aktif',

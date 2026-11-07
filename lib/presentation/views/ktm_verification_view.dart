@@ -549,6 +549,7 @@ class _KtmVerificationContentState extends State<_KtmVerificationContent> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Kembali',
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,

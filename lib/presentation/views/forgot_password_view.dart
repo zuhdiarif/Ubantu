@@ -115,6 +115,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
+          tooltip: 'Kembali',
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,
@@ -122,8 +123,10 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
           onPressed: () {
             if (provider.step == PasswordResetStep.enterCode) {
               provider.setStep(PasswordResetStep.enterEmail);
-            } else {
+            } else if (context.canPop()) {
               context.pop();
+            } else {
+              context.go(AppRouter.login);
             }
           },
         ),
