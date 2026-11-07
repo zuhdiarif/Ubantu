@@ -87,24 +87,19 @@ class ServiceOrderProvider extends ChangeNotifier {
 
   ServiceOrderModel? get activeOrder {
     if (_activeOrder != null) return _activeOrder;
-    try {
-      return _myOrders.firstWhere(
-        (o) =>
-            o.status == MoveServiceStatus.accepted ||
-            o.status == MoveServiceStatus.inProgress ||
-            o.status == MoveServiceStatus.completed,
-      );
-    } catch (_) {
-      try {
-        return _myOrders.first;
-      } catch (_) {
-        try {
-          return _activeOrders.first;
-        } catch (_) {
-          return null;
-        }
+    for (final o in _myOrders) {
+      if (o.status != MoveServiceStatus.completed &&
+          o.status != MoveServiceStatus.cancelled &&
+          o.status != MoveServiceStatus.dibatalkan) {
+        return o;
       }
     }
+    return null;
+  }
+
+  void setActiveOrder(ServiceOrderModel? order) {
+    _activeOrder = order;
+    notifyListeners();
   }
 
   void clearActiveOrder() {
@@ -188,8 +183,9 @@ class ServiceOrderProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result.isSuccess) {
-      _myOrders = [result.data!, ..._myOrders];
-      _activeOrders = [result.data!, ..._activeOrders];
+      final created = result.data!;
+      _myOrders = [created, ..._myOrders];
+      _activeOrder = created;
       notifyListeners();
       return true;
     } else {
@@ -262,8 +258,9 @@ class ServiceOrderProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result.isSuccess) {
-      _myOrders = [result.data!, ..._myOrders];
-      _activeOrders = [result.data!, ..._activeOrders];
+      final created = result.data!;
+      _myOrders = [created, ..._myOrders];
+      _activeOrder = created;
       notifyListeners();
       return true;
     } else {
@@ -331,8 +328,9 @@ class ServiceOrderProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result.isSuccess) {
-      _myOrders = [result.data!, ..._myOrders];
-      _activeOrders = [result.data!, ..._activeOrders];
+      final created = result.data!;
+      _myOrders = [created, ..._myOrders];
+      _activeOrder = created;
       notifyListeners();
       return true;
     } else {
@@ -408,8 +406,9 @@ class ServiceOrderProvider extends ChangeNotifier {
     _isLoading = false;
 
     if (result.isSuccess) {
-      _myOrders = [result.data!, ..._myOrders];
-      _activeOrders = [result.data!, ..._activeOrders];
+      final created = result.data!;
+      _myOrders = [created, ..._myOrders];
+      _activeOrder = created;
       notifyListeners();
       return true;
     } else {

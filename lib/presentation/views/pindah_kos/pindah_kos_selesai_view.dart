@@ -75,7 +75,14 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
             color: Color(0xFF1E281C),
             size: 20,
           ),
-          onPressed: () => context.pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.home);
+            }
+          },
         ),
       ),
       body: SafeArea(
@@ -140,9 +147,20 @@ class _PindahKosSelesaiViewState extends State<PindahKosSelesaiView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Berikan ulasan',
-                      style: TextStyle(
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w600,
+                        height: 1.20,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'untuk ${(activeOrder?.helperName != null && activeOrder!.helperName!.isNotEmpty) ? activeOrder.helperName! : 'Mitra Penolong UB'}',
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 16,
                         fontFamily: 'Plus Jakarta Sans',

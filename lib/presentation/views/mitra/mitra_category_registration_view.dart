@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
+import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
 
@@ -54,10 +55,19 @@ class _MitraCategoryRegistrationViewState
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primaryDark,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.mitraDashboard);
+            }
+          },
         ),
         title: Text(
           'Kategori & Kendaraan Mitra',
@@ -351,7 +361,7 @@ class _MitraCategoryRegistrationViewState
                     children: [
                       Icon(Icons.two_wheeler, size: 18),
                       SizedBox(width: 6),
-                      Text('Sepeda Motor'),
+                      Flexible(child: Text('Sepeda Motor', overflow: TextOverflow.ellipsis)),
                     ],
                   ),
                   selected: _selectedVehicleType == VehicleType.motor,
@@ -377,7 +387,7 @@ class _MitraCategoryRegistrationViewState
                     children: [
                       Icon(Icons.directions_car, size: 18),
                       SizedBox(width: 6),
-                      Text('Mobil'),
+                      Flexible(child: Text('Mobil', overflow: TextOverflow.ellipsis)),
                     ],
                   ),
                   selected: _selectedVehicleType == VehicleType.mobil,

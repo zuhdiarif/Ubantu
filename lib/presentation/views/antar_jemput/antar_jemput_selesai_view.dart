@@ -132,7 +132,7 @@ class _AntarJemputSelesaiViewState extends State<AntarJemputSelesaiView> {
             _buildProofPhotoCard(context, activeOrder?.completionPhotoUrl),
             _buildBarterConfirmationCard(context, orderProvider, activeOrder),
             const SizedBox(height: 8),
-            _buildRatingSection(),
+            _buildRatingSection(activeOrder),
             const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
@@ -481,13 +481,16 @@ class _AntarJemputSelesaiViewState extends State<AntarJemputSelesaiView> {
     );
   }
 
-  Widget _buildRatingSection() {
+  Widget _buildRatingSection(ServiceOrderModel? order) {
+    final helperName = (order?.helperName != null && order!.helperName!.isNotEmpty)
+        ? order.helperName!
+        : 'Mitra Penolong UB';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const Text(
-          'Beri Penilaian untuk Ahmad Rizky',
-          style: TextStyle(
+        Text(
+          'Beri Penilaian untuk $helperName',
+          style: const TextStyle(
             color: Colors.black,
             fontSize: 14,
             fontFamily: 'Plus Jakarta Sans',

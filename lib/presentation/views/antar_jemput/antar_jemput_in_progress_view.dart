@@ -121,7 +121,14 @@ class _AntarJemputInProgressViewState extends State<AntarJemputInProgressView> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.home);
+            }
+          },
         ),
         title: const Text(
           'Bantuan Berlangsung',

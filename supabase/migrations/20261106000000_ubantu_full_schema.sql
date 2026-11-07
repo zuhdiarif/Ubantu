@@ -80,8 +80,8 @@ create table if not exists public.tasks (
 -- 4. SOS Reports Table
 create table if not exists public.sos_reports (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.profiles(id) on delete cascade,
-  reporter_id uuid references public.profiles(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete set null,
+  reporter_id uuid references public.profiles(id) on delete set null,
   issue_type text not null default '',
   status text not null default 'received',
   latitude numeric(10,7),
@@ -130,7 +130,7 @@ create table if not exists public.chat_messages (
 -- 7. Notifications Table
 create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.profiles(id) on delete cascade,
+  user_id uuid references public.profiles(id) on delete set null,
   title text not null,
   body text not null,
   type text not null default 'order',
@@ -139,20 +139,11 @@ create table if not exists public.notifications (
   created_at timestamptz not null default timezone('utc'::text, now())
 );
 
--- 8. Order Ratings & Ratings Tables
-create table if not exists public.order_ratings (
-  id uuid primary key default gen_random_uuid(),
-  order_id uuid references public.service_orders(id) on delete cascade,
-  target_user_id uuid references public.profiles(id) on delete cascade not null,
-  reviewer_id uuid references public.profiles(id) on delete set null,
-  reviewer_name text not null default 'Mahasiswa UB',
-  score numeric(2,1) not null default 5.0,
-  review_text text not null default '',
-  created_at timestamptz not null default timezone('utc'::text, now())
-);
-
+-- 8. Ratings Table
 create table if not exists public.ratings (
   id uuid primary key default gen_random_uuid(),
+  order_id text,
+  task_id text,
   target_user_id uuid references public.profiles(id) on delete cascade not null,
   reviewer_id uuid references public.profiles(id) on delete set null,
   reviewer_name text not null default 'Mahasiswa UB',
@@ -238,7 +229,6 @@ create index if not exists idx_chat_rooms_order on public.chat_rooms(order_id);
 create index if not exists idx_chat_messages_room on public.chat_messages(room_id);
 create index if not exists idx_chat_messages_created_at on public.chat_messages(created_at asc);
 create index if not exists idx_notifications_user on public.notifications(user_id);
-create index if not exists idx_order_ratings_target on public.order_ratings(target_user_id);
 create index if not exists idx_ratings_target on public.ratings(target_user_id);
 create index if not exists idx_loyalty_transactions_user on public.loyalty_transactions(user_id);
 create index if not exists idx_mitra_schedules_user on public.mitra_schedules(user_id);
@@ -253,7 +243,6 @@ alter table public.sos_reports enable row level security;
 alter table public.chat_rooms enable row level security;
 alter table public.chat_messages enable row level security;
 alter table public.notifications enable row level security;
-alter table public.order_ratings enable row level security;
 alter table public.ratings enable row level security;
 alter table public.loyalty_points enable row level security;
 alter table public.loyalty_transactions enable row level security;
@@ -297,7 +286,7 @@ drop policy if exists "Tasks update authenticated" on public.tasks;
 create policy "Tasks update authenticated" on public.tasks for update using (auth.role() = 'authenticated');
 
 drop policy if exists "SOS reports access" on public.sos_reports;
-create policy "SOS reports access" on public.sos_reports for all using (user_id = auth.uid() or reporter_id = auth.uid());
+create policy "SOS reports access" on public.sos_reports for all using ((select auth.uid())::text = coalesce(user_id::text, '') or (select auth.uid())::text = coalesce(reporter_id::text, ''));
 
 drop policy if exists "Chat rooms access" on public.chat_rooms;
 create policy "Chat rooms access" on public.chat_rooms for all using (
@@ -326,12 +315,6 @@ create policy "Chat messages insert" on public.chat_messages for insert with che
 drop policy if exists "Notifications access" on public.notifications;
 create policy "Notifications access" on public.notifications for all using (user_id = auth.uid());
 
-drop policy if exists "Order ratings select" on public.order_ratings;
-create policy "Order ratings select" on public.order_ratings for select using (true);
-
-drop policy if exists "Order ratings insert" on public.order_ratings;
-create policy "Order ratings insert" on public.order_ratings for insert with check (reviewer_id = auth.uid());
-
 drop policy if exists "Ratings select" on public.ratings;
 create policy "Ratings select" on public.ratings for select using (true);
 
@@ -359,16 +342,12 @@ create policy "Mitra declined orders access" on public.mitra_declined_orders for
 -- 15. Storage Buckets (5MB = 5242880 bytes limit)
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
-  ('ktm-photos', 'ktm-photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
   ('ktm_photos', 'ktm_photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
   ('avatars', 'avatars', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
-  ('order-photos', 'order-photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
+  ('task_images', 'task_images', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
   ('order_photos', 'order_photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
-  ('chat-attachments', 'chat-attachments', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
   ('chat_attachments', 'chat_attachments', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
-  ('completion-proofs', 'completion-proofs', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
-  ('order-proofs', 'order-proofs', true, 5242880, array['image/jpeg', 'image/png', 'image/webp']),
-  ('task_images', 'task_images', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+  ('order-proofs', 'order-proofs', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
 on conflict (id) do update set
   public = excluded.public,
   file_size_limit = excluded.file_size_limit,
@@ -378,12 +357,12 @@ on conflict (id) do update set
 drop policy if exists "Public storage objects select" on storage.objects;
 create policy "Public storage objects select" on storage.objects for select using (
   bucket_id in (
-    'ktm-photos', 'ktm_photos',
+    'ktm_photos',
     'avatars',
-    'order-photos', 'order_photos',
-    'chat-attachments', 'chat_attachments',
-    'completion-proofs', 'order-proofs',
-    'task_images'
+    'task_images',
+    'order_photos',
+    'chat_attachments',
+    'order-proofs'
   )
 );
 
@@ -391,12 +370,12 @@ drop policy if exists "Authenticated storage objects insert" on storage.objects;
 create policy "Authenticated storage objects insert" on storage.objects for insert with check (
   auth.role() = 'authenticated' and
   bucket_id in (
-    'ktm-photos', 'ktm_photos',
+    'ktm_photos',
     'avatars',
-    'order-photos', 'order_photos',
-    'chat-attachments', 'chat_attachments',
-    'completion-proofs', 'order-proofs',
-    'task_images'
+    'task_images',
+    'order_photos',
+    'chat_attachments',
+    'order-proofs'
   )
 );
 
@@ -404,12 +383,12 @@ drop policy if exists "Authenticated storage objects update" on storage.objects;
 create policy "Authenticated storage objects update" on storage.objects for update using (
   auth.role() = 'authenticated' and
   bucket_id in (
-    'ktm-photos', 'ktm_photos',
+    'ktm_photos',
     'avatars',
-    'order-photos', 'order_photos',
-    'chat-attachments', 'chat_attachments',
-    'completion-proofs', 'order-proofs',
-    'task_images'
+    'task_images',
+    'order_photos',
+    'chat_attachments',
+    'order-proofs'
   )
 );
 

@@ -63,6 +63,7 @@ class _InboxViewState extends State<InboxView> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
+    final canPop = GoRouter.maybeOf(context)?.canPop() ?? (ModalRoute.of(context)?.canPop ?? false);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -75,6 +76,24 @@ class _InboxViewState extends State<InboxView> with WidgetsBindingObserver {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Row(
                 children: [
+                  if (canPop) ...[
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E281C)),
+                      tooltip: 'Kembali',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        if (GoRouter.maybeOf(context)?.canPop() == true) {
+                          context.pop();
+                        } else if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          context.go(AppRouter.home);
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                  ],
                   Text(
                     'Chat',
                     style: AppTypography.h4.copyWith(

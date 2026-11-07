@@ -38,7 +38,7 @@ begin
 end $$;
 
 create or replace function public.award_order_points(p_order_id text)
-returns public.loyalty_points language plpgsql security definer set search_path = '' as $$
+returns public.loyalty_points language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_uid text := (select auth.uid())::text; v_points constant integer := 10; v_inserted integer; v_row public.loyalty_points;
 begin
   if v_uid is null then raise exception 'not_authenticated' using errcode = '28000'; end if;
@@ -52,7 +52,7 @@ begin
 end; $$;
 
 create or replace function public.claim_loyalty_voucher()
-returns public.loyalty_points language plpgsql security definer set search_path = '' as $$
+returns public.loyalty_points language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_uid text := (select auth.uid())::text; v_cost constant integer := 100; v_row public.loyalty_points;
 begin
   if v_uid is null then raise exception 'not_authenticated' using errcode = '28000'; end if;

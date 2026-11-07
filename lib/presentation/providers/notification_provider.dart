@@ -69,18 +69,12 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   void markAsRead(String id) {
-    final repo = _repository;
-    if (repo is NotificationRepositoryImpl) {
-      repo.service.markAsRead(id);
-    }
+    _repository.markAsRead(id);
     notifyListeners();
   }
 
   void deleteNotification(String id) {
-    final repo = _repository;
-    if (repo is NotificationRepositoryImpl) {
-      repo.service.deleteNotification(id);
-    }
+    _repository.deleteNotification(id);
     notifyListeners();
   }
 

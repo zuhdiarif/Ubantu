@@ -1,46 +1,102 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:ubantu/components/custom_badge.dart';
 import 'package:ubantu/components/custom_button.dart';
-import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
+import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/core/utils/campus_locations.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/task_model.dart';
+import 'package:ubantu/presentation/providers/chat_provider.dart';
 
 class HelpDetailView extends StatelessWidget {
   final TaskModel? task;
 
   const HelpDetailView({super.key, this.task});
 
+  Future<void> _handleChat(BuildContext context) async {
+    final t = task;
+    final orderId = t?.id.isNotEmpty == true
+        ? t!.id
+        : 'tsk_${DateTime.now().millisecondsSinceEpoch}';
+    final orderNumber =
+        'UB-${orderId.length > 4 ? orderId.substring(0, 4).toUpperCase() : '8890'}';
+    final serviceTitle =
+        t?.title.isNotEmpty == true ? t!.title : 'Bantuan Mahasiswa';
+    final requester =
+        t?.requesterName.isNotEmpty == true ? t!.requesterName : 'Mahasiswa UB';
+
+    ChatProvider? chatProv;
+    try {
+      chatProv = context.read<ChatProvider>();
+    } catch (_) {}
+
+    if (chatProv != null) {
+      final room = await chatProv.selectOrCreateRoomForOrder(
+        orderId: orderId,
+        orderNumber: orderNumber,
+        serviceTitle: serviceTitle,
+        otherUserName: requester,
+        otherUserFaculty: 'Universitas Brawijaya',
+        itemSummary: t?.notes.isNotEmpty == true ? t!.notes : serviceTitle,
+        pickupLocation:
+            t?.location.isNotEmpty == true ? t!.location : 'Universitas Brawijaya',
+      );
+      if (context.mounted) {
+        context.push(AppRouter.chatRoom, extra: room);
+      }
+    } else {
+      if (context.mounted) {
+        context.push(AppRouter.chatRoom);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final requester = task?.requesterName ?? 'Mahasiswa UB';
     final initial = requester.isNotEmpty ? requester[0].toUpperCase() : 'M';
-    final ratingStr = task != null ? '${task!.rating.toStringAsFixed(1)} (${task!.ratingCount})' : '5.0 (Baru)';
+    final ratingStr = task != null
+        ? '${task!.rating.toStringAsFixed(1)} (${task!.ratingCount})'
+        : '5.0 (Baru)';
     final categoryText = switch (task?.category) {
       ServiceCategory.pindahKos => 'Pindah Kos',
       ServiceCategory.bersihKos => 'Bersih Kos',
       ServiceCategory.antarJemput => 'Antar Jemput',
       null => 'Bantuan Mahasiswa',
     };
-    final locationText = task?.location.isNotEmpty == true ? task!.location : 'Kampus UB, Jl. Veteran, Malang';
-    final dateTimeText = task != null ? '${task!.date} • ${task!.time}' : 'Hari ini • Fleksibel';
-    final notesText = task?.notes.isNotEmpty == true ? task!.notes : 'Bantuan saling bantu antar mahasiswa UB.';
+    final locationText = task?.location.isNotEmpty == true
+        ? task!.location
+        : 'Kampus UB, Jl. Veteran, Malang';
+    final dateTimeText =
+        task != null ? '${task!.date} • ${task!.time}' : 'Hari ini • Fleksibel';
+    final notesText = task?.notes.isNotEmpty == true
+        ? task!.notes
+        : 'Bantuan saling bantu antar mahasiswa UB.';
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primaryDark,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
+            Icons.arrow_back_rounded,
             color: Colors.white,
           ),
-          onPressed: () => context.pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.home);
+            }
+          },
         ),
         title: Text(
           'Detail Permintaan Bantuan',
@@ -206,7 +262,7 @@ class HelpDetailView extends StatelessWidget {
               CustomButton(
                 text: 'Chat Pemohon',
                 icon: Icons.chat_bubble_outline_rounded,
-                onPressed: () => context.push(AppRouter.chatInbox),
+                onPressed: () => _handleChat(context),
               ),
               const SizedBox(height: 12),
               CustomButton(

@@ -94,6 +94,18 @@ class _RegisterViewState extends State<RegisterView> {
 
     if (!mounted) return;
 
+    if (nextStep.name == 'failed') {
+      final errorMsg = (regProvider as dynamic).signUpError as String? ??
+          'Registrasi gagal. Periksa kembali data Anda.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     switch (nextStep) {
       case RegistrationNextStep.home:
         await context.read<AuthProvider>().login(
@@ -140,10 +152,11 @@ class _RegisterViewState extends State<RegisterView> {
         }
         context.push(AppRouter.ktmVerification);
         break;
+      case RegistrationNextStep.failed:
+        break;
       case RegistrationNextStep.otpVerification:
-        await regProvider.sendOtp();
         if (mounted) {
-          context.push(AppRouter.otpVerification);
+          context.go(AppRouter.otpVerification);
         }
         break;
     }

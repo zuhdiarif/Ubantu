@@ -77,8 +77,11 @@ class SupabaseOrderService {
         }
 
         final response = await query.order('created_at', ascending: false);
-
-        final orders = response
+        final rawRows = (response as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        final enrichedRows = await _enrichRequesterNames(rawRows);
+        final orders = enrichedRows
             .map((e) => ServiceOrderModel.fromJson(e))
             .where((o) {
               if (currentUserId != null && currentUserId.isNotEmpty) {
@@ -120,7 +123,11 @@ class SupabaseOrderService {
           .or('requester_id.eq.$userId,helper_id.eq.$userId')
           .order('created_at', ascending: false);
 
-      final orders = response
+      final rawRows = (response as List)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      final enrichedRows = await _enrichRequesterNames(rawRows);
+      final orders = enrichedRows
           .map((e) => ServiceOrderModel.fromJson(e))
           .toList();
       return AppResult.success(orders);
@@ -229,12 +236,31 @@ class SupabaseOrderService {
 
     try {
       if (SupabaseService.instance.isInitialized) {
+        String? helperName;
+        try {
+          final profileRes = await SupabaseService.instance.client
+              .from('profiles')
+              .select('full_name')
+              .eq('id', helperId)
+              .maybeSingle();
+          if (profileRes != null && profileRes['full_name'] != null) {
+            final name = profileRes['full_name'].toString().trim();
+            if (name.isNotEmpty) {
+              helperName = name;
+            }
+          }
+        } catch (_) {}
+
+        final updateData = <String, dynamic>{
+          'helper_id': helperId,
+          'status': MoveServiceStatus.accepted.name,
+          if (helperName != null && helperName.isNotEmpty)
+            'helper_name': helperName,
+        };
+
         final response = await SupabaseService.instance.client
             .from(_table)
-            .update({
-              'helper_id': helperId,
-              'status': MoveServiceStatus.accepted.name,
-            })
+            .update(updateData)
             .eq('id', orderId)
             .eq('status', MoveServiceStatus.waiting.name)
             .neq('requester_id', helperId)
@@ -247,7 +273,8 @@ class SupabaseOrderService {
           );
         }
 
-        final updated = ServiceOrderModel.fromJson(response);
+        final enrichedList = await _enrichRequesterNames([Map<String, dynamic>.from(response)]);
+        final updated = ServiceOrderModel.fromJson(enrichedList.first);
         _mockOrderControllers[orderId]?.add(updated);
         return AppResult.success(updated);
       }
@@ -352,6 +379,73 @@ class SupabaseOrderService {
       return AppResult.failure('Order not found');
     } catch (e) {
       return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _enrichRequesterNames(
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final ids = <String>{};
+    for (final row in rows) {
+      final rName = row['requester_name']?.toString();
+      final rId = row['requester_id']?.toString();
+      if ((rName == null || rName.trim().isEmpty) &&
+          rId != null &&
+          rId.trim().isNotEmpty) {
+        ids.add(rId);
+      }
+      final hName = row['helper_name']?.toString();
+      final hId = row['helper_id']?.toString();
+      if ((hName == null || hName.trim().isEmpty) &&
+          hId != null &&
+          hId.trim().isNotEmpty) {
+        ids.add(hId);
+      }
+    }
+
+    if (ids.isEmpty || !SupabaseService.instance.isInitialized) {
+      return rows;
+    }
+
+    try {
+      final profilesRes = await SupabaseService.instance.client
+          .from('profiles')
+          .select('id, full_name')
+          .inFilter('id', ids.toList());
+
+      final Map<String, String> nameById = {};
+      for (final p in profilesRes as List<dynamic>) {
+        if (p is Map && p['id'] != null && p['full_name'] != null) {
+          final fullName = p['full_name'].toString().trim();
+          if (fullName.isNotEmpty) {
+            nameById[p['id'].toString()] = fullName;
+          }
+        }
+      }
+
+      final enrichedList = <Map<String, dynamic>>[];
+      for (final row in rows) {
+        final enriched = Map<String, dynamic>.from(row);
+        final rName = enriched['requester_name']?.toString();
+        final rId = enriched['requester_id']?.toString();
+        if ((rName == null || rName.trim().isEmpty) &&
+            rId != null &&
+            nameById.containsKey(rId)) {
+          enriched['requester_name'] = nameById[rId];
+        }
+
+        final hName = enriched['helper_name']?.toString();
+        final hId = enriched['helper_id']?.toString();
+        if ((hName == null || hName.trim().isEmpty) &&
+            hId != null &&
+            nameById.containsKey(hId)) {
+          enriched['helper_name'] = nameById[hId];
+        }
+        enrichedList.add(enriched);
+      }
+      return enrichedList;
+    } catch (_) {
+      return rows;
     }
   }
 

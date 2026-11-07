@@ -23,11 +23,20 @@ class MitraActiveOrderView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: AppColors.primaryDark,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.mitraDashboard);
+            }
+          },
         ),
         title: Text(
           'Kelola Order Aktif',
@@ -275,7 +284,9 @@ class MitraActiveOrderView extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Mahasiswa UB (Pemesan)',
+                  (order.requesterName != null && order.requesterName!.trim().isNotEmpty)
+                      ? order.requesterName!
+                      : 'Mahasiswa UB (Pemesan)',
                   style: AppTypography.body1.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -313,7 +324,9 @@ class MitraActiveOrderView extends StatelessWidget {
                       orderNumber: 'UB-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : '8890'}',
                       serviceTitle: 'Layanan ${order.category.name}',
                       serviceStatus: order.status.name,
-                      otherUserName: 'Mahasiswa UB (Pemesan)',
+                      otherUserName: (order.requesterName != null && order.requesterName!.trim().isNotEmpty)
+                          ? order.requesterName!
+                          : 'Mahasiswa UB (Pemesan)',
                       otherUserFaculty: 'Universitas Brawijaya',
                       lastMessage: '',
                       lastMessageTime: DateTime.now(),

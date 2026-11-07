@@ -95,7 +95,14 @@ class _AntarJemputWaitingViewState extends State<AntarJemputWaitingView>
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.antarJemput);
+            }
+          },
         ),
         title: const Text(
           'Mencari Helper',

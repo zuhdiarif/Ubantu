@@ -125,7 +125,14 @@ class _OtpVerificationViewState extends State<OtpVerificationView>
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.primaryDark,
           ),
-          onPressed: () => context.pop(),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.login);
+            }
+          },
         ),
         title: Text(
           'Verifikasi OTP',

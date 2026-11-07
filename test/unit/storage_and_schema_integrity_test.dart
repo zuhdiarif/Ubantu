@@ -228,17 +228,17 @@ void main() {
       expect(sql, contains('public.chat_rooms'));
       expect(sql, contains('public.chat_messages'));
       expect(sql, contains('public.notifications'));
-      expect(sql, contains('public.order_ratings'));
+      expect(sql, contains('public.ratings'));
       expect(sql, contains('public.loyalty_transactions'));
       expect(sql, contains('public.mitra_schedules'));
       expect(sql, contains('public.mitra_declined_orders'));
 
       expect(sql, contains('5242880'));
-      expect(sql, contains('ktm-photos'));
+      expect(sql, contains('ktm_photos'));
       expect(sql, contains('avatars'));
-      expect(sql, contains('order-photos'));
-      expect(sql, contains('chat-attachments'));
-      expect(sql, contains('completion-proofs'));
+      expect(sql, contains('order_photos'));
+      expect(sql, contains('chat_attachments'));
+      expect(sql, contains('order-proofs'));
       expect(sql, contains('supabase_realtime'));
     });
   });

@@ -96,8 +96,8 @@ class _DebugFloatingMenuState extends State<DebugFloatingMenu> {
     final screenW = size.width > 0 ? size.width : 390.0;
     final screenH = size.height > 0 ? size.height : 800.0;
 
-    _x ??= 16.0;
-    _y ??= 120.0;
+    _x ??= screenW - 68.0;
+    _y ??= screenH - 220.0;
 
     return Stack(
       clipBehavior: Clip.none,

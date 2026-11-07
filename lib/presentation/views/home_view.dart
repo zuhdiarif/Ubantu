@@ -49,6 +49,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     final userId = user?.id ?? '';
     await Future.wait([
       context.read<ServiceOrderProvider>().loadActiveOrders(),
+      context.read<TaskProvider>().loadTasks(),
       if (userId.isNotEmpty)
         context.read<ServiceOrderProvider>().loadMyOrders(userId),
       authProvider.refreshProfile(),
@@ -439,10 +440,16 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
     final orderProvider = context.watch<ServiceOrderProvider>();
     final myOrders = orderProvider.myOrders;
     final ongoingOrders = myOrders
-        .where((o) => o.status != MoveServiceStatus.completed)
+        .where((o) =>
+            o.status != MoveServiceStatus.completed &&
+            o.status != MoveServiceStatus.cancelled &&
+            o.status != MoveServiceStatus.dibatalkan)
         .toList();
     final historyOrders = myOrders
-        .where((o) => o.status == MoveServiceStatus.completed)
+        .where((o) =>
+            o.status == MoveServiceStatus.completed ||
+            o.status == MoveServiceStatus.cancelled ||
+            o.status == MoveServiceStatus.dibatalkan)
         .toList();
 
     final displayedOrders = _activityTab == 0 ? ongoingOrders : historyOrders;
@@ -567,15 +574,18 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       ServiceCategory.antarJemput => 'assets/images/ic_antar_jemput.png',
     };
 
-    final statusText = order.status.label;
-    final badgeBg = order.status.badgeBgColor;
-    final badgeText = order.status.badgeTextColor;
-
     final dateStr =
         '${order.scheduledAt.day} ${_monthName(order.scheduledAt.month)} ${order.scheduledAt.year} - ${order.scheduledAt.hour.toString().padLeft(2, '0')}:${order.scheduledAt.minute.toString().padLeft(2, '0')}';
 
+    final isCancelled = order.status == MoveServiceStatus.cancelled ||
+        order.status == MoveServiceStatus.dibatalkan;
+    final statusText = isCancelled ? 'Dibatalkan' : order.status.label;
+    final badgeBg = isCancelled ? const Color(0xFFFFEBEE) : order.status.badgeBgColor;
+    final badgeText = isCancelled ? const Color(0xFFC62828) : order.status.badgeTextColor;
+
     return GestureDetector(
       onTap: () {
+        context.read<ServiceOrderProvider>().setActiveOrder(order);
         context.push(AppRouter.bantuanDetail, extra: order);
       },
       child: Container(
@@ -813,11 +823,16 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
   }
 
   List<Widget> _buildOrderList(BuildContext context, TaskProvider taskProvider) {
+    final authProvider = context.watch<AuthProvider>();
+    final isMale = authProvider.currentUser?.gender == UserGender.male;
     final orderProvider = context.watch<ServiceOrderProvider>();
     final allOrders = orderProvider.activeOrders;
-    final orders = taskProvider.isFemaleOnlyFilter
-        ? allOrders.where((o) => o.isFemaleOnly).toList()
+    var orders = isMale
+        ? allOrders.where((o) => !o.isFemaleOnly).toList()
         : allOrders;
+    if (taskProvider.isFemaleOnlyFilter) {
+      orders = orders.where((o) => o.isFemaleOnly).toList();
+    }
 
     if (orders.isNotEmpty) {
       return orders.map((order) {
@@ -855,7 +870,10 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -875,8 +893,7 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                                 ),
                               ),
                             ),
-                            if (order.isFemaleOnly) ...[
-                              const SizedBox(width: 6),
+                            if (order.isFemaleOnly)
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
@@ -899,8 +916,6 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                                   ],
                                 ),
                               ),
-                            ],
-                            const SizedBox(width: 6),
                             Text(
                               'Menunggu Bantuan',
                               style: AppTypography.caption.copyWith(
@@ -1015,8 +1030,15 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
       }).toList();
     }
 
-    if (taskProvider.tasks.isNotEmpty) {
-      return taskProvider.tasks.map((task) {
+    var tasks = isMale
+        ? taskProvider.tasks.where((t) => !t.isFemaleOnly).toList()
+        : taskProvider.tasks;
+    if (taskProvider.isFemaleOnlyFilter) {
+      tasks = tasks.where((t) => t.isFemaleOnly).toList();
+    }
+
+    if (tasks.isNotEmpty) {
+      return tasks.map((task) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(14),
@@ -1188,9 +1210,9 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                   final orderProv = context.read<ServiceOrderProvider>();
                   final mitraProv = context.read<MitraProvider>();
                   nav.pop();
-                  final success = await orderProv.acceptOrder(order.id);
-                  if (success) {
-                    await mitraProv.acceptOrder(order.id);
+                  final mitraSuccess = await mitraProv.acceptOrder(order.id);
+                  if (mitraSuccess) {
+                    await orderProv.loadActiveOrders();
                     messenger.showSnackBar(
                       const SnackBar(
                         content: Text(
@@ -1200,7 +1222,33 @@ class _HomeViewState extends State<HomeView> with WidgetsBindingObserver {
                       ),
                     );
                     if (mounted) {
-                      context.push('/mitra/active-order');
+                      context.push(AppRouter.mitraDashboard);
+                    }
+                  } else {
+                    final fallbackSuccess = await orderProv.acceptOrder(order.id);
+                    if (fallbackSuccess) {
+                      await orderProv.loadActiveOrders();
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Bantuan berhasil diambil! Menuju ke halaman order aktif.',
+                          ),
+                          backgroundColor: Color(0xFF283626),
+                        ),
+                      );
+                      if (mounted) {
+                        context.push(AppRouter.mitraDashboard);
+                      }
+                    } else {
+                      final errorMsg = mitraProv.errorMessage ??
+                          orderProv.errorMessage ??
+                          'Gagal mengambil bantuan.';
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(errorMsg),
+                          backgroundColor: const Color(0xFFD32F2F),
+                        ),
+                      );
                     }
                   }
                 },

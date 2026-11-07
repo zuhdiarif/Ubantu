@@ -53,7 +53,20 @@ class _MitraDashboardViewState extends State<MitraDashboardView> {
         backgroundColor: AppColors.background,
         appBar: AppBar(
           backgroundColor: AppColors.primaryDark,
+          foregroundColor: Colors.white,
+          iconTheme: const IconThemeData(color: Colors.white),
           elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            tooltip: 'Kembali',
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRouter.home);
+              }
+            },
+          ),
           title: Text(
             'Dashboard Mitra UB',
             style: AppTypography.h5.copyWith(color: Colors.white),

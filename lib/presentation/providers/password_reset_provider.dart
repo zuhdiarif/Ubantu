@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:ubantu/data/repositories/auth_repository_impl.dart';
+import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/repositories/auth_repository.dart';
 import 'package:ubantu/domain/usecases/send_password_reset_otp_usecase.dart';
 import 'package:ubantu/domain/usecases/update_password_usecase.dart';
@@ -19,13 +19,13 @@ class PasswordResetProvider extends ChangeNotifier {
     SendPasswordResetOtpUseCase? sendOtpUseCase,
     VerifyRecoveryOtpUseCase? verifyRecoveryOtpUseCase,
     UpdatePasswordUseCase? updatePasswordUseCase,
-  })  : _repository = repository ?? AuthRepositoryImpl(),
+  })  : _repository = repository ?? ServiceLocator.instance.authRepository,
         _sendOtpUseCase = sendOtpUseCase ??
-            SendPasswordResetOtpUseCase(repository ?? AuthRepositoryImpl()),
+            SendPasswordResetOtpUseCase(repository ?? ServiceLocator.instance.authRepository),
         _verifyRecoveryOtpUseCase = verifyRecoveryOtpUseCase ??
-            VerifyRecoveryOtpUseCase(repository ?? AuthRepositoryImpl()),
+            VerifyRecoveryOtpUseCase(repository ?? ServiceLocator.instance.authRepository),
         _updatePasswordUseCase = updatePasswordUseCase ??
-            UpdatePasswordUseCase(repository ?? AuthRepositoryImpl());
+            UpdatePasswordUseCase(repository ?? ServiceLocator.instance.authRepository);
 
   PasswordResetStep _step = PasswordResetStep.enterEmail;
   String _email = '';

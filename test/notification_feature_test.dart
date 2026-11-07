@@ -60,6 +60,21 @@ class MockNotificationRepo implements INotificationRepository {
       _list[i] = _list[i].copyWith(isRead: true);
     }
   }
+
+  @override
+  Future<AppResult<bool>> markAsRead(String id) async {
+    final idx = _list.indexWhere((n) => n.id == id);
+    if (idx != -1) {
+      _list[idx] = _list[idx].copyWith(isRead: true);
+    }
+    return AppResult.success(true);
+  }
+
+  @override
+  Future<AppResult<bool>> deleteNotification(String id) async {
+    _list.removeWhere((n) => n.id == id);
+    return AppResult.success(true);
+  }
 }
 
 class MockOrderRepo implements IServiceOrderRepository {
@@ -229,6 +244,12 @@ class MockAuthRepo implements IAuthRepository {
   @override
   Future<void> logout() async {
     user = null;
+  }
+
+  @override
+  Future<AppResult<bool>> deleteAccount() async {
+    user = null;
+    return AppResult.success(true);
   }
 
   @override

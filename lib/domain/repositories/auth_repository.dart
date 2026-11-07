@@ -14,6 +14,7 @@ abstract class IAuthRepository {
   Future<AppResult<UserModel>> updateProfile(UserModel user);
   Future<AppResult<bool>> signInWithGoogle();
   Future<void> logout();
+  Future<AppResult<bool>> deleteAccount() async => AppResult.success(true);
   UserModel? getCurrentUser();
   bool didSignUpReturnSession();
 }

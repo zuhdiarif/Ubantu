@@ -127,6 +127,12 @@ class _FakeNotificationRepository implements INotificationRepository {
 
   @override
   void markAllAsRead() {}
+
+  @override
+  Future<AppResult<bool>> markAsRead(String id) async => AppResult.success(true);
+
+  @override
+  Future<AppResult<bool>> deleteNotification(String id) async => AppResult.success(true);
 }
 
 class _FakeMitraRepository implements IMitraRepository {
@@ -387,6 +393,7 @@ void main() {
 
       final repo = _FakeOrderRepository(order);
       final provider = ServiceOrderProvider(repository: repo);
+      provider.setActiveOrder(order);
 
       await provider.loadMyOrders('req-1');
       expect(provider.activeOrder?.barterConfirmedByCustomer, isFalse);
@@ -520,6 +527,7 @@ void main() {
     }) {
       final orderRepo = _FakeOrderRepository(activeOrder);
       final orderProvider = ServiceOrderProvider(repository: orderRepo);
+      orderProvider.setActiveOrder(activeOrder);
       orderProvider.loadMyOrders(activeOrder.requesterId);
       final ratingProvider = RatingProvider(repository: _FakeRatingRepository());
 

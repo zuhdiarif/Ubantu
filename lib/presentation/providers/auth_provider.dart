@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:ubantu/core/errors/app_exceptions.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/data/repositories/auth_repository_impl.dart';
@@ -137,6 +138,8 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<AppResult<UserModel>> updateProfile({
+    UserModel? updatedUser,
+    UserModel? user,
     String? fullName,
     String? phoneNumber,
     UserGender? gender,
@@ -144,9 +147,11 @@ class AuthProvider extends ChangeNotifier {
     String? faculty,
     String? bio,
   }) async {
-    final baseUser = _getBaseUser();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
-    final updated = baseUser.copyWith(
+    final baseUser = updatedUser ?? user ?? _getBaseUser().copyWith(
       fullName: fullName,
       phoneNumber: phoneNumber,
       gender: gender,
@@ -155,75 +160,126 @@ class AuthProvider extends ChangeNotifier {
       bio: bio,
     );
 
+    if (SupabaseService.instance.isInitialized) {
+      try {
+        final profileResult = await SupabaseProfileService().updateProfile(baseUser);
+        if (!profileResult.isSuccess) {
+          _isLoading = false;
+          notifyListeners();
+          return AppResult.failure(NetworkException('Gagal memperbarui profil: ${profileResult.errorMessage}').message);
+        }
+        await SupabaseAuthService().updateUserMetadata({
+          if (baseUser.fullName.isNotEmpty) 'full_name': baseUser.fullName,
+          if (baseUser.phoneNumber.isNotEmpty) 'phone_number': baseUser.phoneNumber,
+          'gender': baseUser.gender.name,
+          'is_female_only_preferred': baseUser.isFemaleOnlyPreferred,
+          if (baseUser.faculty != null) 'faculty': baseUser.faculty,
+          if (baseUser.bio != null) 'bio': baseUser.bio,
+        });
+      } catch (e) {
+        _isLoading = false;
+        notifyListeners();
+        return AppResult.failure(NetworkException('Gagal memperbarui profil: $e').message);
+      }
+    }
+
+    _currentUser = baseUser;
+    final repo = _repository;
+    if (repo is AuthRepositoryImpl) {
+      repo.setCurrentUser(baseUser);
+    }
+    _checkKtmVerificationTransition(baseUser.verificationStatus);
+    _isLoading = false;
+    notifyListeners();
+    return AppResult.success(baseUser);
+  }
+
+  Future<AppResult<String>> updateAvatar(dynamic imageFileOrPath) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final File imageFile = imageFileOrPath is File ? imageFileOrPath : File(imageFileOrPath.toString());
+    final userId = _currentUser?.id ?? 'usr_${DateTime.now().millisecondsSinceEpoch}';
+
+    if (SupabaseService.instance.isInitialized) {
+      final uploadResult = await SupabaseStorageService().uploadAvatar(imageFile, userId);
+      if (!uploadResult.isSuccess || uploadResult.data == null) {
+        _isLoading = false;
+        notifyListeners();
+        return AppResult.failure(
+          uploadResult.errorMessage ?? const ServerException('Gagal mengunggah foto profil.').message,
+        );
+      }
+
+      final avatarUrl = uploadResult.data!;
+      final baseUser = _getBaseUser();
+      final updated = baseUser.copyWith(avatarUrl: avatarUrl);
+
+      try {
+        final profileRes = await SupabaseProfileService().updateProfile(updated);
+        if (!profileRes.isSuccess) {
+          _isLoading = false;
+          notifyListeners();
+          return AppResult.failure(
+            NetworkException('Gagal memperbarui foto profil: ${profileRes.errorMessage}').message,
+          );
+        }
+        await SupabaseAuthService().updateUserMetadata({'avatar_url': avatarUrl});
+      } catch (e) {
+        _isLoading = false;
+        notifyListeners();
+        return AppResult.failure(
+          NetworkException('Gagal memperbarui foto profil: $e').message,
+        );
+      }
+
+      _currentUser = updated;
+      final repo = _repository;
+      if (repo is AuthRepositoryImpl) {
+        repo.setCurrentUser(updated);
+      }
+      _isLoading = false;
+      notifyListeners();
+      return AppResult.success(avatarUrl);
+    }
+
+    final avatarUrl = 'https://mock.storage/avatar_$userId.jpg';
+    final baseUser = _getBaseUser();
+    final updated = baseUser.copyWith(avatarUrl: avatarUrl);
     _currentUser = updated;
     final repo = _repository;
     if (repo is AuthRepositoryImpl) {
       repo.setCurrentUser(updated);
     }
-
-    try {
-      if (SupabaseService.instance.isInitialized) {
-        await SupabaseAuthService().updateUserMetadata({
-          if (updated.fullName.isNotEmpty) 'full_name': updated.fullName,
-          if (updated.phoneNumber.isNotEmpty) 'phone_number': updated.phoneNumber,
-          'gender': updated.gender.name,
-          'is_female_only_preferred': updated.isFemaleOnlyPreferred,
-          if (updated.faculty != null) 'faculty': updated.faculty,
-          if (updated.bio != null) 'bio': updated.bio,
-        });
-        await SupabaseProfileService().updateProfile(updated);
-      }
-    } catch (_) {}
-
+    _isLoading = false;
     notifyListeners();
-    return AppResult.success(updated);
+    return AppResult.success(avatarUrl);
   }
 
-  Future<AppResult<String>> updateAvatar(File imageFile) async {
+  Future<AppResult<String>> submitKtm({
+    required String nim,
+    dynamic photoFile,
+    String? ktmPath,
+  }) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
+    final String path = ktmPath ?? (photoFile is File ? photoFile.path : (photoFile?.toString() ?? ''));
+    final File effectiveFile = photoFile is File ? photoFile : File(path);
     final userId = _currentUser?.id ?? 'usr_${DateTime.now().millisecondsSinceEpoch}';
-    final uploadResult = await SupabaseStorageService().uploadAvatar(imageFile, userId);
 
-    _isLoading = false;
-
-    if (uploadResult.isSuccess && uploadResult.data != null) {
-      final avatarUrl = uploadResult.data!;
-      final baseUser = _getBaseUser();
-      final updated = baseUser.copyWith(avatarUrl: avatarUrl);
-      _currentUser = updated;
-
-      final repo = _repository;
-      if (repo is AuthRepositoryImpl) {
-        repo.setCurrentUser(updated);
+    if (SupabaseService.instance.isInitialized && _currentUser != null && path.isNotEmpty) {
+      final uploadResult = await SupabaseStorageService().uploadKtmPhoto(effectiveFile, userId);
+      if (!uploadResult.isSuccess || uploadResult.data == null) {
+        _isLoading = false;
+        notifyListeners();
+        return AppResult.failure(
+          uploadResult.errorMessage ?? const ServerException('Gagal mengunggah foto KTM.').message,
+        );
       }
 
-      try {
-        if (SupabaseService.instance.isInitialized) {
-          await SupabaseAuthService().updateUserMetadata({'avatar_url': avatarUrl});
-          await SupabaseProfileService().updateProfile(updated);
-        }
-      } catch (_) {}
-
-      notifyListeners();
-      return AppResult.success(avatarUrl);
-    } else {
-      notifyListeners();
-      return uploadResult;
-    }
-  }
-
-  Future<AppResult<String>> submitKtm({required String nim, required File photoFile}) async {
-    _isLoading = true;
-    notifyListeners();
-
-    final userId = _currentUser?.id ?? 'usr_${DateTime.now().millisecondsSinceEpoch}';
-    final uploadResult = await SupabaseStorageService().uploadKtmPhoto(photoFile, userId);
-
-    _isLoading = false;
-
-    if (uploadResult.isSuccess && uploadResult.data != null) {
       final ktmUrl = uploadResult.data!;
       final baseUser = _getBaseUser();
       final updated = baseUser.copyWith(
@@ -231,30 +287,56 @@ class AuthProvider extends ChangeNotifier {
         ktmPhotoUrl: ktmUrl,
         verificationStatus: KtmVerificationStatus.pending,
       );
-      _currentUser = updated;
 
+      try {
+        final profileResult = await SupabaseProfileService().updateProfile(updated);
+        if (!profileResult.isSuccess) {
+          _isLoading = false;
+          notifyListeners();
+          return AppResult.failure(
+            NetworkException('Gagal menyimpan data verifikasi KTM: ${profileResult.errorMessage}').message,
+          );
+        }
+        await SupabaseAuthService().updateUserMetadata({
+          'nim': nim,
+          'ktm_photo_url': ktmUrl,
+          'verification_status': KtmVerificationStatus.pending.name,
+        });
+      } catch (e) {
+        _isLoading = false;
+        notifyListeners();
+        return AppResult.failure(
+          NetworkException('Gagal menyimpan data verifikasi KTM: $e').message,
+        );
+      }
+
+      _currentUser = updated;
       final repo = _repository;
       if (repo is AuthRepositoryImpl) {
         repo.setCurrentUser(updated);
       }
-
-      try {
-        if (SupabaseService.instance.isInitialized) {
-          await SupabaseAuthService().updateUserMetadata({
-            'nim': nim,
-            'ktm_photo_url': ktmUrl,
-            'verification_status': KtmVerificationStatus.pending.name,
-          });
-          await SupabaseProfileService().updateProfile(updated);
-        }
-      } catch (_) {}
-
+      _checkKtmVerificationTransition(updated.verificationStatus);
+      _isLoading = false;
       notifyListeners();
       return AppResult.success(ktmUrl);
-    } else {
-      notifyListeners();
-      return uploadResult;
     }
+
+    final mockUrl = 'https://mock.storage/ktm_$userId.jpg';
+    final baseUser = _getBaseUser();
+    final updated = baseUser.copyWith(
+      nim: nim,
+      ktmPhotoUrl: mockUrl,
+      verificationStatus: KtmVerificationStatus.pending,
+    );
+    _currentUser = updated;
+    final repo = _repository;
+    if (repo is AuthRepositoryImpl) {
+      repo.setCurrentUser(updated);
+    }
+    _checkKtmVerificationTransition(updated.verificationStatus);
+    _isLoading = false;
+    notifyListeners();
+    return AppResult.success(mockUrl);
   }
 
   Future<bool> login(String email, String password) async {
@@ -357,6 +439,27 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<AppResult<bool>> deleteAccount() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _repository.deleteAccount();
+    _isLoading = false;
+
+    if (result.isSuccess) {
+      _currentUser = null;
+      _errorMessage = null;
+      SessionManager.instance.clearAll();
+      notifyListeners();
+      return AppResult.success(true);
+    } else {
+      _errorMessage = result.errorMessage;
+      notifyListeners();
+      return result;
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _repository.logout();
@@ -375,5 +478,15 @@ class AuthProvider extends ChangeNotifier {
   void dispose() {
     _authSubscription?.cancel();
     super.dispose();
+  }
+}
+
+class SessionManager {
+  static final SessionManager instance = SessionManager._();
+  SessionManager._();
+  void clearAll() {
+    ServiceLocator.instance.clearSessionCaches();
+    AppAuthNotifier.instance.setLoggedIn(false);
+    AppAuthNotifier.instance.setOAuthCallbackPending(false);
   }
 }

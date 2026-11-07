@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:ubantu/core/errors/app_exceptions.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
 import 'package:ubantu/domain/models/mitra_profile_model.dart';
@@ -10,6 +11,12 @@ import 'package:ubantu/domain/repositories/mitra_repository.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/domain/repositories/notification_repository.dart';
 import 'package:ubantu/domain/usecases/complete_order_with_proof_usecase.dart';
+
+enum Gender {
+  lakiLaki,
+  perempuan,
+  unspecified,
+}
 
 class MitraProvider extends ChangeNotifier {
   final IMitraRepository _repository;
@@ -36,8 +43,18 @@ class MitraProvider extends ChangeNotifier {
   String? _errorMessage;
 
   MitraProfileModel? get profile => _profile;
+  Gender get _effectiveGender {
+    final userGender = ServiceLocator.instance.authRepository.getCurrentUser()?.gender;
+    if (userGender == UserGender.female) return Gender.perempuan;
+    if (userGender == UserGender.male) return Gender.lakiLaki;
+    return Gender.unspecified;
+  }
+
   List<ServiceOrderModel> get incomingOrders =>
-      List.unmodifiable(_incomingOrders);
+      List.unmodifiable(_incomingOrders.where((o) {
+        if (o.isFemaleOnly && _effectiveGender != Gender.perempuan) return false;
+        return true;
+      }));
   ServiceOrderModel? get activeOrder => _activeOrder;
   List<ServiceOrderModel> get completedOrders =>
       List.unmodifiable(_completedOrders);
@@ -162,6 +179,16 @@ class MitraProvider extends ChangeNotifier {
   }
 
   Future<bool> acceptOrder(String orderId) async {
+    final order = _incomingOrders.cast<ServiceOrderModel?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    if (order != null && order.isFemaleOnly && _effectiveGender != Gender.perempuan) {
+      _errorMessage = const ValidationException('Pesanan khusus perempuan hanya dapat diambil oleh mitra perempuan.').message;
+      notifyListeners();
+      return false;
+    }
+
     _isLoading = true;
     notifyListeners();
 

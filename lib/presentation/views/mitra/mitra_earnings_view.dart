@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ubantu/components/custom_empty_state.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
+import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
 
@@ -29,10 +30,19 @@ class _MitraEarningsViewState extends State<MitraEarningsView> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primaryDark,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+          tooltip: 'Kembali',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRouter.mitraDashboard);
+            }
+          },
         ),
         title: Text(
           'Dompet & Rekap Barter',

@@ -281,7 +281,7 @@ void main() {
     expect(find.text('Bantuan Selesai'), findsOneWidget);
     expect(find.text('Pengantaran Selesai!'), findsOneWidget);
     expect(find.text('+10 Poin Barter UBantu'), findsOneWidget);
-    expect(find.text('Beri Penilaian untuk Ahmad Rizky'), findsOneWidget);
+    expect(find.text('Beri Penilaian untuk Mitra Penolong UB'), findsOneWidget);
     expect(find.text('Kirim Ulasan & Selesai'), findsOneWidget);
   });
 
