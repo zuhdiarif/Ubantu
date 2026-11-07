@@ -33,6 +33,7 @@ create table if not exists public.profiles (
 create table if not exists public.service_orders (
   id uuid primary key default gen_random_uuid(),
   requester_id uuid references public.profiles(id) on delete set null,
+  requester_name text,
   helper_id uuid references public.profiles(id) on delete set null,
   helper_name text,
   category text not null,
@@ -53,7 +54,8 @@ create table if not exists public.service_orders (
   completed_at timestamptz,
   barter_confirmed_by_customer boolean not null default false,
   created_at timestamptz not null default timezone('utc'::text, now()),
-  updated_at timestamptz not null default timezone('utc'::text, now())
+  updated_at timestamptz not null default timezone('utc'::text, now()),
+  constraint service_orders_no_self_accept check (helper_id is null or helper_id <> requester_id)
 );
 
 -- 3. Tasks Table
@@ -102,6 +104,11 @@ create table if not exists public.chat_rooms (
   pickup_location text default '',
   destination_location text default '',
   total_price text,
+  last_message text not null default '',
+  last_message_time timestamptz not null default now(),
+  unread_count integer not null default 0,
+  other_user_name text,
+  other_user_faculty text,
   is_active boolean not null default true,
   closed_at timestamptz,
   created_at timestamptz not null default timezone('utc'::text, now()),

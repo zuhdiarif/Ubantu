@@ -3,6 +3,7 @@ import 'package:ubantu/domain/models/app_enums.dart';
 class ServiceOrderModel {
   final String id;
   final String requesterId;
+  final String? requesterName;
   final String? helperId;
   final String? helperName;
   final ServiceCategory category;
@@ -27,6 +28,7 @@ class ServiceOrderModel {
   const ServiceOrderModel({
     required this.id,
     required this.requesterId,
+    this.requesterName,
     this.helperId,
     this.helperName,
     required this.category,
@@ -50,9 +52,22 @@ class ServiceOrderModel {
   });
 
   factory ServiceOrderModel.fromJson(Map<String, dynamic> json) {
+    String? parsedRequesterName;
+    final rawReqName = json['requester_name'];
+    if (rawReqName is String && rawReqName.trim().isNotEmpty) {
+      parsedRequesterName = rawReqName.trim();
+    } else if (json['profiles'] is Map) {
+      final prof = json['profiles'] as Map;
+      final pName = prof['full_name'];
+      if (pName is String && pName.trim().isNotEmpty) {
+        parsedRequesterName = pName.trim();
+      }
+    }
+
     return ServiceOrderModel(
       id: json['id'] as String? ?? '',
       requesterId: json['requester_id'] as String? ?? '',
+      requesterName: parsedRequesterName,
       helperId: json['helper_id'] as String?,
       helperName: json['helper_name'] as String?,
       category: ServiceCategory.values.firstWhere(
@@ -97,6 +112,8 @@ class ServiceOrderModel {
     return {
       'id': id,
       'requester_id': requesterId,
+      if (requesterName != null && requesterName!.isNotEmpty)
+        'requester_name': requesterName,
       'helper_id': helperId,
       'helper_name': helperName,
       'category': category.name,
@@ -124,6 +141,7 @@ class ServiceOrderModel {
   ServiceOrderModel copyWith({
     String? id,
     String? requesterId,
+    String? requesterName,
     String? helperId,
     String? helperName,
     ServiceCategory? category,
@@ -148,6 +166,7 @@ class ServiceOrderModel {
     return ServiceOrderModel(
       id: id ?? this.id,
       requesterId: requesterId ?? this.requesterId,
+      requesterName: requesterName ?? this.requesterName,
       helperId: helperId ?? this.helperId,
       helperName: helperName ?? this.helperName,
       category: category ?? this.category,

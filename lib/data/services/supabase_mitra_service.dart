@@ -155,7 +155,11 @@ class SupabaseMitraService {
   Future<AppResult<ServiceOrderModel>> acceptOrder({
     required String orderId,
     required String helperId,
+    String? requesterId,
   }) async {
+    if (requesterId != null && requesterId.isNotEmpty && requesterId == helperId) {
+      return AppResult.failure('Tidak dapat mengambil pesanan milik sendiri.');
+    }
     if (!isAvailable) {
       return AppResult.failure('Layanan belum terhubung. Periksa koneksi internet Anda.');
     }
@@ -172,11 +176,12 @@ class SupabaseMitraService {
           })
           .eq('id', orderId)
           .eq('status', MoveServiceStatus.waiting.name)
+          .neq('requester_id', helperId)
           .select()
           .maybeSingle();
       if (res == null) {
         return AppResult.failure(
-          'Pesanan sudah diambil mitra lain atau tidak lagi tersedia.',
+          'Pesanan tidak dapat diambil (milik sendiri atau sudah diambil mitra lain).',
         );
       }
       return AppResult.success(ServiceOrderModel.fromJson(res));

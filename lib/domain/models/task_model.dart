@@ -62,13 +62,14 @@ class TaskModel {
       title = 'Bantuan ${_categoryLabel(category)}';
     }
 
-    final rawRequester = json['requester_name'] as String?;
+    final rawRequester = json['requester_name'] as String? ??
+        (json['profiles'] is Map ? (json['profiles'] as Map)['full_name'] as String? : null);
     final rawReceiver = json['receiver_name'] as String?;
     final String requesterName;
     if (rawRequester != null && rawRequester.trim().isNotEmpty) {
-      requesterName = rawRequester;
+      requesterName = rawRequester.trim();
     } else if (rawReceiver != null && rawReceiver.trim().isNotEmpty) {
-      requesterName = rawReceiver;
+      requesterName = rawReceiver.trim();
     } else {
       requesterName = 'Mahasiswa UB';
     }
@@ -166,7 +167,11 @@ class TaskModel {
   }
 
   factory TaskModel.fromServiceOrder(ServiceOrderModel order) {
-    return TaskModel.fromJson(order.toJson());
+    final json = order.toJson();
+    if (order.requesterName != null && order.requesterName!.trim().isNotEmpty) {
+      json['requester_name'] = order.requesterName!.trim();
+    }
+    return TaskModel.fromJson(json);
   }
 
   Map<String, dynamic> toJson() {

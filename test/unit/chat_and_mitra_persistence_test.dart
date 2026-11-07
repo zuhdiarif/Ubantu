@@ -95,6 +95,7 @@ class FakeSupabaseMitraService extends SupabaseMitraService {
   Future<AppResult<ServiceOrderModel>> acceptOrder({
     required String orderId,
     required String helperId,
+    String? requesterId,
   }) async {
     acceptOrderCalled = true;
     lastAcceptOrderId = orderId;

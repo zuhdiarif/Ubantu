@@ -10,7 +10,7 @@ import 'package:ubantu/presentation/providers/task_provider.dart';
 
 class FakeEmptyRemoteTaskService extends SupabaseTaskService {
   @override
-  Future<AppResult<List<TaskModel>>> getTasks() async {
+  Future<AppResult<List<TaskModel>>> getTasks({String? excludeRequesterId}) async {
     return AppResult.success(const []);
   }
 }
@@ -21,7 +21,7 @@ class FakePopulatedRemoteTaskService extends SupabaseTaskService {
   FakePopulatedRemoteTaskService(this.tasks);
 
   @override
-  Future<AppResult<List<TaskModel>>> getTasks() async {
+  Future<AppResult<List<TaskModel>>> getTasks({String? excludeRequesterId}) async {
     return AppResult.success(tasks);
   }
 }
