@@ -194,7 +194,7 @@ class _BersihKosViewState extends State<BersihKosView> {
                   bottom: 0,
                   width: 170,
                   child: Image.asset(
-                    'assets/pindah_kos_flow/illust-banner-promo.png',
+                    'assets/images/ic_bersih_kos.png',
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) => const Icon(
                       Icons.cleaning_services_rounded,

@@ -177,7 +177,7 @@ class _PindahKosViewState extends State<PindahKosView> {
                   top: -20,
                   bottom: -20,
                   child: Image.asset(
-                    'assets/pindah_kos_flow/illust-banner-promo.png',
+                    'assets/images/ic_pindah_kos.png',
                     width: 200,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) =>
@@ -277,7 +277,7 @@ class _PindahKosViewState extends State<PindahKosView> {
           child: _buildFeatureCard(
             title: 'Bersih kos',
             subtitle: 'Bantu bersihkan kos kamu',
-            imagePath: 'assets/pindah_kos_flow/illust-bersih-kos.png',
+            imagePath: 'assets/images/ic_bersih_kos.png',
             onTap: () => context.push(AppRouter.bersihKos),
           ),
         ),
@@ -286,7 +286,7 @@ class _PindahKosViewState extends State<PindahKosView> {
           child: _buildFeatureCard(
             title: 'Antar jemput',
             subtitle: 'Bantu antar jemput kamu',
-            imagePath: 'assets/pindah_kos_flow/illust-antar-jemput.png',
+            imagePath: 'assets/images/ic_antar_jemput.png',
             onTap: () => context.push(AppRouter.antarJemput),
           ),
         ),
