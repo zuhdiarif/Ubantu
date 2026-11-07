@@ -206,6 +206,20 @@ class AuthRepositoryImpl implements IAuthRepository, SessionScoped {
   }
 
   @override
+  Future<AppResult<bool>> deleteAccount() async {
+    if (_authService.isAvailable) {
+      final res = await _authService.deleteAccount();
+      if (!res.isSuccess) {
+        return res;
+      }
+    }
+    _currentUser = null;
+    _signUpReturnedSession = false;
+    ServiceLocator.instance.clearSessionCaches();
+    return AppResult.success(true);
+  }
+
+  @override
   Future<void> logout() async {
     if (_authService.isAvailable) {
       await _authService.logout();

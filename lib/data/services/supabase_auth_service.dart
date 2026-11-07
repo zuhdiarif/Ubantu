@@ -434,6 +434,22 @@ class SupabaseAuthService {
     }
   }
 
+  Future<AppResult<bool>> deleteAccount() async {
+    if (!isAvailable) return AppResult.failure('Layanan autentikasi tidak tersedia.');
+    try {
+      final userId = _effectiveClient.auth.currentUser?.id;
+      if (userId == null) {
+        return AppResult.failure('Tidak ada pengguna yang sedang masuk.');
+      }
+      await _effectiveClient.from('profiles').delete().eq('id', userId);
+      await _effectiveClient.auth.signOut();
+      _cachedUser = null;
+      return AppResult.success(true);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
   Future<void> logout() async {
     _cachedUser = null;
     if (!isAvailable) return;

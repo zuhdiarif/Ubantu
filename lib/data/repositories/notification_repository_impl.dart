@@ -1,3 +1,4 @@
+import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/notification_service.dart';
 import 'package:ubantu/data/services/supabase_notification_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
@@ -35,8 +36,31 @@ class NotificationRepositoryImpl implements INotificationRepository, SessionScop
   void markAllAsRead() {
     _service.markAllAsRead();
     if (isRemoteActive) {
-      _supabaseService.markAllAsRead();
+      final uid = SupabaseService.instance.client.auth.currentUser?.id;
+      if (uid != null && uid.isNotEmpty) {
+        _supabaseService.markAllAsRead(uid);
+      } else {
+        _supabaseService.markAllAsRead();
+      }
     }
+  }
+
+  @override
+  Future<AppResult<bool>> markAsRead(String id) async {
+    _service.markAsRead(id);
+    if (isRemoteActive) {
+      return _supabaseService.markAsRead(id);
+    }
+    return AppResult.success(true);
+  }
+
+  @override
+  Future<AppResult<bool>> deleteNotification(String id) async {
+    _service.deleteNotification(id);
+    if (isRemoteActive) {
+      return _supabaseService.deleteNotification(id);
+    }
+    return AppResult.success(true);
   }
 
   @override

@@ -11,11 +11,24 @@ class SupabaseSosService {
 
   SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
 
-  Future<AppResult<SosReportModel>> submitSosReport(String issueType) async {
+  Future<AppResult<SosReportModel>> submitSosReport(dynamic reportOrIssueType, {String? userId}) async {
     try {
       final user = _effectiveClient.auth.currentUser;
-      final payload = {
-        'reporter_id': user?.id,
+      final String issueType;
+      final String? effectiveUserId;
+      if (reportOrIssueType is SosReportModel) {
+        issueType = reportOrIssueType.issueType;
+        effectiveUserId = reportOrIssueType.userId.isNotEmpty ? reportOrIssueType.userId : user?.id;
+      } else {
+        issueType = reportOrIssueType.toString();
+        effectiveUserId = userId ?? user?.id;
+      }
+
+      final payload = <String, dynamic>{
+        if (effectiveUserId != null && effectiveUserId.isNotEmpty) ...{
+          'user_id': effectiveUserId,
+          'reporter_id': effectiveUserId,
+        },
         'issue_type': issueType,
         'status': SosStatus.received.name,
       };

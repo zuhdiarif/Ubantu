@@ -22,11 +22,11 @@ class ChatProvider extends ChangeNotifier {
   ChatProvider({
     IChatRepository? repository,
     INotificationRepository? notificationRepository,
-  })  : _repository = repository ?? ChatRepositoryImpl(),
+  })  : _repository = repository ?? ServiceLocator.instance.chatRepository,
         _notificationRepository = notificationRepository ?? ServiceLocator.instance.notificationRepository,
-        _getChatRoomsUseCase = GetChatRoomsUseCase(repository ?? ChatRepositoryImpl()),
-        _getChatMessagesUseCase = GetChatMessagesUseCase(repository ?? ChatRepositoryImpl()),
-        _sendChatMessageUseCase = SendChatMessageUseCase(repository ?? ChatRepositoryImpl());
+        _getChatRoomsUseCase = GetChatRoomsUseCase(repository ?? ServiceLocator.instance.chatRepository),
+        _getChatMessagesUseCase = GetChatMessagesUseCase(repository ?? ServiceLocator.instance.chatRepository),
+        _sendChatMessageUseCase = SendChatMessageUseCase(repository ?? ServiceLocator.instance.chatRepository);
 
   final Map<String, DateTime> _locallyReadRooms = {};
   List<ChatRoomModel> _rooms = [];

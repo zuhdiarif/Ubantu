@@ -52,10 +52,11 @@ class UserModel {
         (e) => e.name == json['role'],
         orElse: () => UserRole.customer,
       ),
-      gender: UserGender.values.firstWhere(
-        (e) => e.name == json['gender'],
-        orElse: () => UserGender.unspecified,
-      ),
+      gender: switch (json['gender']) {
+        'male' || 'lakiLaki' || 'laki_laki' => UserGender.male,
+        'female' || 'perempuan' => UserGender.female,
+        _ => UserGender.unspecified,
+      },
       isFemaleOnlyPreferred: json['is_female_only_preferred'] as bool? ?? false,
       rewardPoints: json['reward_points'] as int? ?? 0,
       faculty: json['faculty'] as String?,

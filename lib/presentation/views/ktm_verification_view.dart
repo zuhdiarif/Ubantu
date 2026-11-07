@@ -7,6 +7,7 @@ import 'package:ubantu/components/custom_button.dart';
 import 'package:ubantu/components/custom_input_field.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
+import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/core/utils/app_validators.dart';
 import 'package:ubantu/core/utils/input_formatters.dart';
@@ -65,6 +66,39 @@ class _KtmVerificationContentState extends State<_KtmVerificationContent> {
       }
       if (user.ktmPhotoUrl != null && user.ktmPhotoUrl!.isNotEmpty) {
         _existingKtmUrl = user.ktmPhotoUrl;
+      }
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _submitKtm();
+    });
+  }
+
+  Future<void> _submitKtm() async {
+    final regProvider = context.read<RegistrationProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final ktmPath = regProvider.ktmPhotoPath;
+    final nim = regProvider.nim.trim();
+    if (ktmPath != null && ktmPath.isNotEmpty && nim.isNotEmpty && authProvider.isAuthenticated) {
+      AppResult<dynamic> res;
+      try {
+        res = await (authProvider as dynamic).submitKtm(
+          nim: nim,
+          ktmPath: ktmPath,
+        );
+      } catch (_) {
+        res = await authProvider.submitKtm(
+          nim: nim,
+          photoFile: File(ktmPath),
+        );
+      }
+      if (!mounted) return;
+      if (!res.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.errorMessage ?? 'Gagal memproses verifikasi KTM'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -239,10 +273,18 @@ class _KtmVerificationContentState extends State<_KtmVerificationContent> {
     if (isLoggedIn) {
       setState(() => _isSubmitting = true);
       final file = _selectedKtmFile ?? File(_existingKtmUrl ?? '');
-      final result = await authProvider.submitKtm(
-        nim: _nimController.text.trim(),
-        photoFile: file,
-      );
+      AppResult<dynamic> result;
+      try {
+        result = await (authProvider as dynamic).submitKtm(
+          nim: _nimController.text.trim(),
+          ktmPath: file.path,
+        );
+      } catch (_) {
+        result = await authProvider.submitKtm(
+          nim: _nimController.text.trim(),
+          photoFile: file,
+        );
+      }
       setState(() => _isSubmitting = false);
 
       if (mounted) {
@@ -310,7 +352,6 @@ class _KtmVerificationContentState extends State<_KtmVerificationContent> {
           context.go(AppRouter.home);
         }
       } else {
-        await regProvider.sendOtp();
         if (mounted) {
           context.push(AppRouter.otpVerification);
         }

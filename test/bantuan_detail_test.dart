@@ -119,7 +119,9 @@ void main() {
       id: 'order-123',
       requesterId: 'user-1',
       category: ServiceCategory.bersihKos,
-      status: MoveServiceStatus.inProgress,
+      helperId: 'helper-1',
+      helperName: 'Nasya',
+      status: MoveServiceStatus.dikerjakan,
       locationOrigin: 'Jl. Veteran, Malang',
       locationDestination: 'Stasiun Malang Kota Baru',
       scheduledAt: DateTime(2026, 7, 20, 9, 0),
@@ -144,10 +146,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('Detail Petugas'), findsOneWidget);
-    expect(find.text('Status: Aktif'), findsOneWidget);
+    expect(find.text('Status: Dikerjakan'), findsOneWidget);
     expect(find.text('Informasi Petugas'), findsOneWidget);
     expect(find.text('Nasya'), findsOneWidget);
-    expect(find.text('4.8 (23)'), findsOneWidget);
+    expect(find.text('5.0'), findsOneWidget);
     expect(find.text('Detail Bantuan'), findsOneWidget);
     expect(find.text('Bersih kos'), findsOneWidget);
     expect(find.text('Jl. Veteran, Malang'), findsOneWidget);

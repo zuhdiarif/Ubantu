@@ -29,13 +29,40 @@ class SupabaseNotificationService {
     }
   }
 
-  Future<AppResult<bool>> markAllAsRead() async {
+  Future<AppResult<bool>> markAllAsRead([String? userId]) async {
     try {
-      final user = _effectiveClient.auth.currentUser;
+      final uid = userId ?? _effectiveClient.auth.currentUser?.id ?? '';
       await _effectiveClient
           .from('notifications')
           .update({'is_read': true})
-          .eq('user_id', user?.id ?? '');
+          .eq('user_id', uid)
+          .eq('is_read', false);
+
+      return AppResult.success(true);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<AppResult<bool>> markAsRead(String notificationId) async {
+    try {
+      await _effectiveClient
+          .from('notifications')
+          .update({'is_read': true})
+          .eq('id', notificationId);
+
+      return AppResult.success(true);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<AppResult<bool>> deleteNotification(String notificationId) async {
+    try {
+      await _effectiveClient
+          .from('notifications')
+          .delete()
+          .eq('id', notificationId);
 
       return AppResult.success(true);
     } catch (e) {

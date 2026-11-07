@@ -275,7 +275,9 @@ class MitraActiveOrderView extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Mahasiswa UB (Pemesan)',
+                  (order.requesterName != null && order.requesterName!.trim().isNotEmpty)
+                      ? order.requesterName!
+                      : 'Mahasiswa UB (Pemesan)',
                   style: AppTypography.body1.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -313,7 +315,9 @@ class MitraActiveOrderView extends StatelessWidget {
                       orderNumber: 'UB-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : '8890'}',
                       serviceTitle: 'Layanan ${order.category.name}',
                       serviceStatus: order.status.name,
-                      otherUserName: 'Mahasiswa UB (Pemesan)',
+                      otherUserName: (order.requesterName != null && order.requesterName!.trim().isNotEmpty)
+                          ? order.requesterName!
+                          : 'Mahasiswa UB (Pemesan)',
                       otherUserFaculty: 'Universitas Brawijaya',
                       lastMessage: '',
                       lastMessageTime: DateTime.now(),

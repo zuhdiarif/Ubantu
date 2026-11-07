@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:ubantu/components/ubantu_campus_map.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/core/utils/campus_locations.dart';
-import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/domain/models/chat_room_model.dart';
 import 'package:ubantu/domain/models/service_order_model.dart';
@@ -25,6 +24,7 @@ class BantuanDetailView extends StatelessWidget {
     } catch (_) {}
 
     final currentOrder = order ??
+        orderProvider.activeOrder ??
         orderProvider.myOrders
             .where(
               (o) =>
@@ -41,14 +41,17 @@ class BantuanDetailView extends StatelessWidget {
       _ => 'Bersih kos',
     };
 
-    final String helperName = currentOrder?.helperId != null &&
-            currentOrder!.helperId!.isNotEmpty
-        ? (SupabaseService.instance.isInitialized
-            ? 'Mitra Penolong UB'
-            : 'Nasya')
-        : (SupabaseService.instance.isInitialized
-            ? 'Menunggu Helper'
-            : 'Nasya');
+    final isWaiting = currentOrder == null ||
+        currentOrder.status == MoveServiceStatus.waiting ||
+        currentOrder.status == MoveServiceStatus.searching ||
+        ((currentOrder.helperId == null || currentOrder.helperId!.isEmpty) &&
+            (currentOrder.helperName == null || currentOrder.helperName!.isEmpty));
+
+    final String helperDisplayName = isWaiting
+        ? 'Menunggu Mitra UB'
+        : (currentOrder.helperName != null && currentOrder.helperName!.trim().isNotEmpty
+            ? currentOrder.helperName!.trim()
+            : 'Mitra Penolong UB');
 
     final String location = currentOrder?.locationOrigin.isNotEmpty == true
         ? currentOrder!.locationOrigin
@@ -69,7 +72,10 @@ class BantuanDetailView extends StatelessWidget {
         ? currentOrder!.itemDescription
         : 'Bantu bersihkan kamar kos, alat sudah disiapkan';
 
-    final bool hasUnreadForRoom = chatProvider?.rooms.any((r) => (r.orderId == currentOrder?.id || r.id == currentOrder?.id) && r.unreadCount > 0) ?? false;
+    final bool hasUnreadForRoom = chatProvider?.rooms.any((r) =>
+            (r.orderId == currentOrder?.id || r.id == currentOrder?.id) &&
+            r.unreadCount > 0) ??
+        false;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -118,15 +124,15 @@ class BantuanDetailView extends StatelessWidget {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const ShapeDecoration(
-                        color: Color(0xFF86B049),
-                        shape: OvalBorder(),
+                      decoration: ShapeDecoration(
+                        color: currentOrder?.status.badgeTextColor ?? const Color(0xFF86B049),
+                        shape: const OvalBorder(),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Text(
-                      'Status: Aktif',
-                      style: TextStyle(
+                    Text(
+                      'Status: ${currentOrder != null ? currentOrder.status.label : 'Aktif'}',
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 14,
                         fontFamily: 'Plus Jakarta Sans',
@@ -168,39 +174,62 @@ class BantuanDetailView extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        helperName,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: const [
-                          Icon(
-                            Icons.star_rounded,
-                            size: 18,
-                            color: Color(0xFFF86F1A),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          helperDisplayName,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w600,
                           ),
-                          SizedBox(width: 4),
-                          Text(
-                            '4.8 (23)',
+                        ),
+                        const SizedBox(height: 6),
+                        if (isWaiting)
+                          const Text(
+                            'Belum ada mitra yang mengambil pesanan',
                             style: TextStyle(
-                              color: Colors.black,
+                              color: Color(0xFF5C6658),
                               fontSize: 13,
                               fontFamily: 'Plus Jakarta Sans',
                               fontWeight: FontWeight.w400,
                             ),
+                          )
+                        else
+                          Row(
+                            children: const [
+                              Text(
+                                'Mitra Penolong UB',
+                                style: TextStyle(
+                                  color: Color(0xFF5C6658),
+                                  fontSize: 13,
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Icon(
+                                Icons.star_rounded,
+                                size: 18,
+                                color: Color(0xFFF86F1A),
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                '5.0',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 13,
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -358,7 +387,7 @@ class BantuanDetailView extends StatelessWidget {
                                     'UB-${currentOrder.id.length > 4 ? currentOrder.id.substring(0, 4).toUpperCase() : '8890'}',
                                 serviceTitle: 'Layanan $serviceCategoryName',
                                 serviceStatus: currentOrder.status.name,
-                                otherUserName: helperName,
+                                otherUserName: isWaiting ? 'Mitra Penolong UB' : helperDisplayName,
                                 otherUserFaculty: 'Universitas Brawijaya',
                                 lastMessage: '',
                                 lastMessageTime: DateTime.now(),

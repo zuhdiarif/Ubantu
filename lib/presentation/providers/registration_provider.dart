@@ -9,7 +9,7 @@ import 'package:ubantu/domain/usecases/resend_signup_otp_usecase.dart';
 import 'package:ubantu/domain/usecases/send_otp_usecase.dart';
 import 'package:ubantu/domain/usecases/verify_otp_usecase.dart';
 
-enum RegistrationNextStep { home, ktmVerification, otpVerification, otpSkipped }
+enum RegistrationNextStep { home, ktmVerification, otpVerification, otpSkipped, failed }
 
 class RegistrationProvider extends ChangeNotifier {
   final IAuthRepository _repository;
@@ -38,6 +38,7 @@ class RegistrationProvider extends ChangeNotifier {
   bool _isOtpVerifying = false;
   bool _isSigningUp = false;
   String? _otpError;
+  String? _signUpError;
   int _resendCooldown = 0;
   Timer? _cooldownTimer;
   bool _emailOtpSkipped = false;
@@ -52,6 +53,7 @@ class RegistrationProvider extends ChangeNotifier {
   bool get isOtpVerifying => _isOtpVerifying;
   bool get isSigningUp => _isSigningUp;
   String? get otpError => _otpError;
+  String? get signUpError => _signUpError;
   int get resendCooldown => _resendCooldown;
   bool get canResendOtp => _resendCooldown == 0;
   bool get emailOtpSkipped => _emailOtpSkipped;
@@ -98,6 +100,7 @@ class RegistrationProvider extends ChangeNotifier {
 
   Future<RegistrationNextStep> signUp() async {
     _isSigningUp = true;
+    _signUpError = null;
     notifyListeners();
 
     final result = await _repository.signUp(_email, _password, {
@@ -110,7 +113,7 @@ class RegistrationProvider extends ChangeNotifier {
 
     if (!result.isSuccess) {
       if (result.errorCode == 'email_delivery_unavailable' ||
-          (result.errorMessage ?? '').contains('email_delivery_unavailable')) {
+          result.errorMessage == 'email_delivery_unavailable') {
         final fallbackResult = await _repository.signUpFallback(_email, _password, {
           'full_name': _fullName,
           'phone_number': _phone,
@@ -127,13 +130,14 @@ class RegistrationProvider extends ChangeNotifier {
           return RegistrationNextStep.otpSkipped;
         } else {
           _otpError = fallbackResult.errorMessage ?? 'Gagal mendaftar akun';
+          await sendOtp();
           return RegistrationNextStep.otpVerification;
         }
       }
       _isSigningUp = false;
+      _signUpError = result.errorMessage ?? 'Registrasi gagal. Periksa kembali data Anda.';
       notifyListeners();
-      _startCooldown(60);
-      return RegistrationNextStep.otpVerification;
+      return RegistrationNextStep.failed;
     }
 
     if (_repository.didSignUpReturnSession() || !AppConfig.confirmEmailEnabled) {
@@ -173,7 +177,6 @@ class RegistrationProvider extends ChangeNotifier {
     _isOtpVerifying = false;
 
     if (result.isSuccess) {
-      _ktmStatus = KtmVerificationStatus.verified;
       notifyListeners();
       return true;
     } else {
@@ -194,6 +197,7 @@ class RegistrationProvider extends ChangeNotifier {
     _isOtpVerifying = false;
     _isSigningUp = false;
     _otpError = null;
+    _signUpError = null;
     _cooldownTimer?.cancel();
     _resendCooldown = 0;
     _emailOtpSkipped = false;

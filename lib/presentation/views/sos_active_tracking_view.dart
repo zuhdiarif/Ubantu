@@ -5,21 +5,27 @@ import 'package:ubantu/components/custom_button.dart';
 import 'package:ubantu/components/theme/app_colors.dart';
 import 'package:ubantu/components/theme/app_typography.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
+import 'package:ubantu/domain/models/app_enums.dart';
+import 'package:ubantu/domain/models/sos_report_model.dart';
 import 'package:ubantu/presentation/providers/sos_provider.dart';
+
+extension SosProviderTrackingExtension on SosProvider {
+  SosReportModel? get currentReport => activeReport;
+
+  Future<void> cancelActiveSos() async {
+    await updateStatus(SosStatus.completed);
+  }
+}
+
+extension SosReportModelDetailsExtension on SosReportModel {
+  String get details => issueType;
+}
 
 class SosActiveTrackingView extends StatelessWidget {
   const SosActiveTrackingView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final sosProvider = context.watch<SosProvider>();
-    final createdAt = sosProvider.activeReport?.createdAt ?? DateTime.now();
-    final receivedTime =
-        '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
-    final handledDt = createdAt.add(const Duration(minutes: 2));
-    final handledTime =
-        '${handledDt.hour.toString().padLeft(2, '0')}:${handledDt.minute.toString().padLeft(2, '0')}';
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -42,128 +48,209 @@ class SosActiveTrackingView extends StatelessWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEBEE),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFFCDD2)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.campaign_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+        child: Consumer<SosProvider>(
+          builder: (context, sosProvider, _) {
+            final report = sosProvider.currentReport;
+            final status = report?.status ?? SosStatus.received;
+            final isResolved = status == SosStatus.completed || status.name == 'resolved';
+
+            final createdAt = report?.createdAt ?? DateTime.now();
+            final receivedTime =
+                '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+            final handledDt = createdAt.add(const Duration(minutes: 2));
+            final handledTime =
+                '${handledDt.hour.toString().padLeft(2, '0')}:${handledDt.minute.toString().padLeft(2, '0')}';
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFFCDD2)),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.campaign_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'SOS AKTIF',
+                                style: AppTypography.body1.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Tim kami telah menerima laporanmu dan sedang memproses bantuan.',
+                                style: AppTypography.body2.copyWith(
+                                  color: const Color(0xFFC62828),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (report?.details != null && report!.details.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'SOS AKTIF',
-                            style: AppTypography.body1.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
+                          Row(
+                            children: [
+                              const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primaryDark),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Detail Laporan SOS',
+                                style: AppTypography.body2.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 6),
                           Text(
-                            'Tim kami telah menerima laporanmu dan sedang memproses bantuan.',
+                            report.details,
                             style: AppTypography.body2.copyWith(
-                              color: const Color(0xFFC62828),
+                              color: Colors.grey.shade800,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Status Bantuan',
-                style: AppTypography.h5.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildTimelineStep(
-                title: 'Diterima',
-                subtitle: 'Laporan kamu telah diterima oleh tim bantuan.',
-                time: receivedTime,
-                isCompleted: true,
-                isActive: false,
-                isLast: false,
-              ),
-              _buildTimelineStep(
-                title: 'Ditangani',
-                subtitle:
-                    'Tim bantuan sedang memproses laporan dan akan segera menghubungi kamu.',
-                time: handledTime,
-                isCompleted: false,
-                isActive: true,
-                isLast: false,
-              ),
-              _buildTimelineStep(
-                title: 'Selesai',
-                subtitle: 'Bantuan telah diberikan dan laporan diselesaikan.',
-                time: '',
-                isCompleted: false,
-                isActive: false,
-                isLast: true,
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.shield_rounded,
-                      color: AppColors.primaryGreen,
-                      size: 24,
+                  const SizedBox(height: 24),
+                  Text(
+                    'Status Bantuan',
+                    style: AppTypography.h5.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primaryDark,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Tetap tenang, tim kami sedang bekerja untuk memastikan kamu aman.',
-                        style: AppTypography.body2.copyWith(
-                          color: AppColors.primaryDark,
-                          fontWeight: FontWeight.w500,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildStatusTimeline(
+                    status: status,
+                    isResolved: isResolved,
+                    receivedTime: receivedTime,
+                    handledTime: handledTime,
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.shield_rounded,
+                          color: AppColors.primaryGreen,
+                          size: 24,
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Tetap tenang, tim kami sedang bekerja untuk memastikan kamu aman.',
+                            style: AppTypography.body2.copyWith(
+                              color: AppColors.primaryDark,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 32),
+                  CustomButton(
+                    text: 'Akhiri Sinyal Darurat (Saya Aman)',
+                    type: CustomButtonType.outline,
+                    icon: Icons.check_circle_outline_rounded,
+                    onPressed: () async {
+                      await context.read<SosProvider>().cancelActiveSos();
+                      if (context.mounted) {
+                        context.go(AppRouter.home);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  CustomButton(
+                    text: 'Hubungi Bantuan',
+                    icon: Icons.phone_in_talk_rounded,
+                    onPressed: () => context.push(AppRouter.sosFinish),
+                  ),
+                ],
               ),
-              const SizedBox(height: 32),
-              CustomButton(
-                text: 'Hubungi Bantuan',
-                icon: Icons.phone_in_talk_rounded,
-                onPressed: () => context.push(AppRouter.sosFinish),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
+    );
+  }
+
+  Widget _buildStatusTimeline({
+    required SosStatus status,
+    required bool isResolved,
+    required String receivedTime,
+    required String handledTime,
+  }) {
+    return Column(
+      children: [
+        _buildTimelineStep(
+          title: 'Sinyal Darurat Diterima',
+          subtitle: 'Laporan kamu telah diterima oleh tim bantuan.',
+          time: receivedTime,
+          isDone: true,
+          isCurrent: status == SosStatus.received,
+          isLast: false,
+        ),
+        _buildTimelineStep(
+          title: 'Tim Keamanan Merespons',
+          subtitle: 'Tim bantuan sedang memproses laporan dan segera ke lokasi.',
+          time: (status == SosStatus.handling || isResolved) ? handledTime : '',
+          isDone: status == SosStatus.handling || isResolved,
+          isCurrent: status == SosStatus.handling,
+          isLast: false,
+        ),
+        _buildTimelineStep(
+          title: 'Tiba di Lokasi & Penanganan Selesai',
+          subtitle: 'Bantuan telah diberikan dan situasi dinyatakan aman terkendali.',
+          time: '',
+          isDone: isResolved,
+          isCurrent: isResolved,
+          isLast: true,
+        ),
+      ],
     );
   }
 
@@ -171,12 +258,12 @@ class SosActiveTrackingView extends StatelessWidget {
     required String title,
     required String subtitle,
     required String time,
-    required bool isCompleted,
-    required bool isActive,
+    required bool isDone,
+    required bool isCurrent,
     required bool isLast,
   }) {
     Widget indicator;
-    if (isCompleted) {
+    if (isDone && !isCurrent) {
       indicator = Container(
         width: 28,
         height: 28,
@@ -186,14 +273,14 @@ class SosActiveTrackingView extends StatelessWidget {
         ),
         child: const Icon(Icons.check, color: Colors.white, size: 16),
       );
-    } else if (isActive) {
+    } else if (isCurrent) {
       indicator = Container(
         width: 28,
         height: 28,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade400, width: 2),
+          border: Border.all(color: Colors.red, width: 2),
         ),
         child: const Center(
           child: SizedBox(
@@ -201,7 +288,7 @@ class SosActiveTrackingView extends StatelessWidget {
             height: 12,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: AppColors.primaryDark,
+              color: Colors.red,
             ),
           ),
         ),
@@ -228,7 +315,7 @@ class SosActiveTrackingView extends StatelessWidget {
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: Colors.grey.shade300,
+                    color: isDone ? Colors.red : Colors.grey.shade300,
                   ),
                 ),
             ],

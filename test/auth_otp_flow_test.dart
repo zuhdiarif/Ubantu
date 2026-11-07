@@ -23,6 +23,12 @@ class _FakeAuthRepository implements IAuthRepository {
   String? lastRecoveryCode;
 
   @override
+  Future<AppResult<bool>> deleteAccount() async {
+    currentUser = null;
+    return AppResult.success(true);
+  }
+
+  @override
   Future<AppResult<UserModel>> login(String email, String password) async {
     currentUser = UserModel(
       id: 'usr_test',
@@ -341,7 +347,8 @@ void main() {
 
       expect(repository.fallbackCalled, isFalse);
       expect(provider.emailOtpSkipped, isFalse);
-      expect(nextStep, RegistrationNextStep.otpVerification);
+      expect(nextStep, RegistrationNextStep.failed);
+      expect(provider.signUpError, isNotNull);
     });
   });
 

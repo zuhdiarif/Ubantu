@@ -13,6 +13,7 @@ import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/auth_provider.dart';
 import 'package:ubantu/presentation/providers/barter_provider.dart';
 import 'package:ubantu/presentation/providers/chat_provider.dart';
+import 'package:ubantu/domain/models/reward_points_model.dart';
 import 'package:ubantu/presentation/providers/loyalty_provider.dart';
 import 'package:ubantu/presentation/providers/mitra_provider.dart';
 import 'package:ubantu/presentation/providers/notification_provider.dart';
@@ -71,7 +72,14 @@ class _ProfilViewState extends State<ProfilView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthProvider>().refreshProfile();
+      final auth = context.read<AuthProvider>();
+      auth.refreshProfile();
+      try {
+        final user = auth.currentUser;
+        if (user != null && user.id.isNotEmpty) {
+          context.read<LoyaltyProvider>().fetchLoyaltyPoints(user.id);
+        }
+      } catch (_) {}
     });
   }
 
@@ -339,9 +347,11 @@ class _ProfilViewState extends State<ProfilView> {
     );
   }
 
-  void _showLoyaltySheet(BuildContext context, AuthProvider authProvider) {
-    final user = authProvider.currentUser;
-    final points = user?.rewardPoints ?? 0;
+  void _showLoyaltySheet(BuildContext context, int points) {
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (userId != null && userId.isNotEmpty) {
+      context.read<LoyaltyProvider>().fetchLoyaltyPoints(userId);
+    }
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -350,133 +360,180 @@ class _ProfilViewState extends State<ProfilView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Consumer<LoyaltyProvider>(
+          builder: (context, loyaltyProvider, _) {
+            final totalPoints = loyaltyProvider.loyaltyPoints?.totalPoints ?? points;
+            final availableVouchers = loyaltyProvider.loyaltyPoints?.availableVouchers ?? 0;
+            final claimedCodes = loyaltyProvider.loyaltyPoints?.claimedVoucherCodes ?? const <String>[];
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Poin Reward & Voucher',
-                    style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE2F1D8),
-                      borderRadius: BorderRadius.circular(12),
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Poin Reward & Voucher',
+                          style: AppTypography.h4.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2F1D8),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.stars_rounded, color: Color(0xFF86B049), size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$totalPoints Poin',
+                              style: const TextStyle(
+                                fontFamily: 'Plus Jakarta Sans',
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF2F3E2E),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Kumpulkan poin dari setiap bantuan yang berhasil diselesaikan dan tukarkan dengan voucher mitra kampus.',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 13,
+                      color: Color(0xFF70776D),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAF4),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8D8)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.stars_rounded, color: Color(0xFF86B049), size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$points Poin',
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2F3E2E),
-                            fontSize: 13,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF86B049),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.confirmation_num_rounded, color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Voucher Diskon Kantin UB',
+                                    style: TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                      color: Color(0xFF263225),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Voucher Tersedia: $availableVouchers',
+                                    style: const TextStyle(
+                                      fontFamily: 'Plus Jakarta Sans',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF2F3E2E),
+                                    ),
+                                  ),
+                                  if (claimedCodes.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Kode Terakhir: ${claimedCodes.last}',
+                                      style: const TextStyle(
+                                        fontFamily: 'Plus Jakarta Sans',
+                                        fontSize: 11,
+                                        color: Color(0xFF70776D),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF263225),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: (totalPoints >= 100 && !loyaltyProvider.isLoading && userId != null && userId.isNotEmpty)
+                                ? () async {
+                                    final success = await loyaltyProvider.claimVoucher(userId, 100);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(success
+                                              ? 'Voucher gratis 1x berhasil ditukarkan!'
+                                              : (loyaltyProvider.errorMessage ?? 'Gagal menukarkan voucher')),
+                                          backgroundColor: success ? AppColors.primaryDark : Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                : null,
+                            child: loyaltyProvider.isLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
+                                : const Text(
+                                    'Tukar 100 Poin Jadi Voucher Gratis 1x',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                  ),
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Kumpulkan poin dari setiap bantuan yang berhasil diselesaikan dan tukarkan dengan voucher mitra kampus.',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  color: Color(0xFF70776D),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAF4),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8D8)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF86B049),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.confirmation_num_rounded, color: Colors.white, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Voucher Diskon Kantin UB',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                              color: Color(0xFF263225),
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Potongan Rp 5.000 (Min. 50 Poin)',
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 11,
-                              color: Color(0xFF70776D),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF263225),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Voucher diskon kantin berhasil diklaim!'),
-                            backgroundColor: Color(0xFF263225),
-                          ),
-                        );
-                        Navigator.of(sheetContext).pop();
-                      },
-                      child: const Text('Klaim', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -543,6 +600,22 @@ class _ProfilViewState extends State<ProfilView> {
     );
   }
 
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    _resetUserSessionProviders(context);
+    final result = await context.read<AuthProvider>().deleteAccount();
+    if (!context.mounted) return;
+    if (!result.isSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Gagal menghapus akun.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    context.go(AppRouter.login);
+  }
+
   void _showDeleteAccountDialog(BuildContext context, AuthProvider authProvider) {
     showDialog(
       context: context,
@@ -566,17 +639,7 @@ class _ProfilViewState extends State<ProfilView> {
               ),
               onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                _resetUserSessionProviders(context);
-                await authProvider.logout();
-                if (context.mounted) {
-                  context.go(AppRouter.login);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Akun berhasil dihapus'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                await _confirmDeleteAccount(context);
               },
               child: const Text('Hapus'),
             ),
@@ -697,6 +760,11 @@ class _ProfilViewState extends State<ProfilView> {
     final user = authProvider.currentUser;
     final displayName = user?.fullName.isNotEmpty == true ? user!.fullName : 'Mahasiswa UB';
     final displayEmail = user?.email.isNotEmpty == true ? user!.email : 'mahasiswa@student.ub.ac.id';
+    LoyaltyProvider? loyaltyProvider;
+    try {
+      loyaltyProvider = context.watch<LoyaltyProvider>();
+    } catch (_) {}
+    final displayPoints = loyaltyProvider?.loyaltyPoints?.totalPoints ?? user?.rewardPoints ?? 0;
 
     return Material(
       color: AppColors.background,
@@ -854,8 +922,8 @@ class _ProfilViewState extends State<ProfilView> {
               _buildProfileOption(
                 icon: Icons.card_giftcard_rounded,
                 title: 'Poin Reward & Voucher',
-                subtitle: '${user?.rewardPoints ?? 0} Poin Tersedia',
-                onTap: () => _showLoyaltySheet(context, authProvider),
+                subtitle: '$displayPoints Poin Tersedia',
+                onTap: () => _showLoyaltySheet(context, displayPoints),
               ),
               _buildProfileOption(
                 icon: Icons.settings,
@@ -999,4 +1067,10 @@ class _ProfilViewState extends State<ProfilView> {
       ),
     );
   }
+}
+
+
+extension LoyaltyProviderProfilExtension on LoyaltyProvider {
+  RewardPointsModel? get loyaltyPoints => pointsData;
+  Future<void> fetchLoyaltyPoints(String userId) => loadLoyaltyPoints(userId);
 }

@@ -39,15 +39,21 @@ class _AktivitasViewState extends State<AktivitasView> {
     final orderProvider = context.watch<ServiceOrderProvider>();
     final myOrders = orderProvider.myOrders;
 
-    final ongoingOrders = myOrders
-        .where((o) => o.status != MoveServiceStatus.completed)
+    final activeOrders = myOrders
+        .where((o) =>
+            o.status != MoveServiceStatus.completed &&
+            o.status != MoveServiceStatus.cancelled &&
+            o.status != MoveServiceStatus.dibatalkan)
         .toList();
 
     final historyOrders = myOrders
-        .where((o) => o.status == MoveServiceStatus.completed)
+        .where((o) =>
+            o.status == MoveServiceStatus.completed ||
+            o.status == MoveServiceStatus.cancelled ||
+            o.status == MoveServiceStatus.dibatalkan)
         .toList();
 
-    final displayedOrders = _selectedTab == 0 ? ongoingOrders : historyOrders;
+    final displayedOrders = _selectedTab == 0 ? activeOrders : historyOrders;
 
     return Material(
       color: AppColors.background,
@@ -176,9 +182,11 @@ class _AktivitasViewState extends State<AktivitasView> {
       ServiceCategory.antarJemput => 'assets/images/ic_antar_jemput.png',
     };
 
-    final statusText = order.status.label;
-    final badgeBg = order.status.badgeBgColor;
-    final badgeText = order.status.badgeTextColor;
+    final isCancelled = order.status == MoveServiceStatus.cancelled ||
+        order.status == MoveServiceStatus.dibatalkan;
+    final statusText = isCancelled ? 'Dibatalkan' : order.status.label;
+    final badgeBg = isCancelled ? const Color(0xFFFFEBEE) : order.status.badgeBgColor;
+    final badgeText = isCancelled ? const Color(0xFFC62828) : order.status.badgeTextColor;
 
     final dateStr =
         '${order.scheduledAt.day} ${_monthName(order.scheduledAt.month)} ${order.scheduledAt.year} - ${order.scheduledAt.hour.toString().padLeft(2, '0')}:${order.scheduledAt.minute.toString().padLeft(2, '0')}';
@@ -186,29 +194,30 @@ class _AktivitasViewState extends State<AktivitasView> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
+        context.read<ServiceOrderProvider>().setActiveOrder(order);
         if (order.status == MoveServiceStatus.accepted ||
             order.status == MoveServiceStatus.inProgress) {
           switch (order.category) {
             case ServiceCategory.pindahKos:
-              context.push(AppRouter.pindahKosInProgress);
+              context.push(AppRouter.pindahKosInProgress, extra: order);
               break;
             case ServiceCategory.bersihKos:
-              context.push(AppRouter.bersihKosInProgress);
+              context.push(AppRouter.bersihKosInProgress, extra: order);
               break;
             case ServiceCategory.antarJemput:
-              context.push(AppRouter.antarJemputInProgress);
+              context.push(AppRouter.antarJemputInProgress, extra: order);
               break;
           }
         } else if (order.status == MoveServiceStatus.completed) {
           switch (order.category) {
             case ServiceCategory.pindahKos:
-              context.push(AppRouter.pindahKosSelesai);
+              context.push(AppRouter.pindahKosSelesai, extra: order);
               break;
             case ServiceCategory.bersihKos:
-              context.push(AppRouter.bersihKosSelesai);
+              context.push(AppRouter.bersihKosSelesai, extra: order);
               break;
             case ServiceCategory.antarJemput:
-              context.push(AppRouter.antarJemputSelesai);
+              context.push(AppRouter.antarJemputSelesai, extra: order);
               break;
           }
         } else {

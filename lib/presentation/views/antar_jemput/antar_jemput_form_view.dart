@@ -7,8 +7,29 @@ import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/domain/models/app_enums.dart';
 import 'package:ubantu/presentation/providers/service_order_provider.dart';
 
+enum AntarJemputMode { barang, tebengan }
+
 class AntarJemputFormView extends StatefulWidget {
   const AntarJemputFormView({super.key});
+
+  static bool validateStep0({
+    required AntarJemputMode mode,
+    required String pickup,
+    required String dropoff,
+    String? receiverName,
+    String? receiverPhone,
+  }) {
+    final baseValid = pickup.trim().isNotEmpty && dropoff.trim().isNotEmpty;
+    if (mode == AntarJemputMode.barang) {
+      final phoneValid = receiverPhone != null &&
+          receiverPhone.replaceAll(RegExp(r'[^0-9]'), '').length >= 9;
+      return baseValid &&
+          receiverName != null &&
+          receiverName.trim().isNotEmpty &&
+          phoneValid;
+    }
+    return baseValid;
+  }
 
   @override
   State<AntarJemputFormView> createState() => _AntarJemputFormViewState();
@@ -22,10 +43,13 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
   final TextEditingController _detailController = TextEditingController();
   final TextEditingController _barterDescController = TextEditingController();
 
+  TextEditingController get _pickupController => _originController;
+  TextEditingController get _dropoffController => _destinationController;
+
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = const TimeOfDay(hour: 14, minute: 30);
 
-  String _mode = 'barang';
+  AntarJemputMode _mode = AntarJemputMode.barang;
   VehicleType _selectedVehicle = VehicleType.motor;
   double _selectedWeight = 5.0;
 
@@ -123,7 +147,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
 
   void _showConfirmationSheet() {
     final vehicleLabel = _selectedVehicle == VehicleType.motor ? 'Motor' : 'Mobil';
-    final weightLabel = _mode == 'barang' ? '${_selectedWeight.toInt()} kg' : 'Tebengan / Orang';
+    final weightLabel = _mode == AntarJemputMode.barang ? '${_selectedWeight.toInt()} kg' : 'Tebengan / Orang';
     final barterLabel = _barterDescController.text.trim().isNotEmpty
         ? _barterDescController.text.trim()
         : 'Barter ${_selectedBarter.name}';
@@ -216,37 +240,62 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
     );
   }
 
-  void _onPressSubmit() {
-    if (_originController.text.trim().isEmpty || _destinationController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lokasi jemput dan tujuan wajib diisi.')),
-      );
-      return;
-    }
+  String? _validateReceiverPhone(String? val) {
+    if (val == null || val.trim().isEmpty) return 'Nomor HP penerima wajib diisi';
+    final cleaned = val.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleaned.length < 9) return 'Nomor HP minimal 9 digit';
+    return null;
+  }
 
-    if (_receiverNameController.text.trim().isEmpty || _receiverPhoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama dan nomor HP penerima wajib diisi.')),
-      );
-      return;
+  bool _isStepValid([int step = 0]) {
+    switch (step) {
+      case 0:
+        final baseValid = _pickupController.text.trim().isNotEmpty &&
+            _dropoffController.text.trim().isNotEmpty;
+        if (_mode == AntarJemputMode.barang) {
+          return baseValid &&
+              _receiverNameController.text.trim().isNotEmpty &&
+              _validateReceiverPhone(_receiverPhoneController.text) == null;
+        }
+        return baseValid;
+      default:
+        return true;
+    }
+  }
+
+  void _onPressSubmit() {
+    if (!_isStepValid(0)) {
+      if (_originController.text.trim().isEmpty || _destinationController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lokasi jemput dan tujuan wajib diisi.')),
+        );
+        return;
+      }
+      if (_mode == AntarJemputMode.barang) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nama dan nomor HP penerima wajib diisi.')),
+        );
+        return;
+      }
     }
 
     _showConfirmationSheet();
   }
 
   Future<void> _submitOrder() async {
-    if (_originController.text.trim().isEmpty || _destinationController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lokasi jemput dan tujuan wajib diisi.')),
-      );
-      return;
-    }
-
-    if (_receiverNameController.text.trim().isEmpty || _receiverPhoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nama dan nomor HP penerima wajib diisi.')),
-      );
-      return;
+    if (!_isStepValid(0)) {
+      if (_originController.text.trim().isEmpty || _destinationController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lokasi jemput dan tujuan wajib diisi.')),
+        );
+        return;
+      }
+      if (_mode == AntarJemputMode.barang) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nama dan nomor HP penerima wajib diisi.')),
+        );
+        return;
+      }
     }
 
     final scheduledDateTime = DateTime(
@@ -262,10 +311,10 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
     final success = await provider.createAntarJemputOrder(
       locationOrigin: _originController.text.trim(),
       locationDestination: _destinationController.text.trim(),
-      receiverName: _receiverNameController.text.trim(),
-      receiverPhone: _receiverPhoneController.text.trim(),
+      receiverName: _mode == AntarJemputMode.barang ? _receiverNameController.text.trim() : '',
+      receiverPhone: _mode == AntarJemputMode.barang ? _receiverPhoneController.text.trim() : '',
       itemDescription: _detailController.text.trim().isEmpty
-          ? (_mode == 'barang' ? 'Pengiriman barang seputar UB' : 'Tebengan antar mahasiswa UB')
+          ? (_mode == AntarJemputMode.barang ? 'Pengiriman barang seputar UB' : 'Tebengan antar mahasiswa UB')
           : _detailController.text.trim(),
       scheduledAt: scheduledDateTime,
       barterType: _selectedBarter,
@@ -273,7 +322,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
           ? 'Barter standar ${_selectedBarter.name}'
           : _barterDescController.text.trim(),
       vehicleType: _selectedVehicle,
-      weightKg: _mode == 'barang' ? _selectedWeight : null,
+      weightKg: _mode == AntarJemputMode.barang ? _selectedWeight : null,
       photoUrl: _photoUrl,
       isFemaleOnly: _isFemaleOnly,
     );
@@ -341,7 +390,10 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
                 const SizedBox(height: 16),
                 _buildLocationSection(),
                 const SizedBox(height: 16),
-                _buildReceiverInfoSection(),
+                if (_mode == AntarJemputMode.barang) ...[
+                  _buildReceiverInfoSection(),
+                  const SizedBox(height: 16),
+                ],
                 const SizedBox(height: 16),
                 _buildVehicleAndWeightSection(),
                 const SizedBox(height: 16),
@@ -377,13 +429,13 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _mode = 'barang'),
+              onTap: () => setState(() => _mode = AntarJemputMode.barang),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: _mode == 'barang' ? Colors.white : Colors.transparent,
+                  color: _mode == AntarJemputMode.barang ? Colors.white : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: _mode == 'barang'
+                  boxShadow: _mode == AntarJemputMode.barang
                       ? [const BoxShadow(color: Color(0x14000000), blurRadius: 4, offset: Offset(0, 2))]
                       : null,
                 ),
@@ -393,7 +445,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
                     Icon(
                       Icons.inventory_2_rounded,
                       size: 16,
-                      color: _mode == 'barang' ? const Color(0xFF263225) : const Color(0xFF70776D),
+                      color: _mode == AntarJemputMode.barang ? const Color(0xFF263225) : const Color(0xFF70776D),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -401,8 +453,8 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
                       style: TextStyle(
                         fontSize: 13,
                         fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: _mode == 'barang' ? FontWeight.w700 : FontWeight.w500,
-                        color: _mode == 'barang' ? const Color(0xFF263225) : const Color(0xFF70776D),
+                        fontWeight: _mode == AntarJemputMode.barang ? FontWeight.w700 : FontWeight.w500,
+                        color: _mode == AntarJemputMode.barang ? const Color(0xFF263225) : const Color(0xFF70776D),
                       ),
                     ),
                   ],
@@ -412,13 +464,13 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => _mode = 'tebengan'),
+              onTap: () => setState(() => _mode = AntarJemputMode.tebengan),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: _mode == 'tebengan' ? Colors.white : Colors.transparent,
+                  color: _mode == AntarJemputMode.tebengan ? Colors.white : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: _mode == 'tebengan'
+                  boxShadow: _mode == AntarJemputMode.tebengan
                       ? [const BoxShadow(color: Color(0x14000000), blurRadius: 4, offset: Offset(0, 2))]
                       : null,
                 ),
@@ -428,7 +480,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
                     Icon(
                       Icons.person_pin_circle_rounded,
                       size: 16,
-                      color: _mode == 'tebengan' ? const Color(0xFF263225) : const Color(0xFF70776D),
+                      color: _mode == AntarJemputMode.tebengan ? const Color(0xFF263225) : const Color(0xFF70776D),
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -436,8 +488,8 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
                       style: TextStyle(
                         fontSize: 13,
                         fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: _mode == 'tebengan' ? FontWeight.w700 : FontWeight.w500,
-                        color: _mode == 'tebengan' ? const Color(0xFF263225) : const Color(0xFF70776D),
+                        fontWeight: _mode == AntarJemputMode.tebengan ? FontWeight.w700 : FontWeight.w500,
+                        color: _mode == AntarJemputMode.tebengan ? const Color(0xFF263225) : const Color(0xFF70776D),
                       ),
                     ),
                   ],
@@ -580,7 +632,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
             ),
           ],
         ),
-        if (_mode == 'barang') ...[
+        if (_mode == AntarJemputMode.barang) ...[
           const SizedBox(height: 14),
           const Text(
             'Kategori Berat Barang',
@@ -709,7 +761,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _mode == 'barang' ? 'Detail Barang / Paket' : 'Catatan Penjemputan',
+          _mode == AntarJemputMode.barang ? 'Detail Barang / Paket' : 'Catatan Penjemputan',
           style: const TextStyle(
             color: Colors.black,
             fontSize: 14,
@@ -735,7 +787,7 @@ class _AntarJemputFormViewState extends State<AntarJemputFormView> {
                 maxLines: 3,
                 style: const TextStyle(fontSize: 13, fontFamily: 'Plus Jakarta Sans'),
                 decoration: InputDecoration(
-                  hintText: _mode == 'barang'
+                  hintText: _mode == AntarJemputMode.barang
                       ? 'Tuliskan jenis barang (contoh: buku laporan, baju, titipan makanan)...'
                       : 'Tuliskan ciri pakaian atau titik tunggu spesifik...',
                   hintStyle: const TextStyle(
