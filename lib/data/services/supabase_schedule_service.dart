@@ -1,17 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/smart_schedule_model.dart';
-import 'package:ubantu/domain/models/student_schedule_model.dart';
+import 'package:ubantu/data/models/smart_schedule_model.dart';
+import 'package:ubantu/data/models/student_schedule_model.dart';
 
 class SupabaseScheduleService {
   final SupabaseClient? _client;
+
+  bool get isAvailable => _client != null || SupabaseService.instance.isInitialized;
 
   SupabaseScheduleService({SupabaseClient? supabaseClient}) : _client = supabaseClient;
 
   SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
 
   Future<AppResult<List<SmartScheduleModel>>> getSchedules(String userId) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final response = await _effectiveClient
           .from('schedules')
@@ -30,6 +35,9 @@ class SupabaseScheduleService {
   }
 
   Future<AppResult<SmartScheduleModel>> bookSchedule(SmartScheduleModel schedule) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final data = schedule.toJson()..remove('id');
       final response = await _effectiveClient
@@ -45,6 +53,9 @@ class SupabaseScheduleService {
   }
 
   Future<AppResult<List<StudentScheduleModel>>> getStudentSchedules(String userId) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final response = await _effectiveClient
           .from('student_schedules')
@@ -64,6 +75,9 @@ class SupabaseScheduleService {
   }
 
   Future<AppResult<StudentScheduleModel>> addStudentSchedule(StudentScheduleModel schedule) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final data = schedule.toJson();
       if (data['id'] == '' || data['id'] == null) {
@@ -82,6 +96,9 @@ class SupabaseScheduleService {
   }
 
   Future<AppResult<bool>> deleteStudentSchedule(String scheduleId) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       await _effectiveClient
           .from('student_schedules')

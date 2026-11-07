@@ -2,11 +2,11 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/loyalty_repository_impl.dart';
-import 'package:ubantu/domain/models/reward_points_model.dart';
-import 'package:ubantu/domain/repositories/loyalty_repository.dart';
-import 'package:ubantu/domain/usecases/award_order_points_usecase.dart';
-import 'package:ubantu/domain/usecases/claim_reward_usecase.dart';
-import 'package:ubantu/presentation/providers/loyalty_provider.dart';
+import 'package:ubantu/data/models/reward_points_model.dart';
+import 'package:ubantu/data/repositories/loyalty_repository.dart';
+import 'package:ubantu/logic/award_order_points_usecase.dart';
+import 'package:ubantu/logic/claim_reward_usecase.dart';
+import 'package:ubantu/ui/profile/loyalty_provider.dart';
 
 class _SlowClaimLoyaltyRepository implements ILoyaltyRepository {
   final Completer<void> gate = Completer<void>();

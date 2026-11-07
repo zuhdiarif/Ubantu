@@ -4,13 +4,13 @@ import 'package:ubantu/core/errors/app_exceptions.dart';
 import 'package:ubantu/data/repositories/barter_repository_impl.dart';
 import 'package:ubantu/data/repositories/profile_repository_impl.dart';
 import 'package:ubantu/data/services/storage_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/barter_item_model.dart';
-import 'package:ubantu/domain/models/notification_model.dart';
-import 'package:ubantu/domain/usecases/get_barter_items_usecase.dart';
-import 'package:ubantu/domain/usecases/get_profile_usecase.dart';
-import 'package:ubantu/domain/usecases/update_profile_usecase.dart';
-import 'package:ubantu/presentation/providers/barter_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/barter_item_model.dart';
+import 'package:ubantu/data/models/notification_model.dart';
+import 'package:ubantu/logic/get_barter_items_usecase.dart';
+import 'package:ubantu/logic/get_profile_usecase.dart';
+import 'package:ubantu/logic/update_profile_usecase.dart';
+import 'package:ubantu/ui/profile/barter_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

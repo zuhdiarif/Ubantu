@@ -2,13 +2,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/ubantu_campus_map.dart';
+import 'package:ubantu/ui/widgets/ubantu_campus_map.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
-import 'package:ubantu/presentation/views/bantuan_detail_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
+import 'package:ubantu/ui/aktivitas/bantuan_detail_view.dart';
 
 class MockOrderRepo implements IServiceOrderRepository {
   @override
@@ -110,6 +110,35 @@ class MockOrderRepo implements IServiceOrderRepository {
         createdAt: DateTime.now(),
       ),
     );
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    return AppResult.success(
+      ServiceOrderModel(
+        id: orderId,
+        requesterId: 'test',
+        category: ServiceCategory.bersihKos,
+        status: MoveServiceStatus.waiting,
+        locationOrigin: 'Origin',
+        locationDestination: 'Destination',
+        scheduledAt: DateTime.now(),
+        itemDescription: 'Desc',
+        barterType: BarterType.makanan,
+        barterDescription: 'Nasi',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
+    return AppResult.success(null);
   }
 }
 

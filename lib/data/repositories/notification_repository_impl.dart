@@ -2,9 +2,9 @@ import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/notification_service.dart';
 import 'package:ubantu/data/services/supabase_notification_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/notification_model.dart';
-import 'package:ubantu/domain/repositories/notification_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/notification_model.dart';
+import 'package:ubantu/data/repositories/notification_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class NotificationRepositoryImpl implements INotificationRepository, SessionScoped {
   final NotificationService _service;
@@ -30,6 +30,28 @@ class NotificationRepositoryImpl implements INotificationRepository, SessionScop
   @override
   void addNotification(String title, String message, {String type = 'general'}) {
     _service.addNotification(title, message, type: type);
+    if (isRemoteActive) {
+      final uid = SupabaseService.instance.client.auth.currentUser?.id ?? '';
+      final notification = NotificationModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: uid,
+        title: title,
+        message: message,
+        type: type,
+        createdAt: DateTime.now(),
+      );
+      _supabaseService.createNotification(notification);
+    }
+  }
+
+  @override
+  Future<void> loadRemoteNotifications() async {
+    if (isRemoteActive) {
+      final result = await _supabaseService.fetchNotifications();
+      if (result.isSuccess && result.data != null) {
+        _service.setNotifications(result.data!);
+      }
+    }
   }
 
   @override

@@ -423,3 +423,18 @@ begin
   exception when duplicate_object then null;
   end;
 end $$;
+
+create or replace function public.delete_current_user_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as 
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+  delete from public.profiles where id = auth.uid();
+  delete from auth.users where id = auth.uid();
+end;
+;

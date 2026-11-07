@@ -3,9 +3,9 @@ import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
 import 'package:ubantu/data/services/supabase_mitra_service.dart';
 import 'package:ubantu/data/services/supabase_order_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/models/task_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/models/task_model.dart';
 
 class FakeRemoteMitraServiceForSelfOrder extends SupabaseMitraService {
   final String _currentUserId;

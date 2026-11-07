@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/sos_report_model.dart';
-import 'package:ubantu/domain/models/task_model.dart';
-import 'package:ubantu/domain/models/user_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/sos_report_model.dart';
+import 'package:ubantu/data/models/task_model.dart';
+import 'package:ubantu/data/models/user_model.dart';
 
 void main() {
   group('Domain Model Tests', () {

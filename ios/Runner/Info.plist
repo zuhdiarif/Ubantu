@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>ubantu</string>
+	<string>Ubantu</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,6 +26,23 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Ubantu memerlukan akses kamera untuk mengambil foto bukti penyelesaian pesanan dan verifikasi KTM.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ubantu memerlukan akses galeri foto untuk memilih gambar profil, verifikasi KTM, dan bukti pesanan.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>io.supabase.ubantu</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>io.supabase.ubantu</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

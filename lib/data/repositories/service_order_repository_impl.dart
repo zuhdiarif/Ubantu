@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_order_service.dart';
 import 'package:ubantu/data/services/supabase_storage_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class ServiceOrderRepositoryImpl implements IServiceOrderRepository, SessionScoped {
   final SupabaseOrderService _service;
@@ -80,5 +80,25 @@ class ServiceOrderRepositoryImpl implements IServiceOrderRepository, SessionScop
   @override
   Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) {
     return _service.confirmBarter(orderId);
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) {
+    return _service.updateOrderNegotiation(
+      orderId,
+      paymentMethod: paymentMethod,
+      price: price,
+      barterDescription: barterDescription,
+    );
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) {
+    return _service.fetchOrderById(orderId);
   }
 }

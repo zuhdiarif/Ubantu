@@ -2,12 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ubantu/core/utils/mock_data_factory.dart';
 import 'package:ubantu/data/repositories/rating_repository_impl.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/rating_model.dart';
-import 'package:ubantu/domain/models/task_filter_model.dart';
-import 'package:ubantu/domain/usecases/search_tasks_usecase.dart';
-import 'package:ubantu/presentation/providers/rating_provider.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/rating_model.dart';
+import 'package:ubantu/data/models/task_filter_model.dart';
+import 'package:ubantu/logic/search_tasks_usecase.dart';
+import 'package:ubantu/ui/mitra/rating_provider.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

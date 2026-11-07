@@ -3,10 +3,10 @@ import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
 import 'package:ubantu/data/services/supabase_mitra_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/chat_message_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/chat_message_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
 
 class FakeSupabaseMitraService extends SupabaseMitraService {
   @override

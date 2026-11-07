@@ -3,10 +3,10 @@ import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/core/utils/mock_data_factory.dart';
 import 'package:ubantu/data/repositories/task_repository_impl.dart';
 import 'package:ubantu/data/services/supabase_task_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/models/task_model.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/models/task_model.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
 
 class FakeEmptyRemoteTaskService extends SupabaseTaskService {
   @override

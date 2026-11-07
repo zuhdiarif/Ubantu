@@ -3,9 +3,9 @@ import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/data/repositories/auth_repository_impl.dart';
 import 'package:ubantu/data/repositories/sos_repository_impl.dart';
 import 'package:ubantu/data/repositories/task_repository_impl.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
-import 'package:ubantu/domain/repositories/task_repository.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
+import 'package:ubantu/data/repositories/task_repository.dart';
 
 void main() {
   group('Clean MVVM Repository Implementation Unit Tests', () {

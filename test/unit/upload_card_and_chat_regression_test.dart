@@ -1,15 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubantu/components/photo_upload_card.dart';
+import 'package:ubantu/ui/widgets/photo_upload_card.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
 import 'package:ubantu/data/services/supabase_storage_service.dart';
-import 'package:ubantu/domain/models/chat_message_model.dart';
-import 'package:ubantu/domain/models/chat_room_model.dart';
-import 'package:ubantu/domain/repositories/chat_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
-import 'package:ubantu/presentation/providers/chat_provider.dart';
+import 'package:ubantu/data/models/chat_message_model.dart';
+import 'package:ubantu/data/models/chat_room_model.dart';
+import 'package:ubantu/data/repositories/chat_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
+import 'package:ubantu/ui/chat/chat_provider.dart';
 
 class FakeFailingStorageService extends SupabaseStorageService {
   final String errorMessage;

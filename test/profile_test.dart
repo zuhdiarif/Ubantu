@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/user_model.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/profile_provider.dart';
-import 'package:ubantu/presentation/views/profil_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/user_model.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/profile/profile_provider.dart';
+import 'package:ubantu/ui/profile/profil_view.dart';
 
 void main() {
   group('ProfileProvider Unit Tests', () {

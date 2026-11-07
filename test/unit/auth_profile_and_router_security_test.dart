@@ -4,11 +4,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/data/services/supabase_auth_service.dart';
 import 'package:ubantu/data/services/supabase_profile_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/user_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/user_model.dart';
 import 'package:ubantu/main.dart';
-import 'package:ubantu/presentation/views/login_view.dart';
-import 'package:ubantu/presentation/views/main_navigation_view.dart';
+import 'package:ubantu/ui/auth/login_view.dart';
+import 'package:ubantu/ui/home/main_navigation_view.dart';
 
 void main() {
   group('SupabaseAuthService Profile Mapping & Fallback', () {

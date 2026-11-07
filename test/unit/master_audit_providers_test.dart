@@ -1,18 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/core/di/service_locator.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
-import 'package:ubantu/domain/models/mitra_profile_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/models/user_model.dart';
-import 'package:ubantu/domain/repositories/auth_repository.dart';
-import 'package:ubantu/domain/repositories/mitra_repository.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/providers/registration_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/mitra_earning_item_model.dart';
+import 'package:ubantu/data/models/mitra_profile_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/models/user_model.dart';
+import 'package:ubantu/data/repositories/auth_repository.dart';
+import 'package:ubantu/data/repositories/mitra_repository.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/auth/registration_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
 
 class _FakeAuditAuthRepository implements IAuthRepository {
   UserModel? user;
@@ -125,6 +125,18 @@ class _FakeAuditOrderRepository implements IServiceOrderRepository {
 
   @override
   Stream<ServiceOrderModel?> watchOrder(String orderId) => Stream.value(null);
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async => AppResult.success(null);
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async =>
+      AppResult.failure('Not implemented');
 }
 
 class _FakeAuditMitraRepository implements IMitraRepository {

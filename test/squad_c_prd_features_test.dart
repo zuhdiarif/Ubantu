@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
-import 'package:ubantu/domain/models/chat_room_model.dart';
-import 'package:ubantu/domain/models/user_model.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/chat_provider.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/providers/notification_provider.dart';
-import 'package:ubantu/presentation/providers/rating_provider.dart';
-import 'package:ubantu/presentation/providers/sos_provider.dart';
-import 'package:ubantu/presentation/views/chat/chat_room_view.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_dashboard_view.dart';
-import 'package:ubantu/presentation/views/notification_view.dart';
-import 'package:ubantu/presentation/views/profil_view.dart';
+import 'package:ubantu/data/models/chat_room_model.dart';
+import 'package:ubantu/data/models/user_model.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/chat/chat_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/notification/notification_provider.dart';
+import 'package:ubantu/ui/mitra/rating_provider.dart';
+import 'package:ubantu/ui/sos/sos_provider.dart';
+import 'package:ubantu/ui/chat/chat_room_view.dart';
+import 'package:ubantu/ui/mitra/mitra_dashboard_view.dart';
+import 'package:ubantu/ui/notification/notification_view.dart';
+import 'package:ubantu/ui/profile/profil_view.dart';
 
 void main() {
   group('Squad C PRD Items Tests', () {

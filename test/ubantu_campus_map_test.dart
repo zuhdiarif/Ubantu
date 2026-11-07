@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:ubantu/components/theme/app_colors.dart';
-import 'package:ubantu/components/ubantu_campus_map.dart';
+import 'package:ubantu/core/theme/app_colors.dart';
+import 'package:ubantu/ui/widgets/ubantu_campus_map.dart';
 
 void main() {
   group('UbantuCampusMap Widget Tests', () {

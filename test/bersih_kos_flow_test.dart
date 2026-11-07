@@ -3,20 +3,20 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/debug_floating_menu.dart';
+import 'package:ubantu/ui/widgets/debug_floating_menu.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/rating_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/rating_repository.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/presentation/providers/rating_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
-import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_form_view.dart';
-import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_in_progress_view.dart';
-import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_selesai_view.dart';
-import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_view.dart';
-import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_waiting_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/rating_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/rating_repository.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/ui/mitra/rating_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
+import 'package:ubantu/ui/bersih_kos/bersih_kos_form_view.dart';
+import 'package:ubantu/ui/bersih_kos/bersih_kos_in_progress_view.dart';
+import 'package:ubantu/ui/bersih_kos/bersih_kos_selesai_view.dart';
+import 'package:ubantu/ui/bersih_kos/bersih_kos_view.dart';
+import 'package:ubantu/ui/bersih_kos/bersih_kos_waiting_view.dart';
 
 class _MockServiceOrderRepository implements IServiceOrderRepository {
   final List<ServiceOrderModel> orders = [];
@@ -127,6 +127,37 @@ class _MockServiceOrderRepository implements IServiceOrderRepository {
       orders[idx] = updated;
       orderControllers[orderId]?.add(updated);
       return AppResult.success(updated);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    final match = orders.cast<ServiceOrderModel?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    if (match != null) {
+      return AppResult.success(match);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      final updated = orders[idx].copyWith(
+        barterDescription: barterDescription,
+      );
+      orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
+      return AppResult.success(null);
     }
     return AppResult.failure('Order not found');
   }

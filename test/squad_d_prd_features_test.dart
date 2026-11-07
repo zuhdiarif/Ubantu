@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/core/di/service_locator.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/notification_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
-import 'package:ubantu/presentation/views/home_view.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/notification/notification_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
+import 'package:ubantu/ui/home/home_view.dart';
 
 void main() {
   group('Squad D PRD Features Tests', () {

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/user_model.dart';
-import 'package:ubantu/domain/repositories/auth_repository.dart';
-import 'package:ubantu/domain/usecases/resend_signup_otp_usecase.dart';
-import 'package:ubantu/domain/usecases/send_password_reset_otp_usecase.dart';
-import 'package:ubantu/domain/usecases/update_password_usecase.dart';
-import 'package:ubantu/domain/usecases/update_user_profile_usecase.dart';
-import 'package:ubantu/domain/usecases/verify_recovery_otp_usecase.dart';
-import 'package:ubantu/presentation/providers/password_reset_provider.dart';
-import 'package:ubantu/presentation/providers/registration_provider.dart';
-import 'package:ubantu/presentation/views/forgot_password_view.dart';
+import 'package:ubantu/data/models/user_model.dart';
+import 'package:ubantu/data/repositories/auth_repository.dart';
+import 'package:ubantu/logic/resend_signup_otp_usecase.dart';
+import 'package:ubantu/logic/send_password_reset_otp_usecase.dart';
+import 'package:ubantu/logic/update_password_usecase.dart';
+import 'package:ubantu/logic/update_user_profile_usecase.dart';
+import 'package:ubantu/logic/verify_recovery_otp_usecase.dart';
+import 'package:ubantu/ui/auth/password_reset_provider.dart';
+import 'package:ubantu/ui/auth/registration_provider.dart';
+import 'package:ubantu/ui/auth/forgot_password_view.dart';
 
 class _FakeAuthRepository implements IAuthRepository {
   UserModel? currentUser;

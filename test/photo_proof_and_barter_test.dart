@@ -4,24 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
-import 'package:ubantu/domain/models/mitra_profile_model.dart';
-import 'package:ubantu/domain/models/notification_model.dart';
-import 'package:ubantu/domain/models/rating_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/mitra_repository.dart';
-import 'package:ubantu/domain/repositories/notification_repository.dart';
-import 'package:ubantu/domain/repositories/rating_repository.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/domain/usecases/complete_order_with_proof_usecase.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/providers/rating_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
-import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_selesai_view.dart';
-import 'package:ubantu/presentation/views/bersih_kos/bersih_kos_selesai_view.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_active_order_view.dart';
-import 'package:ubantu/presentation/views/pindah_kos/pindah_kos_selesai_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/mitra_earning_item_model.dart';
+import 'package:ubantu/data/models/mitra_profile_model.dart';
+import 'package:ubantu/data/models/notification_model.dart';
+import 'package:ubantu/data/models/rating_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/mitra_repository.dart';
+import 'package:ubantu/data/repositories/notification_repository.dart';
+import 'package:ubantu/data/repositories/rating_repository.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/logic/complete_order_with_proof_usecase.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/mitra/rating_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
+import 'package:ubantu/ui/antar_jemput/antar_jemput_selesai_view.dart';
+import 'package:ubantu/ui/bersih_kos/bersih_kos_selesai_view.dart';
+import 'package:ubantu/ui/mitra/mitra_active_order_view.dart';
+import 'package:ubantu/ui/pindah_kos/pindah_kos_selesai_view.dart';
 
 class _FakeOrderRepository implements IServiceOrderRepository {
   bool shouldUploadFail = false;
@@ -109,6 +109,30 @@ class _FakeOrderRepository implements IServiceOrderRepository {
   @override
   Stream<ServiceOrderModel?> watchOrder(String orderId) =>
       Stream.value(lastOrder);
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    if (lastOrder != null && lastOrder!.id == orderId) {
+      return AppResult.success(lastOrder!);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
+    if (lastOrder != null) {
+      lastOrder = lastOrder!.copyWith(
+        barterDescription: barterDescription,
+      );
+      return AppResult.success(null);
+    }
+    return AppResult.failure('Order not found');
+  }
 }
 
 class _FakeNotificationRepository implements INotificationRepository {
@@ -133,6 +157,9 @@ class _FakeNotificationRepository implements INotificationRepository {
 
   @override
   Future<AppResult<bool>> deleteNotification(String id) async => AppResult.success(true);
+
+  @override
+  Future<void> loadRemoteNotifications() async {}
 }
 
 class _FakeMitraRepository implements IMitraRepository {

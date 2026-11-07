@@ -10,14 +10,14 @@ import 'package:ubantu/data/repositories/schedule_repository_impl.dart';
 import 'package:ubantu/data/repositories/service_order_repository_impl.dart';
 import 'package:ubantu/data/repositories/sos_repository_impl.dart';
 import 'package:ubantu/data/repositories/task_repository_impl.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/barter_provider.dart';
-import 'package:ubantu/presentation/providers/loyalty_provider.dart';
-import 'package:ubantu/presentation/providers/profile_provider.dart';
-import 'package:ubantu/presentation/providers/rating_provider.dart';
-import 'package:ubantu/presentation/providers/registration_provider.dart';
-import 'package:ubantu/presentation/providers/schedule_provider.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/profile/barter_provider.dart';
+import 'package:ubantu/ui/profile/loyalty_provider.dart';
+import 'package:ubantu/ui/profile/profile_provider.dart';
+import 'package:ubantu/ui/mitra/rating_provider.dart';
+import 'package:ubantu/ui/auth/registration_provider.dart';
+import 'package:ubantu/ui/mitra/schedule_provider.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
 
 void main() {
   group('ServiceLocator and Repository DI Connection Tests', () {

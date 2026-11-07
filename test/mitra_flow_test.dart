@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/debug_floating_menu.dart';
+import 'package:ubantu/ui/widgets/debug_floating_menu.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
-import 'package:ubantu/domain/models/mitra_profile_model.dart';
-import 'package:ubantu/domain/usecases/accept_mitra_order_usecase.dart';
-import 'package:ubantu/domain/usecases/decline_mitra_order_usecase.dart';
-import 'package:ubantu/domain/usecases/get_incoming_orders_usecase.dart';
-import 'package:ubantu/domain/usecases/get_mitra_profile_usecase.dart';
-import 'package:ubantu/domain/usecases/toggle_mitra_status_usecase.dart';
-import 'package:ubantu/domain/usecases/update_mitra_order_status_usecase.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_active_order_view.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_category_registration_view.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_dashboard_view.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_earnings_view.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_performance_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/mitra_earning_item_model.dart';
+import 'package:ubantu/data/models/mitra_profile_model.dart';
+import 'package:ubantu/logic/accept_mitra_order_usecase.dart';
+import 'package:ubantu/logic/decline_mitra_order_usecase.dart';
+import 'package:ubantu/logic/get_incoming_orders_usecase.dart';
+import 'package:ubantu/logic/get_mitra_profile_usecase.dart';
+import 'package:ubantu/logic/toggle_mitra_status_usecase.dart';
+import 'package:ubantu/logic/update_mitra_order_status_usecase.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_active_order_view.dart';
+import 'package:ubantu/ui/mitra/mitra_category_registration_view.dart';
+import 'package:ubantu/ui/mitra/mitra_dashboard_view.dart';
+import 'package:ubantu/ui/mitra/mitra_earnings_view.dart';
+import 'package:ubantu/ui/mitra/mitra_performance_view.dart';
 
 void main() {
   group('Mitra Domain Models Tests', () {

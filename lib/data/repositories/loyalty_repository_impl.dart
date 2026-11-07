@@ -1,9 +1,9 @@
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_loyalty_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/reward_points_model.dart';
-import 'package:ubantu/domain/repositories/loyalty_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/reward_points_model.dart';
+import 'package:ubantu/data/repositories/loyalty_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class LoyaltyRepositoryImpl implements ILoyaltyRepository, SessionScoped {
   final SupabaseLoyaltyService _remoteService;

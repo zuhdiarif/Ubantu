@@ -1,6 +1,6 @@
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/barter_item_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/barter_item_model.dart';
 
 class BarterService {
   Future<AppResult<List<BarterItemModel>>> fetchAvailableBarterItems() async {

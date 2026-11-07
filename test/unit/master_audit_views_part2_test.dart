@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/presentation/views/antar_jemput/antar_jemput_form_view.dart';
-import 'package:ubantu/presentation/views/sos_form_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/ui/antar_jemput/antar_jemput_form_view.dart';
+import 'package:ubantu/ui/sos/sos_form_view.dart';
 
 void main() {
   group('AntarJemputMode Validation Tests (Item 3K)', () {

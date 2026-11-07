@@ -2,20 +2,20 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/debug_floating_menu.dart';
+import 'package:ubantu/ui/widgets/debug_floating_menu.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
-import 'package:ubantu/domain/models/chat_message_model.dart';
-import 'package:ubantu/domain/models/chat_room_model.dart';
-import 'package:ubantu/domain/repositories/chat_repository.dart';
-import 'package:ubantu/domain/usecases/get_chat_messages_usecase.dart';
-import 'package:ubantu/domain/usecases/get_chat_rooms_usecase.dart';
-import 'package:ubantu/domain/usecases/send_chat_message_usecase.dart';
-import 'package:ubantu/presentation/providers/chat_provider.dart';
-import 'package:ubantu/presentation/providers/rating_provider.dart';
-import 'package:ubantu/presentation/providers/sos_provider.dart';
-import 'package:ubantu/presentation/views/chat/chat_room_view.dart';
-import 'package:ubantu/presentation/views/chat/inbox_view.dart';
+import 'package:ubantu/data/models/chat_message_model.dart';
+import 'package:ubantu/data/models/chat_room_model.dart';
+import 'package:ubantu/data/repositories/chat_repository.dart';
+import 'package:ubantu/logic/get_chat_messages_usecase.dart';
+import 'package:ubantu/logic/get_chat_rooms_usecase.dart';
+import 'package:ubantu/logic/send_chat_message_usecase.dart';
+import 'package:ubantu/ui/chat/chat_provider.dart';
+import 'package:ubantu/ui/mitra/rating_provider.dart';
+import 'package:ubantu/ui/sos/sos_provider.dart';
+import 'package:ubantu/ui/chat/chat_room_view.dart';
+import 'package:ubantu/ui/chat/inbox_view.dart';
 
 class FakeChatRepository implements IChatRepository {
   List<ChatRoomModel> rooms = [

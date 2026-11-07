@@ -6,8 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
 import 'package:ubantu/main.dart';
-import 'package:ubantu/presentation/views/login_view.dart';
-import 'package:ubantu/presentation/views/main_navigation_view.dart';
+import 'package:ubantu/ui/auth/login_view.dart';
+import 'package:ubantu/ui/home/main_navigation_view.dart';
 
 void main() {
   group('AppAuthNotifier AuthState Stream Binding Tests', () {

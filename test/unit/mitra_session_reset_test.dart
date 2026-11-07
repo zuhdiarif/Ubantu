@@ -5,11 +5,11 @@ import 'package:ubantu/data/repositories/auth_repository_impl.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
 import 'package:ubantu/data/repositories/service_order_repository_impl.dart';
 import 'package:ubantu/data/services/supabase_mitra_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
 
 class FakeMitraServiceForReset extends SupabaseMitraService {
   @override

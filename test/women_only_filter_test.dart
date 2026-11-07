@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/core/di/service_locator.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/models/task_filter_model.dart';
-import 'package:ubantu/domain/models/task_model.dart';
-import 'package:ubantu/domain/usecases/filter_tasks_usecase.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
-import 'package:ubantu/presentation/views/home_view.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_dashboard_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/models/task_filter_model.dart';
+import 'package:ubantu/data/models/task_model.dart';
+import 'package:ubantu/logic/filter_tasks_usecase.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
+import 'package:ubantu/ui/home/home_view.dart';
+import 'package:ubantu/ui/mitra/mitra_dashboard_view.dart';
 
 void main() {
   group('Women-Only Filter Domain & UseCase Tests', () {

@@ -1,10 +1,10 @@
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_barter_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/barter_item_model.dart';
-import 'package:ubantu/domain/repositories/barter_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/barter_item_model.dart';
+import 'package:ubantu/data/repositories/barter_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class BarterRepositoryImpl implements IBarterRepository, SessionScoped {
   final SupabaseBarterService _remoteService;
@@ -25,10 +25,7 @@ class BarterRepositoryImpl implements IBarterRepository, SessionScoped {
   @override
   Future<AppResult<List<BarterItemModel>>> getBarterItems() async {
     if (_useSupabase) {
-      final result = await _remoteService.getBarterItems();
-      if (result.isSuccess) {
-        return result;
-      }
+      return await _remoteService.getBarterItems();
     }
 
     return AppResult.success(const [
@@ -47,5 +44,11 @@ class BarterRepositoryImpl implements IBarterRepository, SessionScoped {
         iconAsset: 'card_giftcard_rounded',
       ),
     ]);
+  }
+
+  Future<AppResult<List<BarterItemModel>>> getListings() => getBarterItems();
+
+  Future<AppResult<BarterItemModel>> createListing(BarterItemModel item) async {
+    return AppResult.success(item);
   }
 }

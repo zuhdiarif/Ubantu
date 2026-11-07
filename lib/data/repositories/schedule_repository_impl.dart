@@ -2,11 +2,11 @@ import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_order_service.dart';
 import 'package:ubantu/data/services/supabase_schedule_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/smart_schedule_model.dart';
-import 'package:ubantu/domain/models/student_schedule_model.dart';
-import 'package:ubantu/domain/repositories/schedule_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/smart_schedule_model.dart';
+import 'package:ubantu/data/models/student_schedule_model.dart';
+import 'package:ubantu/data/repositories/schedule_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class ScheduleRepositoryImpl implements IScheduleRepository, SessionScoped {
   final SupabaseScheduleService _remoteService;
@@ -39,7 +39,8 @@ class ScheduleRepositoryImpl implements IScheduleRepository, SessionScoped {
     ),
   ];
 
-  final List<StudentScheduleModel> _mockStudentSchedules = List.from(_defaultStudentSchedules);
+  final List<StudentScheduleModel> _mockStudentSchedules =
+      List.from(_defaultStudentSchedules);
 
   ScheduleRepositoryImpl({
     SupabaseScheduleService? remoteService,
@@ -57,10 +58,7 @@ class ScheduleRepositoryImpl implements IScheduleRepository, SessionScoped {
   @override
   Future<AppResult<List<SmartScheduleModel>>> getSchedules(String userId) async {
     if (_useSupabase) {
-      final result = await _remoteService.getSchedules(userId);
-      if (result.isSuccess) {
-        return result;
-      }
+      return await _remoteService.getSchedules(userId);
     }
 
     return AppResult.success([
@@ -86,36 +84,39 @@ class ScheduleRepositoryImpl implements IScheduleRepository, SessionScoped {
   }
 
   @override
-  Future<AppResult<SmartScheduleModel>> bookSchedule(SmartScheduleModel schedule) async {
+  Future<AppResult<SmartScheduleModel>> bookSchedule(
+      SmartScheduleModel schedule) async {
     if (_useSupabase) {
-      final result = await _remoteService.bookSchedule(schedule);
-      if (result.isSuccess) {
-        return result;
-      }
+      return await _remoteService.bookSchedule(schedule);
     }
 
     return AppResult.success(schedule);
   }
 
   @override
-  Future<AppResult<List<StudentScheduleModel>>> getStudentSchedules(String userId) async {
+  Future<AppResult<List<StudentScheduleModel>>> getStudentSchedules(
+      String userId) async {
     if (_useSupabase) {
       final result = await _remoteService.getStudentSchedules(userId);
-      if (result.isSuccess) {
-        return result;
+      if (result.isSuccess && result.data != null) {
+        _mockStudentSchedules.clear();
+        _mockStudentSchedules.addAll(result.data!);
       }
+      return result;
     }
 
     return AppResult.success(List.from(_mockStudentSchedules));
   }
 
   @override
-  Future<AppResult<StudentScheduleModel>> addStudentSchedule(StudentScheduleModel schedule) async {
+  Future<AppResult<StudentScheduleModel>> addStudentSchedule(
+      StudentScheduleModel schedule) async {
     if (_useSupabase) {
       final result = await _remoteService.addStudentSchedule(schedule);
-      if (result.isSuccess) {
-        return result;
+      if (result.isSuccess && result.data != null) {
+        _mockStudentSchedules.add(result.data!);
       }
+      return result;
     }
 
     _mockStudentSchedules.add(schedule);
@@ -127,13 +128,21 @@ class ScheduleRepositoryImpl implements IScheduleRepository, SessionScoped {
     if (_useSupabase) {
       final result = await _remoteService.deleteStudentSchedule(scheduleId);
       if (result.isSuccess) {
-        return result;
+        _mockStudentSchedules.removeWhere((s) => s.id == scheduleId);
       }
+      return result;
     }
 
     _mockStudentSchedules.removeWhere((s) => s.id == scheduleId);
     return AppResult.success(true);
   }
+
+  Future<AppResult<StudentScheduleModel>> addSchedule(
+          StudentScheduleModel schedule) =>
+      addStudentSchedule(schedule);
+
+  Future<AppResult<bool>> deleteSchedule(String scheduleId) =>
+      deleteStudentSchedule(scheduleId);
 
   @override
   void clearSessionCache() {
