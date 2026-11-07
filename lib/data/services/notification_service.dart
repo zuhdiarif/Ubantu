@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ubantu/data/services/local_notification_service.dart';
-import 'package:ubantu/domain/models/notification_model.dart';
+import 'package:ubantu/data/models/notification_model.dart';
 
 class NotificationService extends ChangeNotifier {
   final List<NotificationModel> _notifications;
@@ -57,6 +57,12 @@ class NotificationService extends ChangeNotifier {
 
   void deleteNotification(String id) {
     _notifications.removeWhere((n) => n.id == id);
+    notifyListeners();
+  }
+
+  void setNotifications(List<NotificationModel> items) {
+    _notifications.clear();
+    _notifications.addAll(items);
     notifyListeners();
   }
 

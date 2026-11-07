@@ -14,37 +14,37 @@ import 'package:ubantu/data/repositories/rating_repository_impl.dart';
 import 'package:ubantu/data/repositories/schedule_repository_impl.dart';
 import 'package:ubantu/data/services/mock_task_service.dart';
 import 'package:ubantu/data/services/storage_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/chat_message_model.dart';
-import 'package:ubantu/domain/models/chat_room_model.dart';
-import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
-import 'package:ubantu/domain/models/mitra_profile_model.dart';
-import 'package:ubantu/domain/models/reward_points_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/models/smart_schedule_model.dart';
-import 'package:ubantu/domain/models/sos_report_model.dart';
-import 'package:ubantu/domain/models/sos_timeline_step_model.dart';
-import 'package:ubantu/domain/models/task_filter_model.dart';
-import 'package:ubantu/domain/models/task_model.dart';
-import 'package:ubantu/domain/repositories/chat_repository.dart';
-import 'package:ubantu/domain/repositories/loyalty_repository.dart';
-import 'package:ubantu/domain/repositories/mitra_repository.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/domain/repositories/sos_repository.dart';
-import 'package:ubantu/domain/usecases/female_only_tasks_usecase.dart';
-import 'package:ubantu/domain/usecases/filter_tasks_usecase.dart';
-import 'package:ubantu/presentation/providers/chat_provider.dart';
-import 'package:ubantu/presentation/providers/connectivity_provider.dart';
-import 'package:ubantu/presentation/providers/loyalty_provider.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/providers/rating_provider.dart';
-import 'package:ubantu/presentation/providers/registration_provider.dart';
-import 'package:ubantu/presentation/providers/schedule_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
-import 'package:ubantu/presentation/providers/sos_provider.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
-import 'package:ubantu/presentation/views/chat/chat_room_view.dart';
-import 'package:ubantu/presentation/views/sos_finish_dialog_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/chat_message_model.dart';
+import 'package:ubantu/data/models/chat_room_model.dart';
+import 'package:ubantu/data/models/mitra_earning_item_model.dart';
+import 'package:ubantu/data/models/mitra_profile_model.dart';
+import 'package:ubantu/data/models/reward_points_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/models/smart_schedule_model.dart';
+import 'package:ubantu/data/models/sos_report_model.dart';
+import 'package:ubantu/data/models/sos_timeline_step_model.dart';
+import 'package:ubantu/data/models/task_filter_model.dart';
+import 'package:ubantu/data/models/task_model.dart';
+import 'package:ubantu/data/repositories/chat_repository.dart';
+import 'package:ubantu/data/repositories/loyalty_repository.dart';
+import 'package:ubantu/data/repositories/mitra_repository.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/data/repositories/sos_repository.dart';
+import 'package:ubantu/logic/female_only_tasks_usecase.dart';
+import 'package:ubantu/logic/filter_tasks_usecase.dart';
+import 'package:ubantu/ui/chat/chat_provider.dart';
+import 'package:ubantu/ui/home/connectivity_provider.dart';
+import 'package:ubantu/ui/profile/loyalty_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/mitra/rating_provider.dart';
+import 'package:ubantu/ui/auth/registration_provider.dart';
+import 'package:ubantu/ui/mitra/schedule_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
+import 'package:ubantu/ui/sos/sos_provider.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
+import 'package:ubantu/ui/chat/chat_room_view.dart';
+import 'package:ubantu/ui/sos/sos_finish_dialog_view.dart';
 
 class _FakeServiceOrderRepository implements IServiceOrderRepository {
   final List<ServiceOrderModel> orders = [];
@@ -156,6 +156,37 @@ class _FakeServiceOrderRepository implements IServiceOrderRepository {
       orders[idx] = updated;
       orderControllers[orderId]?.add(updated);
       return AppResult.success(updated);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    final match = orders.cast<ServiceOrderModel?>().firstWhere(
+      (o) => o?.id == orderId,
+      orElse: () => null,
+    );
+    if (match != null) {
+      return AppResult.success(match);
+    }
+    return AppResult.failure('Order not found');
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      final updated = orders[idx].copyWith(
+        barterDescription: barterDescription,
+      );
+      orders[idx] = updated;
+      orderControllers[orderId]?.add(updated);
+      return AppResult.success(null);
     }
     return AppResult.failure('Order not found');
   }

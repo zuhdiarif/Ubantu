@@ -2,33 +2,33 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/debug_floating_menu.dart';
+import 'package:ubantu/ui/widgets/debug_floating_menu.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/notification_repository_impl.dart';
 import 'package:ubantu/data/services/notification_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/chat_room_model.dart';
-import 'package:ubantu/domain/models/notification_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/models/user_model.dart';
-import 'package:ubantu/domain/repositories/auth_repository.dart';
-import 'package:ubantu/domain/repositories/chat_repository.dart';
-import 'package:ubantu/domain/repositories/mitra_repository.dart';
-import 'package:ubantu/domain/repositories/notification_repository.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/chat_provider.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/providers/notification_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
-import 'package:ubantu/presentation/views/home_view.dart';
-import 'package:ubantu/presentation/views/notification_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/chat_room_model.dart';
+import 'package:ubantu/data/models/notification_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/models/user_model.dart';
+import 'package:ubantu/data/repositories/auth_repository.dart';
+import 'package:ubantu/data/repositories/chat_repository.dart';
+import 'package:ubantu/data/repositories/mitra_repository.dart';
+import 'package:ubantu/data/repositories/notification_repository.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/chat/chat_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/notification/notification_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
+import 'package:ubantu/ui/home/home_view.dart';
+import 'package:ubantu/ui/notification/notification_view.dart';
 
-import 'package:ubantu/domain/models/chat_message_model.dart';
-import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
-import 'package:ubantu/domain/models/mitra_profile_model.dart';
+import 'package:ubantu/data/models/chat_message_model.dart';
+import 'package:ubantu/data/models/mitra_earning_item_model.dart';
+import 'package:ubantu/data/models/mitra_profile_model.dart';
 
 class MockNotificationRepo implements INotificationRepository {
   final List<NotificationModel> _list = [];
@@ -75,6 +75,9 @@ class MockNotificationRepo implements INotificationRepository {
     _list.removeWhere((n) => n.id == id);
     return AppResult.success(true);
   }
+
+  @override
+  Future<void> loadRemoteNotifications() async {}
 }
 
 class MockOrderRepo implements IServiceOrderRepository {
@@ -176,6 +179,35 @@ class MockOrderRepo implements IServiceOrderRepository {
         createdAt: DateTime.now(),
       ),
     );
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    return AppResult.success(
+      ServiceOrderModel(
+        id: orderId,
+        requesterId: 'usr_1',
+        category: ServiceCategory.antarJemput,
+        status: MoveServiceStatus.waiting,
+        locationOrigin: 'Origin',
+        locationDestination: 'Destination',
+        scheduledAt: DateTime.now(),
+        itemDescription: 'Item',
+        barterType: BarterType.makanan,
+        barterDescription: 'Snack',
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
+    return AppResult.success(null);
   }
 }
 

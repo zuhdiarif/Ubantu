@@ -1,12 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/task_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/task_model.dart';
 
 class SupabaseTaskService {
   final SupabaseClient? _client;
   final String? currentUserIdOverride;
+
+  bool get isAvailable => _client != null || SupabaseService.instance.isInitialized;
 
   SupabaseTaskService({
     SupabaseClient? supabaseClient,
@@ -24,6 +26,9 @@ class SupabaseTaskService {
               : null));
 
   Future<AppResult<List<TaskModel>>> getTasks({String? excludeRequesterId}) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final activeUserId = excludeRequesterId ?? currentUserId;
       var query = _effectiveClient
@@ -97,6 +102,9 @@ class SupabaseTaskService {
   }
 
   Future<AppResult<TaskModel>> createTask(TaskModel task) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final currentUserId = _effectiveClient.auth.currentUser?.id;
       final payload = <String, dynamic>{

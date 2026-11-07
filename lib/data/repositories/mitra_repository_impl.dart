@@ -1,12 +1,12 @@
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_mitra_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/mitra_earning_item_model.dart';
-import 'package:ubantu/domain/models/mitra_profile_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/mitra_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/mitra_earning_item_model.dart';
+import 'package:ubantu/data/models/mitra_profile_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/mitra_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
   final SupabaseMitraService _mitraService;
@@ -15,7 +15,8 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
   MitraRepositoryImpl({SupabaseMitraService? mitraService})
       : _mitraService = mitraService ?? SupabaseMitraService();
 
-  bool get _useSupabase => _mitraService.isAvailable;
+  bool get isRemoteActive => _mitraService.isAvailable;
+  bool get _useSupabase => isRemoteActive;
 
   Set<String> get declinedOrderIdsForTesting =>
       Set.unmodifiable(_declinedOrderIds);
@@ -61,7 +62,7 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
       requesterId: 'req_mahasiswa_1',
       requesterName: 'Bima Aditya (FEB UB)',
       category: ServiceCategory.pindahKos,
-      status: MoveServiceStatus.accepted,
+      status: MoveServiceStatus.waiting,
       locationOrigin: 'Kos Griya UB, Jl. Watugong No. 12',
       locationDestination: 'Kos Permata, Jl. Sigura-gura IV',
       scheduledAt: DateTime.now().add(const Duration(hours: 2)),
@@ -69,7 +70,7 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
       barterType: BarterType.makanan,
       barterDescription: 'Nasi Padang Ampera + Es Teh Manis',
       createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-      helperId: 'mitra_ahmad_fauzi',
+      helperId: null,
     ),
   ];
 
@@ -129,100 +130,14 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
   @override
   Future<AppResult<MitraProfileModel>> getMitraProfile() async {
     if (_useSupabase) {
-      try {
-        final currentUserId = _mitraService.currentUserId;
-        if (currentUserId != null) {
-          final profileData =
-              await _mitraService.fetchMitraProfileData(currentUserId);
-
-          var completedCount = _profile.totalOrdersCompleted;
-          var totalRev = _profile.totalReviews;
-          var avgRating = _profile.rating;
-
-          if (SupabaseService.instance.isInitialized) {
-            try {
-              final ordersRes = await SupabaseService.instance.client
-                  .from('service_orders')
-                  .select('id')
-                  .eq('helper_id', currentUserId)
-                  .eq('status', MoveServiceStatus.completed.name);
-              completedCount = (ordersRes as List).length;
-
-              final ratingsRes = await SupabaseService.instance.client
-                  .from('ratings')
-                  .select('score')
-                  .eq('target_user_id', currentUserId);
-              final ratingList = (ratingsRes as List);
-              totalRev = ratingList.length;
-              if (totalRev > 0) {
-                final sum = ratingList.fold<double>(
-                  0.0,
-                  (acc, curr) =>
-                      acc + ((curr['score'] as num?)?.toDouble() ?? 5.0),
-                );
-                avgRating = double.parse((sum / totalRev).toStringAsFixed(1));
-              }
-            } catch (_) {}
-          }
-
-          final authUser = SupabaseService.instance.isInitialized
-              ? SupabaseService.instance.client.auth.currentUser
-              : null;
-          final rawName = profileData?['full_name'] as String? ??
-              profileData?['username'] as String? ??
-              authUser?.userMetadata?['full_name'] as String? ??
-              authUser?.email?.split('@').first ??
-              _profile.name;
-          final realName = rawName.contains('(Mitra UB)')
-              ? rawName
-              : '$rawName (Mitra UB)';
-          final realFaculty = profileData?['faculty'] as String? ??
-              _profile.faculty;
-          final realPhone = profileData?['phone_number'] as String? ??
-              authUser?.phone ??
-              _profile.phone;
-          final realPoints = (profileData?['barter_points'] as num?)?.toInt() ??
-              (completedCount * 10);
-
-          List<ServiceCategory> parsedCategories = _profile.selectedCategories;
-          if (profileData?['mitra_categories'] != null) {
-            final catList = (profileData!['mitra_categories'] as List)
-                .map((e) => e.toString())
-                .toList();
-            final matched = catList
-                .map((name) {
-                  for (final cat in ServiceCategory.values) {
-                    if (cat.name == name) return cat;
-                  }
-                  return null;
-                })
-                .whereType<ServiceCategory>()
-                .toList();
-            if (matched.isNotEmpty) {
-              parsedCategories = matched;
-            }
-          }
-
-          _profile = _profile.copyWith(
-            id: currentUserId,
-            userId: currentUserId,
-            name: realName,
-            faculty: realFaculty,
-            phone: realPhone,
-            avatarUrl: profileData?['avatar_url'] as String? ?? _profile.avatarUrl,
-            isOnline: profileData?['is_online'] as bool? ?? _profile.isOnline,
-            selectedCategories: parsedCategories,
-            vehicleInfo: profileData?['mitra_vehicle_type'] as String? ??
-                _profile.vehicleInfo,
-            vehiclePlate: profileData?['mitra_vehicle_plate'] as String? ??
-                _profile.vehiclePlate,
-            totalOrdersCompleted: completedCount,
-            totalReviews: totalRev,
-            rating: totalRev > 0 ? avgRating : 5.0,
-            totalBarterPoints: realPoints,
-          );
+      final currentUserId = _mitraService.currentUserId;
+      if (currentUserId != null) {
+        final profileRes =
+            await _mitraService.fetchMitraProfile(currentUserId, _profile);
+        if (profileRes.isSuccess && profileRes.data != null) {
+          _profile = profileRes.data!;
         }
-      } catch (_) {}
+      }
     }
     return AppResult.success(_profile);
   }
@@ -232,9 +147,11 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
     if (_useSupabase) {
       final currentUserId = _mitraService.currentUserId;
       if (currentUserId != null) {
-        final res = await _mitraService.updateOnlineStatus(currentUserId, isOnline);
+        final res =
+            await _mitraService.updateOnlineStatus(currentUserId, isOnline);
         if (!res.isSuccess) {
-          return AppResult.failure(res.errorMessage ?? 'Gagal memperbarui status online');
+          return AppResult.failure(
+              res.errorMessage ?? 'Gagal memperbarui status online');
         }
       }
     }
@@ -257,7 +174,8 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
           vehiclePlate: vehiclePlate ?? _profile.vehiclePlate,
         );
         if (!res.isSuccess) {
-          return AppResult.failure(res.errorMessage ?? 'Gagal memperbarui data pendaftaran mitra');
+          return AppResult.failure(res.errorMessage ??
+              'Gagal memperbarui data pendaftaran mitra');
         }
       }
     }
@@ -287,85 +205,19 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
           _declinedOrderIds.addAll(remoteDeclined);
         } catch (_) {}
       }
-    }
-
-    if (_useSupabase && SupabaseService.instance.isInitialized) {
-      try {
-        final currentUserId = _mitraService.currentUserId;
-        final response = await SupabaseService.instance.client
-            .from('service_orders')
-            .select()
-            .eq('status', MoveServiceStatus.waiting.name)
-            .order('created_at', ascending: false);
-
-        final rows = (response as List)
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .where((row) {
-              final reqId = row['requester_id']?.toString();
-              if (currentUserId != null && reqId == currentUserId) {
-                return false;
-              }
-              final orderId = row['id']?.toString();
-              if (orderId != null && _declinedOrderIds.contains(orderId)) {
-                return false;
-              }
-              return true;
-            })
-            .toList();
-
-        final missingRequesterIds = rows
-            .where((r) {
-              final rName = r['requester_name']?.toString();
-              final rId = r['requester_id']?.toString();
-              return (rName == null || rName.trim().isEmpty) &&
-                  (rId != null && rId.trim().isNotEmpty);
-            })
-            .map((r) => r['requester_id'].toString())
-            .toSet();
-
-        if (missingRequesterIds.isNotEmpty) {
-          try {
-            final profilesRes = await SupabaseService.instance.client
-                .from('profiles')
-                .select('id, full_name')
-                .inFilter('id', missingRequesterIds.toList());
-            final Map<String, String> nameMap = {};
-            for (final p in profilesRes as List<dynamic>) {
-              if (p is Map && p['id'] != null && p['full_name'] != null) {
-                final fullName = p['full_name'].toString().trim();
-                if (fullName.isNotEmpty) {
-                  nameMap[p['id'].toString()] = fullName;
-                }
-              }
-            }
-            for (final row in rows) {
-              final rName = row['requester_name']?.toString();
-              final rId = row['requester_id']?.toString();
-              if ((rName == null || rName.trim().isEmpty) &&
-                  rId != null &&
-                  nameMap.containsKey(rId)) {
-                row['requester_name'] = nameMap[rId];
-              }
-            }
-          } catch (_) {}
+      if (SupabaseService.instance.isInitialized) {
+        final remoteRes = await _mitraService.fetchIncomingOrders(
+          currentUserId: currentUserId,
+          declinedOrderIds: _declinedOrderIds,
+          filterCategories: _profile.selectedCategories,
+        );
+        if (remoteRes.isSuccess && remoteRes.data != null) {
+          _incomingOrders.clear();
+          _incomingOrders.addAll(remoteRes.data!);
+          return AppResult.success(List.unmodifiable(_incomingOrders));
+        } else {
+          return remoteRes;
         }
-
-        final List<ServiceOrderModel> remoteOrders = rows
-            .map((e) => ServiceOrderModel.fromJson(e))
-            .where((order) {
-              if (_profile.selectedCategories.isNotEmpty &&
-                  !_profile.selectedCategories.contains(order.category)) {
-                return false;
-              }
-              return true;
-            })
-            .toList();
-
-        _incomingOrders.clear();
-        _incomingOrders.addAll(remoteOrders);
-        return AppResult.success(List.unmodifiable(_incomingOrders));
-      } catch (e) {
-        return AppResult.failure('Gagal memuat pesanan masuk: $e');
       }
     }
 
@@ -395,57 +247,23 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
           }
         }
       } catch (_) {}
-    } else if (SupabaseService.instance.isInitialized) {
-      try {
-        final currentUserId =
-            SupabaseService.instance.client.auth.currentUser?.id;
-        if (currentUserId != null) {
-          final res = await SupabaseService.instance.client
-              .from('service_orders')
-              .select()
-              .eq('helper_id', currentUserId)
-              .inFilter('status', [
-                MoveServiceStatus.accepted.name,
-                MoveServiceStatus.inProgress.name,
-              ])
-              .order('created_at', ascending: false)
-              .limit(1)
-              .maybeSingle();
-
-          if (res != null) {
-            _activeOrder = ServiceOrderModel.fromJson(res);
-          } else {
-            _activeOrder = null;
-          }
-        }
-      } catch (_) {}
     }
     return AppResult.success(_activeOrder);
   }
 
   @override
   Future<AppResult<List<ServiceOrderModel>>> getCompletedOrders() async {
-    if (SupabaseService.instance.isInitialized) {
-      try {
-        final currentUserId =
-            SupabaseService.instance.client.auth.currentUser?.id;
-        if (currentUserId != null) {
-          final res = await SupabaseService.instance.client
-              .from('service_orders')
-              .select()
-              .eq('helper_id', currentUserId)
-              .eq('status', MoveServiceStatus.completed.name)
-              .order('created_at', ascending: false);
-
-          final List<ServiceOrderModel> completed = (res as List)
-              .map((e) => ServiceOrderModel.fromJson(e as Map<String, dynamic>))
-              .toList();
+    if (_useSupabase && SupabaseService.instance.isInitialized) {
+      final currentUserId = _mitraService.currentUserId;
+      if (currentUserId != null) {
+        final res = await _mitraService.fetchCompletedOrders(currentUserId);
+        if (res.isSuccess && res.data != null) {
           _completedOrders.clear();
-          _completedOrders.addAll(completed);
+          _completedOrders.addAll(res.data!);
           return AppResult.success(List.unmodifiable(_completedOrders));
+        } else {
+          return res;
         }
-      } catch (e) {
-        return AppResult.failure('Gagal memuat riwayat pesanan: $e');
       }
     }
     return AppResult.success(List.unmodifiable(_completedOrders));
@@ -453,41 +271,17 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
 
   @override
   Future<AppResult<List<MitraEarningItemModel>>> getEarningsHistory() async {
-    if (SupabaseService.instance.isInitialized) {
-      try {
-        final currentUserId =
-            SupabaseService.instance.client.auth.currentUser?.id;
-        if (currentUserId != null) {
-          final res = await SupabaseService.instance.client
-              .from('service_orders')
-              .select()
-              .eq('helper_id', currentUserId)
-              .eq('status', MoveServiceStatus.completed.name)
-              .order('created_at', ascending: false);
-
-          final items = (res as List).map((row) {
-            final order =
-                ServiceOrderModel.fromJson(row as Map<String, dynamic>);
-            return MitraEarningItemModel(
-              id: 'earn-${order.id}',
-              orderId: order.id,
-              orderNumber:
-                  'UB-ORD-${order.id.length > 4 ? order.id.substring(0, 4).toUpperCase() : order.id}',
-              serviceTitle: 'Layanan ${_categoryTitle(order.category)}',
-              date: order.createdAt,
-              barterDescription: order.barterDescription,
-              pointsEarned: 10,
-              customerName: (order.requesterName != null && order.requesterName!.isNotEmpty)
-                  ? order.requesterName!
-                  : 'Mahasiswa UB',
-            );
-          }).toList();
+    if (_useSupabase && SupabaseService.instance.isInitialized) {
+      final currentUserId = _mitraService.currentUserId;
+      if (currentUserId != null) {
+        final res = await _mitraService.fetchEarningsHistory(currentUserId);
+        if (res.isSuccess && res.data != null) {
           _earningsHistory.clear();
-          _earningsHistory.addAll(items);
+          _earningsHistory.addAll(res.data!);
           return AppResult.success(List.unmodifiable(_earningsHistory));
+        } else {
+          return res;
         }
-      } catch (e) {
-        return AppResult.failure('Gagal memuat riwayat penghasilan: $e');
       }
     }
     return AppResult.success(List.unmodifiable(_earningsHistory));
@@ -560,7 +354,8 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
           orderId: orderId,
         );
         if (!res.isSuccess) {
-          return AppResult.failure(res.errorMessage ?? 'Gagal mencatat penolakan pesanan');
+          return AppResult.failure(
+              res.errorMessage ?? 'Gagal mencatat penolakan pesanan');
         }
       }
     }
@@ -591,7 +386,8 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
         status: status,
       );
       if (!res.isSuccess) {
-        return AppResult.failure(res.errorMessage ?? 'Gagal memperbarui status pesanan.');
+        return AppResult.failure(
+            res.errorMessage ?? 'Gagal memperbarui status pesanan.');
       }
     }
 
@@ -608,7 +404,8 @@ class MitraRepositoryImpl implements IMitraRepository, SessionScoped {
         date: DateTime.now(),
         barterDescription: finished.barterDescription,
         pointsEarned: 10,
-        customerName: (finished.requesterName != null && finished.requesterName!.isNotEmpty)
+        customerName: (finished.requesterName != null &&
+                finished.requesterName!.isNotEmpty)
             ? finished.requesterName!
             : 'Mahasiswa UB',
       );

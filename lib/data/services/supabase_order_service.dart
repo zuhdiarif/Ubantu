@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
 
 class SupabaseOrderService {
   static const String _table = 'service_orders';
+
+  bool get isAvailable => SupabaseService.instance.isInitialized;
 
   static List<ServiceOrderModel> _defaultWaitingOrders() => [
     ServiceOrderModel(
@@ -117,6 +119,12 @@ class SupabaseOrderService {
     String userId,
   ) async {
     try {
+      if (!SupabaseService.instance.isInitialized) {
+        final list = _fallbackWaitingOrders
+            .where((o) => o.requesterId == userId || o.helperId == userId || userId.isEmpty)
+            .toList();
+        return AppResult.success(list);
+      }
       final response = await SupabaseService.instance.client
           .from(_table)
           .select()
@@ -140,6 +148,16 @@ class SupabaseOrderService {
     ServiceOrderModel order,
   ) async {
     try {
+      if (!SupabaseService.instance.isInitialized) {
+        final fallbackOrder = order.copyWith(
+          id: order.id.isNotEmpty
+              ? order.id
+              : 'local_${DateTime.now().millisecondsSinceEpoch}',
+          createdAt: order.createdAt,
+        );
+        _fallbackWaitingOrders.insert(0, fallbackOrder);
+        return AppResult.success(fallbackOrder);
+      }
       final data = order.toJson()..remove('id');
       data.removeWhere((key, value) => value == null);
 
@@ -446,6 +464,62 @@ class SupabaseOrderService {
       return enrichedList;
     } catch (_) {
       return rows;
+    }
+  }
+
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
+    try {
+      if (!SupabaseService.instance.isInitialized) {
+        final idx = _fallbackWaitingOrders.indexWhere((o) => o.id == orderId);
+        if (idx != -1) {
+          _fallbackWaitingOrders[idx] = _fallbackWaitingOrders[idx].copyWith(
+            barterDescription: barterDescription ?? _fallbackWaitingOrders[idx].barterDescription,
+            barterConfirmedByCustomer: false,
+          );
+        }
+        return AppResult.success(null);
+      }
+      await SupabaseService.instance.client.from(_table).update({
+        'payment_method': paymentMethod.name,
+        'price': price,
+        'barter_description': barterDescription,
+        'is_barter_confirmed': false,
+      }).eq('id', orderId);
+      return AppResult.success(null);
+    } catch (e) {
+      return AppResult.failure(e.toString());
+    }
+  }
+
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    try {
+      if (!SupabaseService.instance.isInitialized) {
+        final found = _fallbackWaitingOrders.cast<ServiceOrderModel?>().firstWhere(
+              (o) => o?.id == orderId,
+              orElse: () => null,
+            );
+        if (found != null) {
+          return AppResult.success(found);
+        }
+        return AppResult.failure('Pesanan tidak ditemukan');
+      }
+      final data = await SupabaseService.instance.client
+          .from(_table)
+          .select()
+          .eq('id', orderId)
+          .maybeSingle();
+      if (data == null) {
+        return AppResult.failure('Pesanan tidak ditemukan');
+      }
+      final enriched = await _enrichRequesterNames([Map<String, dynamic>.from(data)]);
+      return AppResult.success(ServiceOrderModel.fromJson(enriched.first));
+    } catch (e) {
+      return AppResult.failure(e.toString());
     }
   }
 

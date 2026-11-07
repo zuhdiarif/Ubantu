@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/user_model.dart';
-import 'package:ubantu/domain/repositories/text_recognition_service.dart';
-import 'package:ubantu/domain/usecases/extract_ktm_data_usecase.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/ktm_verification_provider.dart';
-import 'package:ubantu/presentation/providers/registration_provider.dart';
-import 'package:ubantu/presentation/views/ktm_verification_view.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/user_model.dart';
+import 'package:ubantu/data/repositories/text_recognition_service.dart';
+import 'package:ubantu/logic/extract_ktm_data_usecase.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/auth/ktm_verification_provider.dart';
+import 'package:ubantu/ui/auth/registration_provider.dart';
+import 'package:ubantu/ui/auth/ktm_verification_view.dart';
 
 class _FakeOcrService implements ITextRecognitionService {
   AppResult<String> result;

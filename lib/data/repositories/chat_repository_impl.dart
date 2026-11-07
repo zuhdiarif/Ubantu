@@ -2,10 +2,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/chat_message_model.dart';
-import 'package:ubantu/domain/models/chat_room_model.dart';
-import 'package:ubantu/domain/repositories/chat_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/chat_message_model.dart';
+import 'package:ubantu/data/models/chat_room_model.dart';
+import 'package:ubantu/data/repositories/chat_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class ChatRepositoryImpl implements IChatRepository, SessionScoped {
   final List<ChatRoomModel> _mockRooms = [];
@@ -90,9 +90,13 @@ class ChatRepositoryImpl implements IChatRepository, SessionScoped {
             }).length;
 
             final isRequester = order['requester_id'] == currentUserId;
+            final helperName = (order['helper_name'] as String?)?.trim() ?? '';
+            final requesterName = (order['requester_name'] as String?)?.trim() ?? '';
             final otherName = isRequester
-                ? (order['helper_id'] != null ? 'Mitra Ubantu' : 'Petugas Ubantu')
-                : 'Mahasiswa UB (Pemesan)';
+                ? (helperName.isNotEmpty
+                    ? helperName
+                    : (order['helper_id'] != null ? 'Mitra Ubantu' : 'Petugas Ubantu'))
+                : (requesterName.isNotEmpty ? requesterName : 'Mahasiswa UB (Pemesan)');
 
             final statusStr = order['status']?.toString() ?? '';
             final isCompleted = statusStr == 'completed';

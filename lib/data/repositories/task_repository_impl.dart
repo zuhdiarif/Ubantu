@@ -2,9 +2,9 @@ import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/mock_task_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/data/services/supabase_task_service.dart';
-import 'package:ubantu/domain/models/task_model.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
-import 'package:ubantu/domain/repositories/task_repository.dart';
+import 'package:ubantu/data/models/task_model.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
+import 'package:ubantu/data/repositories/task_repository.dart';
 
 class TaskRepositoryImpl implements ITaskRepository, SessionScoped {
   final MockTaskService _mockService;

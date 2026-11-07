@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/repositories/text_recognition_service.dart';
-import 'package:ubantu/domain/usecases/extract_ktm_data_usecase.dart';
+import 'package:ubantu/data/repositories/text_recognition_service.dart';
+import 'package:ubantu/logic/extract_ktm_data_usecase.dart';
 
 class _FakeTextRecognitionService implements ITextRecognitionService {
   AppResult<String> result;

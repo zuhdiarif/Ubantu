@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubantu/presentation/providers/registration_provider.dart';
+import 'package:ubantu/ui/auth/registration_provider.dart';
 
 void main() {
   group('OTP Verification Unit Tests', () {

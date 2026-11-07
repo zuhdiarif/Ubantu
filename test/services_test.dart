@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/utils/app_validators.dart';
 import 'package:ubantu/data/services/notification_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/barter_item_model.dart';
-import 'package:ubantu/presentation/providers/registration_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/barter_item_model.dart';
+import 'package:ubantu/ui/auth/registration_provider.dart';
 
 void main() {
   group('AppValidators Tests', () {

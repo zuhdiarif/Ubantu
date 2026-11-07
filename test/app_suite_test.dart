@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_exceptions.dart';
 import 'package:ubantu/core/utils/mock_data_factory.dart';
-import 'package:ubantu/domain/models/rating_model.dart';
-import 'package:ubantu/domain/models/sos_timeline_step_model.dart';
+import 'package:ubantu/data/models/rating_model.dart';
+import 'package:ubantu/data/models/sos_timeline_step_model.dart';
 
 void main() {
   group('MockDataFactory Unit Tests', () {

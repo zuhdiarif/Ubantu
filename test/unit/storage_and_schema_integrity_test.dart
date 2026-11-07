@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_storage_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
 
 class _MockOrderRepo implements IServiceOrderRepository {
   @override
@@ -45,6 +45,21 @@ class _MockOrderRepo implements IServiceOrderRepository {
 
   @override
   Future<AppResult<ServiceOrderModel>> confirmBarter(String orderId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
     throw UnimplementedError();
   }
 }

@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:ubantu/components/custom_badge.dart';
+import 'package:ubantu/ui/widgets/custom_badge.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/mitra_repository_impl.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/models/smart_schedule_model.dart';
-import 'package:ubantu/domain/models/student_schedule_model.dart';
-import 'package:ubantu/domain/repositories/schedule_repository.dart';
-import 'package:ubantu/domain/usecases/check_schedule_conflict_usecase.dart';
-import 'package:ubantu/presentation/providers/mitra_provider.dart';
-import 'package:ubantu/presentation/providers/schedule_provider.dart';
-import 'package:ubantu/presentation/views/mitra/mitra_dashboard_view.dart';
-import 'package:ubantu/presentation/views/mitra/widgets/class_schedule_sheet.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/models/smart_schedule_model.dart';
+import 'package:ubantu/data/models/student_schedule_model.dart';
+import 'package:ubantu/data/repositories/schedule_repository.dart';
+import 'package:ubantu/logic/check_schedule_conflict_usecase.dart';
+import 'package:ubantu/ui/mitra/mitra_provider.dart';
+import 'package:ubantu/ui/mitra/schedule_provider.dart';
+import 'package:ubantu/ui/mitra/mitra_dashboard_view.dart';
+import 'package:ubantu/ui/mitra/widgets/class_schedule_sheet.dart';
 
 class MockScheduleRepository implements IScheduleRepository {
   final List<StudentScheduleModel> _slots = [];

@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/sos_provider.dart';
-import 'package:ubantu/presentation/providers/task_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/sos/sos_provider.dart';
+import 'package:ubantu/ui/home/task_provider.dart';
 
 void main() {
   group('Clean MVVM Providers Unit Tests', () {

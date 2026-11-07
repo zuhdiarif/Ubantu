@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/utils/mock_data_factory.dart';
 import 'package:ubantu/data/repositories/barter_repository_impl.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/task_filter_model.dart';
-import 'package:ubantu/domain/usecases/filter_tasks_usecase.dart';
-import 'package:ubantu/domain/usecases/get_barter_items_usecase.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/task_filter_model.dart';
+import 'package:ubantu/logic/filter_tasks_usecase.dart';
+import 'package:ubantu/logic/get_barter_items_usecase.dart';
 
 void main() {
   group('New Domain UseCases Unit Tests', () {

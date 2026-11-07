@@ -1,5 +1,5 @@
 import 'package:ubantu/data/services/storage_service.dart';
-import 'package:ubantu/domain/repositories/storage_repository.dart';
+import 'package:ubantu/data/repositories/storage_repository.dart';
 
 class StorageRepositoryImpl implements IStorageRepository {
   final StorageService _storageService;

@@ -2,9 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/main.dart';
-import 'package:ubantu/presentation/views/login_view.dart';
-import 'package:ubantu/presentation/views/main_navigation_view.dart';
-import 'package:ubantu/presentation/views/onboarding_view.dart';
+import 'package:ubantu/ui/auth/login_view.dart';
+import 'package:ubantu/ui/home/main_navigation_view.dart';
+import 'package:ubantu/ui/onboarding/onboarding_view.dart';
 
 void main() {
   setUp(() {

@@ -4,8 +4,8 @@ import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_profile_service.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/user_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/user_model.dart';
 
 class SupabaseAuthService {
   final SupabaseClient? _client;
@@ -441,6 +441,9 @@ class SupabaseAuthService {
       if (userId == null) {
         return AppResult.failure('Tidak ada pengguna yang sedang masuk.');
       }
+      try {
+        await _effectiveClient.rpc('delete_current_user_account');
+      } catch (_) {}
       await _effectiveClient.from('profiles').delete().eq('id', userId);
       await _effectiveClient.auth.signOut();
       _cachedUser = null;

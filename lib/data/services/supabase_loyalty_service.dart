@@ -1,16 +1,21 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/reward_points_model.dart';
+import 'package:ubantu/data/models/reward_points_model.dart';
 
 class SupabaseLoyaltyService {
   final SupabaseClient? _client;
+
+  bool get isAvailable => _client != null || SupabaseService.instance.isInitialized;
 
   SupabaseLoyaltyService({SupabaseClient? supabaseClient}) : _client = supabaseClient;
 
   SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
 
   Future<AppResult<RewardPointsModel>> getLoyaltyPoints(String userId) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final response = await _effectiveClient
           .from('loyalty_points')
@@ -35,6 +40,9 @@ class SupabaseLoyaltyService {
   }
 
   Future<AppResult<RewardPointsModel>> claimVoucher([String? userId, int? pointsRequired]) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final response = await _effectiveClient.rpc('claim_loyalty_voucher');
       return AppResult.success(_parseRpcResult(response));
@@ -50,6 +58,9 @@ class SupabaseLoyaltyService {
   }
 
   Future<AppResult<RewardPointsModel>> awardOrderPoints(String orderId) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final response = await _effectiveClient.rpc(
         'award_order_points',

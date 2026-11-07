@@ -2,14 +2,14 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/chat_message_model.dart';
-import 'package:ubantu/domain/models/chat_room_model.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/chat_repository.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/presentation/providers/chat_provider.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/chat_message_model.dart';
+import 'package:ubantu/data/models/chat_room_model.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/chat_repository.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/ui/chat/chat_provider.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
 
 class _FakeRealtimeOrderRepository implements IServiceOrderRepository {
   final StreamController<ServiceOrderModel?> controller =
@@ -55,6 +55,19 @@ class _FakeRealtimeOrderRepository implements IServiceOrderRepository {
   Future<AppResult<ServiceOrderModel>> confirmBarter(
     String orderId,
   ) async =>
+      AppResult.failure('noop');
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async =>
+      AppResult.failure('noop');
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async =>
       AppResult.failure('noop');
 }
 

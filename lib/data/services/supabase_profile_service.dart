@@ -1,16 +1,21 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/user_model.dart';
+import 'package:ubantu/data/models/user_model.dart';
 
 class SupabaseProfileService {
   final SupabaseClient? _client;
+
+  bool get isAvailable => _client != null || SupabaseService.instance.isInitialized;
 
   SupabaseProfileService({SupabaseClient? supabaseClient}) : _client = supabaseClient;
 
   SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
 
   Future<AppResult<UserModel>> getProfile(String userId) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final response = await _effectiveClient
           .from('profiles')
@@ -29,6 +34,9 @@ class SupabaseProfileService {
   }
 
   Future<AppResult<UserModel>> updateProfile(UserModel user) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final payload = buildEditableProfilePayload(user);
       final response = await _effectiveClient
@@ -44,6 +52,9 @@ class SupabaseProfileService {
   }
 
   Future<AppResult<UserModel>> ensureProfileExists(UserModel user) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final existing = await _effectiveClient
           .from('profiles')

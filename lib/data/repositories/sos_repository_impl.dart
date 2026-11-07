@@ -1,14 +1,15 @@
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
 import 'package:ubantu/data/services/supabase_sos_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/sos_report_model.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
-import 'package:ubantu/domain/repositories/sos_repository.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/sos_report_model.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
+import 'package:ubantu/data/repositories/sos_repository.dart';
 
 class SosRepositoryImpl implements ISosRepository, SessionScoped {
   final SupabaseSosService _supabaseSosService;
   SosStatus _status = SosStatus.received;
+  String? _lastReportId;
 
   SosRepositoryImpl({
     SupabaseSosService? service,
@@ -18,14 +19,17 @@ class SosRepositoryImpl implements ISosRepository, SessionScoped {
   bool get hasRemoteService => true;
   SupabaseSosService get remoteService => _supabaseSosService;
   bool get isRemoteActive => SupabaseService.instance.isInitialized;
+  String? get lastReportId => _lastReportId;
 
   @override
   Future<AppResult<SosReportModel>> submitSosReport(String issueType) async {
     if (isRemoteActive) {
-      final result = await _supabaseSosService.submitSosReport(issueType);
-      if (result.isSuccess) {
-        return result;
+      final remoteResult = await _supabaseSosService.submitSosReport(issueType);
+      if (remoteResult.isSuccess && remoteResult.data != null) {
+        _status = remoteResult.data!.status;
+        _lastReportId = remoteResult.data!.id;
       }
+      return remoteResult;
     }
 
     final currentUserId = SupabaseService.instance.isInitialized
@@ -39,16 +43,23 @@ class SosRepositoryImpl implements ISosRepository, SessionScoped {
       status: _status,
       createdAt: DateTime.now(),
     );
+    _lastReportId = report.id;
     return AppResult.success(report);
   }
 
   @override
   Future<void> updateSosStatus(SosStatus status) async {
     _status = status;
+    if (isRemoteActive && _lastReportId != null && _lastReportId!.isNotEmpty) {
+      await _supabaseSosService.updateSosStatus(_lastReportId!, status);
+    }
   }
 
   @override
   void clearSessionCache() {
     _status = SosStatus.received;
+    _lastReportId = null;
   }
+
+  void clearCache() => clearSessionCache();
 }

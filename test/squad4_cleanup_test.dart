@@ -1,15 +1,15 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ubantu/components/theme/app_colors.dart';
-import 'package:ubantu/components/theme/app_theme.dart';
-import 'package:ubantu/components/theme/app_typography.dart';
+import 'package:ubantu/core/theme/app_colors.dart';
+import 'package:ubantu/core/theme/app_theme.dart';
+import 'package:ubantu/core/theme/app_typography.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/repositories/chat_repository_impl.dart';
 import 'package:ubantu/data/services/supabase_auth_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/service_order_model.dart';
-import 'package:ubantu/domain/repositories/service_order_repository.dart';
-import 'package:ubantu/presentation/providers/service_order_provider.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/service_order_model.dart';
+import 'package:ubantu/data/repositories/service_order_repository.dart';
+import 'package:ubantu/ui/aktivitas/service_order_provider.dart';
 
 class MockServiceOrderRepository implements IServiceOrderRepository {
   List<ServiceOrderModel> orders = [];
@@ -66,6 +66,32 @@ class MockServiceOrderRepository implements IServiceOrderRepository {
       final updated = orders[idx].copyWith(barterConfirmedByCustomer: true);
       orders[idx] = updated;
       return AppResult.success(updated);
+    }
+    return AppResult.failure('Not found');
+  }
+
+  @override
+  Future<AppResult<ServiceOrderModel>> fetchOrderById(String orderId) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      return AppResult.success(orders[idx]);
+    }
+    return AppResult.failure('Not found');
+  }
+
+  @override
+  Future<AppResult<void>> updateOrderNegotiation(
+    String orderId, {
+    required PaymentMethodType paymentMethod,
+    required int price,
+    String? barterDescription,
+  }) async {
+    final idx = orders.indexWhere((o) => o.id == orderId);
+    if (idx != -1) {
+      orders[idx] = orders[idx].copyWith(
+        barterDescription: barterDescription,
+      );
+      return AppResult.success(null);
     }
     return AppResult.failure('Not found');
   }

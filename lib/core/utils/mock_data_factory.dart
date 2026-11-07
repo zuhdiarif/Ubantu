@@ -1,8 +1,8 @@
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/barter_item_model.dart';
-import 'package:ubantu/domain/models/notification_model.dart';
-import 'package:ubantu/domain/models/task_model.dart';
-import 'package:ubantu/domain/models/user_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/barter_item_model.dart';
+import 'package:ubantu/data/models/notification_model.dart';
+import 'package:ubantu/data/models/task_model.dart';
+import 'package:ubantu/data/models/user_model.dart';
 
 class MockDataFactory {
   static UserModel get mockUser => const UserModel(

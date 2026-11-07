@@ -61,27 +61,38 @@ UBantu dibangun menggunakan teknologi modern:
 
 ## 🏗️ Arsitektur Aplikasi
 
-UBantu mengadopsi struktur **Clean MVVM Architecture** untuk memastikan pemisahan tanggung jawab (*separation of concerns*), keterujian (*testability*), dan kemudahan pemeliharaan kode:
+UBantu mengadopsi struktur **Clean 4-Layer Architecture** untuk memastikan pemisahan tanggung jawab (*separation of concerns*), keterujian (*testability*), dan kemudahan pemeliharaan kode:
 
 ```text
 lib/
-├── components/           # Reusable UI Widgets & Design Tokens (Badge, Buttons, Cards, Inputs, Theme)
-├── core/                 # Shared Infrastructure: Config, DI Service Locator, Exception Handler, Router, Utils
+├── core/                 # Shared Infrastructure: Config, DI Service Locator, Exception Handler, Navigation, Theme, Utils
 │   ├── config/
 │   ├── di/
 │   ├── errors/
 │   ├── navigation/
+│   ├── theme/
 │   └── utils/
-├── data/                 # Data Layer: Service Wrappers, Concrete RepositoriesImpl, Local Storage
-│   ├── repositories/
-│   └── services/
-├── domain/               # Logic Layer: Entities, Abstract Repository Contracts, UseCases
+├── data/                 # Data Layer: Models (DTOs & Domain Entities), Repositories, Services
 │   ├── models/
 │   ├── repositories/
-│   └── usecases/
-└── presentation/         # UI Layer: State Controllers (Providers) & Screen Views
-    ├── providers/
-    └── views/
+│   └── services/
+├── logic/                # Business Logic / UseCases
+├── ui/                   # Feature-based Presentation (Views, Providers, and Widgets)
+│   ├── aktivitas/
+│   ├── antar_jemput/
+│   ├── auth/
+│   ├── bersih_kos/
+│   ├── chat/
+│   ├── home/
+│   ├── mitra/
+│   ├── notification/
+│   ├── onboarding/
+│   ├── pindah_kos/
+│   ├── profile/
+│   ├── sos/
+│   └── widgets/
+├── app.dart              # MultiProvider Root & MaterialApp Setup
+└── main.dart             # Application Bootstrap & Re-exports
 ```
 
 ---

@@ -6,14 +6,14 @@ import 'package:provider/provider.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/core/navigation/app_router.dart';
 import 'package:ubantu/data/services/supabase_storage_service.dart';
-import 'package:ubantu/domain/models/reward_points_model.dart';
-import 'package:ubantu/domain/repositories/loyalty_repository.dart';
+import 'package:ubantu/data/models/reward_points_model.dart';
+import 'package:ubantu/data/repositories/loyalty_repository.dart';
 import 'package:ubantu/core/errors/app_result.dart';
-import 'package:ubantu/presentation/providers/auth_provider.dart';
-import 'package:ubantu/presentation/providers/loyalty_provider.dart';
-import 'package:ubantu/presentation/providers/password_reset_provider.dart';
-import 'package:ubantu/presentation/views/forgot_password_view.dart';
-import 'package:ubantu/presentation/views/login_view.dart';
+import 'package:ubantu/ui/auth/auth_provider.dart';
+import 'package:ubantu/ui/profile/loyalty_provider.dart';
+import 'package:ubantu/ui/auth/password_reset_provider.dart';
+import 'package:ubantu/ui/auth/forgot_password_view.dart';
+import 'package:ubantu/ui/auth/login_view.dart';
 
 class _MockLoyaltyRepo implements ILoyaltyRepository {
   int points = 120;

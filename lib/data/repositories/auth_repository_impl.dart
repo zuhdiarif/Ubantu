@@ -2,10 +2,10 @@ import 'package:ubantu/core/config/app_config.dart';
 import 'package:ubantu/core/di/service_locator.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_auth_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/user_model.dart';
-import 'package:ubantu/domain/repositories/auth_repository.dart';
-import 'package:ubantu/domain/repositories/session_scoped.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/user_model.dart';
+import 'package:ubantu/data/repositories/auth_repository.dart';
+import 'package:ubantu/data/repositories/session_scoped.dart';
 
 class AuthRepositoryImpl implements IAuthRepository, SessionScoped {
   final SupabaseAuthService _authService;

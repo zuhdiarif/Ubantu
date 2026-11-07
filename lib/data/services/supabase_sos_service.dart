@@ -1,17 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ubantu/core/errors/app_result.dart';
 import 'package:ubantu/data/services/supabase_service.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/sos_report_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/sos_report_model.dart';
 
 class SupabaseSosService {
   final SupabaseClient? _client;
+
+  bool get isAvailable => _client != null || SupabaseService.instance.isInitialized;
 
   SupabaseSosService({SupabaseClient? supabaseClient}) : _client = supabaseClient;
 
   SupabaseClient get _effectiveClient => _client ?? SupabaseService.instance.client;
 
   Future<AppResult<SosReportModel>> submitSosReport(dynamic reportOrIssueType, {String? userId}) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       final user = _effectiveClient.auth.currentUser;
       final String issueType;
@@ -46,6 +51,9 @@ class SupabaseSosService {
   }
 
   Future<AppResult<bool>> updateSosStatus(String reportId, SosStatus status) async {
+    if (!isAvailable) {
+      return AppResult.failure('Supabase belum diinisialisasi.');
+    }
     try {
       await _effectiveClient
           .from('sos_reports')

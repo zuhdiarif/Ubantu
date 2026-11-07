@@ -2,17 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ubantu/data/repositories/loyalty_repository_impl.dart';
 import 'package:ubantu/data/repositories/schedule_repository_impl.dart';
-import 'package:ubantu/domain/models/app_enums.dart';
-import 'package:ubantu/domain/models/reward_points_model.dart';
-import 'package:ubantu/domain/models/smart_schedule_model.dart';
-import 'package:ubantu/domain/models/task_model.dart';
+import 'package:ubantu/data/models/app_enums.dart';
+import 'package:ubantu/data/models/reward_points_model.dart';
+import 'package:ubantu/data/models/smart_schedule_model.dart';
+import 'package:ubantu/data/models/task_model.dart';
 
-import 'package:ubantu/domain/usecases/book_schedule_usecase.dart';
-import 'package:ubantu/domain/usecases/claim_reward_usecase.dart';
-import 'package:ubantu/domain/usecases/emergency_tasks_usecase.dart';
-import 'package:ubantu/domain/usecases/female_only_tasks_usecase.dart';
-import 'package:ubantu/presentation/providers/loyalty_provider.dart';
-import 'package:ubantu/presentation/providers/schedule_provider.dart';
+import 'package:ubantu/logic/book_schedule_usecase.dart';
+import 'package:ubantu/logic/claim_reward_usecase.dart';
+import 'package:ubantu/logic/emergency_tasks_usecase.dart';
+import 'package:ubantu/logic/female_only_tasks_usecase.dart';
+import 'package:ubantu/ui/profile/loyalty_provider.dart';
+import 'package:ubantu/ui/mitra/schedule_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
