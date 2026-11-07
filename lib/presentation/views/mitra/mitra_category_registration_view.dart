@@ -361,7 +361,7 @@ class _MitraCategoryRegistrationViewState
                     children: [
                       Icon(Icons.two_wheeler, size: 18),
                       SizedBox(width: 6),
-                      Text('Sepeda Motor'),
+                      Flexible(child: Text('Sepeda Motor', overflow: TextOverflow.ellipsis)),
                     ],
                   ),
                   selected: _selectedVehicleType == VehicleType.motor,
@@ -387,7 +387,7 @@ class _MitraCategoryRegistrationViewState
                     children: [
                       Icon(Icons.directions_car, size: 18),
                       SizedBox(width: 6),
-                      Text('Mobil'),
+                      Flexible(child: Text('Mobil', overflow: TextOverflow.ellipsis)),
                     ],
                   ),
                   selected: _selectedVehicleType == VehicleType.mobil,
